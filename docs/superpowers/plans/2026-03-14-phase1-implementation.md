@@ -1,25 +1,25 @@
-# Understand Anything — Phase 1 Implementation Plan
+# Understand Anything — Plano de Implementação da Fase 1
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **Para o Claude:** SUB-SKILL OBRIGATÓRIA: Use superpowers:executing-plans para implementar este plano tarefa por tarefa.
 
-**Goal:** Build the foundational MVP — a pnpm monorepo with a core analysis engine (LLM + tree-sitter), a `/understand` skill command, and a basic React dashboard with graph view and code viewer.
+**Objetivo:** Construir o MVP fundamental — um monorepo pnpm com um motor de análise core (LLM + tree-sitter), um comando de skill `/understand`, e um dashboard React básico com graph view e visualizador de código.
 
-**Architecture:** Monorepo with 3 packages (core, skill, dashboard) sharing a knowledge graph JSON schema. The core package handles analysis and persistence. The skill invokes core and launches the dashboard. The dashboard reads the JSON and renders a multi-panel workspace.
+**Arquitetura:** Monorepo com 3 pacotes (core, skill, dashboard) compartilhando um schema JSON de knowledge graph. O pacote core lida com análise e persistência. A skill invoca o core e abre o dashboard. O dashboard lê o JSON e renderiza um workspace multi-panel.
 
-**Tech Stack:** TypeScript, pnpm workspaces, Vitest, React 18, Vite, @xyflow/react (React Flow v12), @monaco-editor/react, Zustand, TailwindCSS, tree-sitter
+**Stack Tecnológica:** TypeScript, pnpm workspaces, Vitest, React 18, Vite, @xyflow/react (React Flow v12), @monaco-editor/react, Zustand, TailwindCSS, tree-sitter
 
 ---
 
-## Task 1: Project Scaffolding — Monorepo Root
+## Tarefa 1: Scaffolding do Projeto — Raiz do Monorepo
 
-**Files:**
-- Create: `package.json`
-- Create: `pnpm-workspace.yaml`
-- Create: `tsconfig.json`
-- Create: `.gitignore`
-- Create: `.npmrc`
+**Arquivos:**
+- Crie: `package.json`
+- Crie: `pnpm-workspace.yaml`
+- Crie: `tsconfig.json`
+- Crie: `.gitignore`
+- Crie: `.npmrc`
 
-**Step 1: Create root package.json**
+**Step 1: Crie o package.json raiz**
 
 ```json
 {
@@ -40,14 +40,14 @@
 }
 ```
 
-**Step 2: Create pnpm-workspace.yaml**
+**Step 2: Crie o pnpm-workspace.yaml**
 
 ```yaml
 packages:
   - 'packages/*'
 ```
 
-**Step 3: Create root tsconfig.json**
+**Step 3: Crie o tsconfig.json raiz**
 
 ```json
 {
@@ -70,7 +70,7 @@ packages:
 }
 ```
 
-**Step 4: Create .gitignore**
+**Step 4: Crie o .gitignore**
 
 ```
 node_modules/
@@ -80,17 +80,17 @@ dist/
 .DS_Store
 ```
 
-**Step 5: Create .npmrc**
+**Step 5: Crie o .npmrc**
 
 ```
 shamefully-hoist=false
 strict-peer-dependencies=false
 ```
 
-**Step 6: Run pnpm install**
+**Step 6: Execute pnpm install**
 
-Run: `pnpm install`
-Expected: lockfile created, no errors
+Execute: `pnpm install`
+Esperado: lockfile criado, sem erros
 
 **Step 7: Commit**
 
@@ -101,15 +101,15 @@ git commit -m "chore: scaffold monorepo root with pnpm workspaces"
 
 ---
 
-## Task 2: Core Package — Scaffolding & Knowledge Graph Types
+## Tarefa 2: Pacote Core — Scaffolding & Tipos do Knowledge Graph
 
-**Files:**
-- Create: `packages/core/package.json`
-- Create: `packages/core/tsconfig.json`
-- Create: `packages/core/src/index.ts`
-- Create: `packages/core/src/types.ts`
+**Arquivos:**
+- Crie: `packages/core/package.json`
+- Crie: `packages/core/tsconfig.json`
+- Crie: `packages/core/src/index.ts`
+- Crie: `packages/core/src/types.ts`
 
-**Step 1: Create packages/core/package.json**
+**Step 1: Crie packages/core/package.json**
 
 ```json
 {
@@ -129,7 +129,7 @@ git commit -m "chore: scaffold monorepo root with pnpm workspaces"
 }
 ```
 
-**Step 2: Create packages/core/tsconfig.json**
+**Step 2: Crie packages/core/tsconfig.json**
 
 ```json
 {
@@ -142,9 +142,9 @@ git commit -m "chore: scaffold monorepo root with pnpm workspaces"
 }
 ```
 
-**Step 3: Create packages/core/src/types.ts**
+**Step 3: Crie packages/core/src/types.ts**
 
-This is the full Knowledge Graph type system from the design doc:
+Este é o sistema completo de tipos do Knowledge Graph vindo do design doc:
 
 ```typescript
 // === Edge Types ===
@@ -296,20 +296,20 @@ export interface AnalyzerPlugin {
 }
 ```
 
-**Step 4: Create packages/core/src/index.ts**
+**Step 4: Crie packages/core/src/index.ts**
 
 ```typescript
 export * from "./types.js";
 ```
 
-**Step 5: Run pnpm install and build**
+**Step 5: Execute pnpm install e o build**
 
-Run: `cd /path/to/project && pnpm install && pnpm --filter @understand-anything/core build`
-Expected: Compiles with no errors, `packages/core/dist/` created
+Execute: `cd /path/to/project && pnpm install && pnpm --filter @understand-anything/core build`
+Esperado: Compila sem erros, `packages/core/dist/` criado
 
-**Step 6: Write a type validation test**
+**Step 6: Escreva um teste de validação de tipos**
 
-Create: `packages/core/src/types.test.ts`
+Crie: `packages/core/src/types.test.ts`
 
 ```typescript
 import { describe, it, expect } from "vitest";
@@ -376,10 +376,10 @@ describe("KnowledgeGraph types", () => {
 });
 ```
 
-**Step 7: Run tests**
+**Step 7: Executar os testes**
 
-Run: `pnpm --filter @understand-anything/core test`
-Expected: All 3 tests PASS
+Execute: `pnpm --filter @understand-anything/core test`
+Esperado: Todos os 3 testes PASS
 
 **Step 8: Commit**
 
@@ -390,15 +390,15 @@ git commit -m "feat(core): add knowledge graph type system and validation tests"
 
 ---
 
-## Task 3: Core Package — JSON Persistence
+## Tarefa 3: Pacote Core — Persistência JSON
 
-**Files:**
-- Create: `packages/core/src/persistence/index.ts`
-- Create: `packages/core/src/persistence/persistence.test.ts`
+**Arquivos:**
+- Crie: `packages/core/src/persistence/index.ts`
+- Crie: `packages/core/src/persistence/persistence.test.ts`
 
-**Step 1: Write the failing test**
+**Step 1: Escreva o teste que vai falhar**
 
-Create: `packages/core/src/persistence/persistence.test.ts`
+Crie: `packages/core/src/persistence/persistence.test.ts`
 
 ```typescript
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
@@ -503,14 +503,14 @@ describe("Persistence", () => {
 });
 ```
 
-**Step 2: Run test to verify it fails**
+**Step 2: Executar o teste para verificar que ele falha**
 
-Run: `pnpm --filter @understand-anything/core test`
-Expected: FAIL — module `./index.js` not found
+Execute: `pnpm --filter @understand-anything/core test`
+Esperado: FAIL — módulo `./index.js` não encontrado
 
-**Step 3: Implement persistence module**
+**Step 3: Implemente o módulo de persistência**
 
-Create: `packages/core/src/persistence/index.ts`
+Crie: `packages/core/src/persistence/index.ts`
 
 ```typescript
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
@@ -556,17 +556,17 @@ export function loadMeta(projectRoot: string): AnalysisMeta | null {
 }
 ```
 
-**Step 4: Update packages/core/src/index.ts**
+**Step 4: Atualizar packages/core/src/index.ts**
 
 ```typescript
 export * from "./types.js";
 export * from "./persistence/index.js";
 ```
 
-**Step 5: Run tests**
+**Step 5: Executar os testes**
 
-Run: `pnpm --filter @understand-anything/core test`
-Expected: All 6 persistence tests PASS + 3 type tests PASS = 9 total
+Execute: `pnpm --filter @understand-anything/core test`
+Esperado: Todos os 6 testes de persistência PASS + 3 testes de types PASS = 9 no total
 
 **Step 6: Commit**
 
@@ -577,20 +577,20 @@ git commit -m "feat(core): add JSON persistence for knowledge graph and meta"
 
 ---
 
-## Task 4: Core Package — Tree-sitter Analyzer Plugin
+## Tarefa 4: Pacote Core — Plugin Analisador Tree-sitter
 
-**Files:**
-- Create: `packages/core/src/plugins/tree-sitter-plugin.ts`
-- Create: `packages/core/src/plugins/tree-sitter-plugin.test.ts`
+**Arquivos:**
+- Crie: `packages/core/src/plugins/tree-sitter-plugin.ts`
+- Crie: `packages/core/src/plugins/tree-sitter-plugin.test.ts`
 
-**Step 1: Install tree-sitter dependencies**
+**Step 1: Instale as dependências do tree-sitter**
 
-Run: `pnpm --filter @understand-anything/core add tree-sitter tree-sitter-javascript tree-sitter-typescript`
-Expected: packages installed
+Execute: `pnpm --filter @understand-anything/core add tree-sitter tree-sitter-javascript tree-sitter-typescript`
+Esperado: pacotes instalados
 
-**Step 2: Write the failing test**
+**Step 2: Escreva o teste que vai falhar**
 
-Create: `packages/core/src/plugins/tree-sitter-plugin.test.ts`
+Crie: `packages/core/src/plugins/tree-sitter-plugin.test.ts`
 
 ```typescript
 import { describe, it, expect } from "vitest";
@@ -703,14 +703,14 @@ import * as path from "path";
 });
 ```
 
-**Step 3: Run test to verify it fails**
+**Step 3: Executar o teste para verificar que ele falha**
 
-Run: `pnpm --filter @understand-anything/core test`
-Expected: FAIL — module not found
+Execute: `pnpm --filter @understand-anything/core test`
+Esperado: FAIL — módulo não encontrado
 
-**Step 4: Implement the tree-sitter plugin**
+**Step 4: Implemente o plugin tree-sitter**
 
-Create: `packages/core/src/plugins/tree-sitter-plugin.ts`
+Crie: `packages/core/src/plugins/tree-sitter-plugin.ts`
 
 ```typescript
 import Parser from "tree-sitter";
@@ -989,7 +989,7 @@ export class TreeSitterPlugin implements AnalyzerPlugin {
 }
 ```
 
-**Step 5: Update packages/core/src/index.ts**
+**Step 5: Atualizar packages/core/src/index.ts**
 
 ```typescript
 export * from "./types.js";
@@ -997,10 +997,10 @@ export * from "./persistence/index.js";
 export { TreeSitterPlugin } from "./plugins/tree-sitter-plugin.js";
 ```
 
-**Step 6: Run tests**
+**Step 6: Executar os testes**
 
-Run: `pnpm --filter @understand-anything/core test`
-Expected: All tree-sitter tests PASS. Some tests may need adjustment based on exact tree-sitter parse output — iterate until green.
+Execute: `pnpm --filter @understand-anything/core test`
+Esperado: Todos os testes do tree-sitter PASS. Alguns testes podem precisar de ajuste com base no output exato do parse do tree-sitter — itere até ficar verde.
 
 **Step 7: Commit**
 
@@ -1011,19 +1011,19 @@ git commit -m "feat(core): add tree-sitter analyzer plugin for TS/JS"
 
 ---
 
-## Task 5: Core Package — LLM Analysis Engine
+## Tarefa 5: Pacote Core — Motor de Análise LLM
 
-**Files:**
-- Create: `packages/core/src/analyzer/llm-analyzer.ts`
-- Create: `packages/core/src/analyzer/llm-analyzer.test.ts`
-- Create: `packages/core/src/analyzer/graph-builder.ts`
-- Create: `packages/core/src/analyzer/graph-builder.test.ts`
+**Arquivos:**
+- Crie: `packages/core/src/analyzer/llm-analyzer.ts`
+- Crie: `packages/core/src/analyzer/llm-analyzer.test.ts`
+- Crie: `packages/core/src/analyzer/graph-builder.ts`
+- Crie: `packages/core/src/analyzer/graph-builder.test.ts`
 
-**Step 1: Write the graph builder test**
+**Step 1: Escreva o teste do graph builder**
 
-The graph builder takes structural analysis + LLM summaries and assembles a KnowledgeGraph.
+O graph builder pega a análise estrutural + os summaries do LLM e monta um KnowledgeGraph.
 
-Create: `packages/core/src/analyzer/graph-builder.test.ts`
+Crie: `packages/core/src/analyzer/graph-builder.test.ts`
 
 ```typescript
 import { describe, it, expect } from "vitest";
@@ -1128,14 +1128,14 @@ describe("GraphBuilder", () => {
 });
 ```
 
-**Step 2: Run test to verify it fails**
+**Step 2: Executar o teste para verificar que ele falha**
 
-Run: `pnpm --filter @understand-anything/core test`
-Expected: FAIL — module not found
+Execute: `pnpm --filter @understand-anything/core test`
+Esperado: FAIL — módulo não encontrado
 
-**Step 3: Implement GraphBuilder**
+**Step 3: Implemente o GraphBuilder**
 
-Create: `packages/core/src/analyzer/graph-builder.ts`
+Crie: `packages/core/src/analyzer/graph-builder.ts`
 
 ```typescript
 import type {
@@ -1321,16 +1321,16 @@ export class GraphBuilder {
 }
 ```
 
-**Step 4: Run tests**
+**Step 4: Executar os testes**
 
-Run: `pnpm --filter @understand-anything/core test`
-Expected: All GraphBuilder tests PASS
+Execute: `pnpm --filter @understand-anything/core test`
+Esperado: Todos os testes do GraphBuilder PASS
 
-**Step 5: Create the LLM analyzer interface**
+**Step 5: Crie a interface do analisador LLM**
 
-Create: `packages/core/src/analyzer/llm-analyzer.ts`
+Crie: `packages/core/src/analyzer/llm-analyzer.ts`
 
-This defines the interface for LLM-based analysis. The actual LLM calls happen via the skill (which has access to the Claude session). The core package defines the prompts and expected response format.
+Define a interface para análise baseada em LLM. As chamadas LLM em si acontecem via skill (que tem acesso à sessão do Claude). O pacote core define os prompts e o formato de resposta esperado.
 
 ```typescript
 /**
@@ -1481,9 +1481,9 @@ export function parseProjectSummaryResponse(
 }
 ```
 
-**Step 6: Write tests for LLM analyzer**
+**Step 6: Escreva os testes para o analisador LLM**
 
-Create: `packages/core/src/analyzer/llm-analyzer.test.ts`
+Crie: `packages/core/src/analyzer/llm-analyzer.test.ts`
 
 ```typescript
 import { describe, it, expect } from "vitest";
@@ -1579,7 +1579,7 @@ describe("LLM Analyzer", () => {
 });
 ```
 
-**Step 7: Update packages/core/src/index.ts**
+**Step 7: Atualizar packages/core/src/index.ts**
 
 ```typescript
 export * from "./types.js";
@@ -1598,10 +1598,10 @@ export type {
 } from "./analyzer/llm-analyzer.js";
 ```
 
-**Step 8: Run all tests**
+**Step 8: Executar todos os testes**
 
-Run: `pnpm --filter @understand-anything/core test`
-Expected: All tests PASS
+Execute: `pnpm --filter @understand-anything/core test`
+Esperado: Todos os testes PASS
 
 **Step 9: Commit**
 
@@ -1612,23 +1612,23 @@ git commit -m "feat(core): add graph builder and LLM analysis prompt system"
 
 ---
 
-## Task 6: Dashboard Package — Scaffolding with Vite + React
+## Tarefa 6: Pacote Dashboard — Scaffolding com Vite + React
 
-**Files:**
-- Create: `packages/dashboard/` (via Vite scaffold, then customize)
+**Arquivos:**
+- Crie: `packages/dashboard/` (via Vite scaffold, then customize)
 
-**Step 1: Scaffold React app with Vite**
+**Step 1: Faça o scaffolding do app React com Vite**
 
-Run: `cd packages && pnpm create vite dashboard --template react-ts`
-Then: Remove boilerplate (App.css, etc.), keep structure.
+Execute: `cd packages && pnpm create vite dashboard --template react-ts`
+Em seguida: Remova o boilerplate (App.css, etc.), mantenha a estrutura.
 
-**Step 2: Install dashboard dependencies**
+**Step 2: Instale as dependências do dashboard**
 
-Run: `cd packages/dashboard && pnpm add @xyflow/react @monaco-editor/react zustand && pnpm add -D tailwindcss @tailwindcss/vite`
+Execute: `cd packages/dashboard && pnpm add @xyflow/react @monaco-editor/react zustand && pnpm add -D tailwindcss @tailwindcss/vite`
 
-**Step 3: Configure TailwindCSS**
+**Step 3: Configure o TailwindCSS**
 
-Update `packages/dashboard/vite.config.ts`:
+Atualize `packages/dashboard/vite.config.ts`:
 
 ```typescript
 import { defineConfig } from "vite";
@@ -1640,25 +1640,25 @@ export default defineConfig({
 });
 ```
 
-Replace `packages/dashboard/src/index.css`:
+Substitua `packages/dashboard/src/index.css`:
 
 ```css
 @import "tailwindcss";
 ```
 
-**Step 4: Add workspace dependency on core**
+**Step 4: Adicione a dependência de workspace para o core**
 
-Add to `packages/dashboard/package.json` dependencies:
+Adicione ao `packages/dashboard/package.json` em dependencies:
 
 ```json
 "@understand-anything/core": "workspace:*"
 ```
 
-Run: `pnpm install`
+Execute: `pnpm install`
 
-**Step 5: Create the Zustand store**
+**Step 5: Crie a store Zustand**
 
-Create: `packages/dashboard/src/store.ts`
+Crie: `packages/dashboard/src/store.ts`
 
 ```typescript
 import { create } from "zustand";
@@ -1716,15 +1716,15 @@ git commit -m "feat(dashboard): scaffold React + Vite app with Tailwind, Zustand
 
 ---
 
-## Task 7: Dashboard — Graph View Panel with React Flow
+## Tarefa 7: Dashboard — Painel Graph View com React Flow
 
-**Files:**
-- Create: `packages/dashboard/src/components/GraphView.tsx`
-- Create: `packages/dashboard/src/components/CustomNode.tsx`
+**Arquivos:**
+- Crie: `packages/dashboard/src/components/GraphView.tsx`
+- Crie: `packages/dashboard/src/components/CustomNode.tsx`
 
-**Step 1: Create the custom node component**
+**Step 1: Crie o componente de nó customizado**
 
-Create: `packages/dashboard/src/components/CustomNode.tsx`
+Crie: `packages/dashboard/src/components/CustomNode.tsx`
 
 ```tsx
 import { Handle, Position } from "@xyflow/react";
@@ -1798,9 +1798,9 @@ export function CustomNode({ data }: NodeProps<CustomNodeData>) {
 }
 ```
 
-**Step 2: Create the GraphView component**
+**Step 2: Crie o componente GraphView**
 
-Create: `packages/dashboard/src/components/GraphView.tsx`
+Crie: `packages/dashboard/src/components/GraphView.tsx`
 
 ```tsx
 import { useCallback, useMemo } from "react";
@@ -1916,14 +1916,14 @@ git commit -m "feat(dashboard): add graph view with React Flow and custom nodes"
 
 ---
 
-## Task 8: Dashboard — Code Viewer Panel with Monaco Editor
+## Tarefa 8: Dashboard — Painel Visualizador de Código com Monaco Editor
 
-**Files:**
-- Create: `packages/dashboard/src/components/CodeViewer.tsx`
+**Arquivos:**
+- Crie: `packages/dashboard/src/components/CodeViewer.tsx`
 
-**Step 1: Create the CodeViewer component**
+**Step 1: Crie o componente CodeViewer**
 
-Create: `packages/dashboard/src/components/CodeViewer.tsx`
+Crie: `packages/dashboard/src/components/CodeViewer.tsx`
 
 ```tsx
 import Editor from "@monaco-editor/react";
@@ -2014,16 +2014,16 @@ git commit -m "feat(dashboard): add code viewer panel with Monaco Editor"
 
 ---
 
-## Task 9: Dashboard — Search Bar and Main Layout
+## Tarefa 9: Dashboard — Barra de Busca e Layout Principal
 
-**Files:**
-- Create: `packages/dashboard/src/components/SearchBar.tsx`
-- Create: `packages/dashboard/src/components/NodeInfo.tsx`
-- Modify: `packages/dashboard/src/App.tsx`
+**Arquivos:**
+- Crie: `packages/dashboard/src/components/SearchBar.tsx`
+- Crie: `packages/dashboard/src/components/NodeInfo.tsx`
+- Modificar: `packages/dashboard/src/App.tsx`
 
-**Step 1: Create SearchBar component**
+**Step 1: Crie o componente SearchBar**
 
-Create: `packages/dashboard/src/components/SearchBar.tsx`
+Crie: `packages/dashboard/src/components/SearchBar.tsx`
 
 ```tsx
 import { useDashboardStore } from "../store";
@@ -2065,9 +2065,9 @@ export function SearchBar() {
 }
 ```
 
-**Step 2: Create NodeInfo panel (placeholder for chat + learn panels)**
+**Step 2: Crie o painel NodeInfo (placeholder para os painéis chat + learn)**
 
-Create: `packages/dashboard/src/components/NodeInfo.tsx`
+Crie: `packages/dashboard/src/components/NodeInfo.tsx`
 
 ```tsx
 import { useDashboardStore } from "../store";
@@ -2156,9 +2156,9 @@ export function NodeInfo() {
 }
 ```
 
-**Step 3: Create the main App layout**
+**Step 3: Crie o layout principal do App**
 
-Replace: `packages/dashboard/src/App.tsx`
+Substitua: `packages/dashboard/src/App.tsx`
 
 ```tsx
 import { useEffect } from "react";
@@ -2238,14 +2238,14 @@ function App() {
 export default App;
 ```
 
-**Step 4: Run the dashboard**
+**Step 4: Inicie o dashboard**
 
-Run: `pnpm --filter @understand-anything/dashboard dev`
-Expected: Vite dev server starts at localhost:5173. Dashboard renders with "No knowledge graph loaded" message.
+Execute: `pnpm --filter @understand-anything/dashboard dev`
+Esperado: Vite dev server inicia em localhost:5173. Dashboard renderiza com a mensagem "No knowledge graph loaded".
 
-**Step 5: Test with sample data**
+**Step 5: Teste com dados de exemplo**
 
-Create `packages/dashboard/public/knowledge-graph.json` with a sample graph for testing:
+Crie `packages/dashboard/public/knowledge-graph.json` com um graph de exemplo para testes:
 
 ```json
 {
@@ -2350,10 +2350,10 @@ Create `packages/dashboard/public/knowledge-graph.json` with a sample graph for 
 }
 ```
 
-**Step 6: Verify in browser**
+**Step 6: Verifique no browser**
 
-Open: `http://localhost:5173`
-Expected: Dashboard loads, graph renders 5 nodes with edges, clicking a node shows details in the info panel and placeholder in code viewer. Search works.
+Abra: `http://localhost:5173`
+Esperado: Dashboard carrega, o graph renderiza 5 nós com arestas, clicar em um nó mostra detalhes no painel de info e placeholder no code viewer. A busca funciona.
 
 **Step 7: Commit**
 
@@ -2364,13 +2364,13 @@ git commit -m "feat(dashboard): add main layout with search bar, graph view, cod
 
 ---
 
-## Task 10: Integration — Wire Everything Together + README
+## Tarefa 10: Integração — Conectar Tudo + README
 
-**Files:**
-- Create: `README.md`
-- Create: `CLAUDE.md`
+**Arquivos:**
+- Crie: `README.md`
+- Crie: `CLAUDE.md`
 
-**Step 1: Create README.md**
+**Step 1: Crie o README.md**
 
 ```markdown
 # Understand Anything
@@ -2421,7 +2421,7 @@ packages/
 MIT
 ```
 
-**Step 2: Create CLAUDE.md**
+**Step 2: Crie o CLAUDE.md**
 
 ```markdown
 # Understand Anything
@@ -2457,13 +2457,13 @@ git commit -m "docs: add README and CLAUDE.md with project overview and conventi
 
 ---
 
-## Verification Checklist
+## Checklist de Verificação
 
-After completing all 10 tasks:
+Após completar todas as 10 tarefas:
 
-1. **`pnpm install`** — No errors
-2. **`pnpm --filter @understand-anything/core build`** — Compiles clean
-3. **`pnpm --filter @understand-anything/core test`** — All tests pass (types, persistence, tree-sitter, graph builder, LLM analyzer)
-4. **`pnpm dev:dashboard`** — Dashboard starts at localhost:5173
-5. **Dashboard with sample data** — Loads `knowledge-graph.json`, graph renders, nodes clickable, search works, code viewer shows node info
-6. **Git log** — Clean history with 10 logical commits
+1. **`pnpm install`** — Sem erros
+2. **`pnpm --filter @understand-anything/core build`** — Compila limpo
+3. **`pnpm --filter @understand-anything/core test`** — Todos os testes passam (types, persistence, tree-sitter, graph builder, analisador LLM)
+4. **`pnpm dev:dashboard`** — Dashboard inicia em localhost:5173
+5. **Dashboard com dados de exemplo** — Carrega `knowledge-graph.json`, o graph renderiza, nós são clicáveis, a busca funciona, o code viewer mostra info do nó
+6. **Git log** — Histórico limpo com 10 commits lógicos

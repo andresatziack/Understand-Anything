@@ -6,48 +6,48 @@ argument-hint: [query]
 
 # /understand-chat
 
-Answer questions about this codebase using the knowledge graph at `.understand-anything/knowledge-graph.json`.
+Responda perguntas sobre este codebase usando o knowledge graph em `.understand-anything/knowledge-graph.json`.
 
-## Graph Structure Reference
+## Referência da Estrutura do Grafo
 
-The knowledge graph JSON has this structure:
+O JSON do knowledge graph tem esta estrutura:
 - `project` — {name, description, languages, frameworks, analyzedAt, gitCommitHash}
-- `nodes[]` — each has {id, type, name, filePath, summary, tags[], complexity, languageNotes?}
-  - Node types: file, function, class, module, concept
+- `nodes[]` — cada um tem {id, type, name, filePath, summary, tags[], complexity, languageNotes?}
+  - Tipos de nó: file, function, class, module, concept
   - IDs: `file:path`, `function:path:name`, `class:path:name`
-- `edges[]` — each has {source, target, type, direction, weight}
-  - Key types: imports, contains, calls, depends_on
-- `layers[]` — each has {id, name, description, nodeIds[]}
-- `tour[]` — each has {order, title, description, nodeIds[]}
+- `edges[]` — cada uma tem {source, target, type, direction, weight}
+  - Tipos-chave: imports, contains, calls, depends_on
+- `layers[]` — cada uma tem {id, name, description, nodeIds[]}
+- `tour[]` — cada um tem {order, title, description, nodeIds[]}
 
-## How to Read Efficiently
+## Como Ler com Eficiência
 
-1. Use Grep to search within the JSON for relevant entries BEFORE reading the full file
-2. Only read sections you need — don't dump the entire graph into context
-3. Node names and summaries are the most useful fields for understanding
-4. Edges tell you how components connect — follow imports and calls for dependency chains
+1. Use Grep para buscar dentro do JSON pelas entradas relevantes ANTES de ler o arquivo inteiro
+2. Leia apenas as seções que você precisa — não despeje o grafo inteiro no contexto
+3. Os campos mais úteis para compreensão são `name` e `summary` dos nós
+4. As arestas dizem como os componentes se conectam — siga imports e calls para cadeias de dependência
 
-## Instructions
+## Instruções
 
-1. Check that `.understand-anything/knowledge-graph.json` exists in the current project root. If not, tell the user to run `/understand` first.
+1. Verifique se `.understand-anything/knowledge-graph.json` existe na raiz do projeto atual. Se não existir, peça ao usuário para rodar `/understand` primeiro.
 
-2. **Read project metadata only** — use Grep or Read with a line limit to extract just the `"project"` section from the top of the file for context (name, description, languages, frameworks).
+2. **Leia apenas os metadados do projeto** — use Grep ou Read com limite de linhas para extrair somente a seção `"project"` do topo do arquivo para contexto (name, description, languages, frameworks).
 
-3. **Search for relevant nodes** — use Grep to search the knowledge graph file for the user's query keywords: "$ARGUMENTS"
-   - Search `"name"` fields: `grep -i "query_keyword"` in the graph file
-   - Search `"summary"` fields for semantic matches
-   - Search `"tags"` arrays for topic matches
-   - Note the `id` values of all matching nodes
+3. **Busque nós relevantes** — use Grep para procurar no arquivo do knowledge graph pelas palavras-chave da pergunta do usuário: "$ARGUMENTS"
+   - Busque em campos `"name"`: `grep -i "query_keyword"` no arquivo do grafo
+   - Busque em campos `"summary"` por matches semânticos
+   - Busque em arrays `"tags"` por matches de tópico
+   - Anote os valores de `id` de todos os nós que casarem
 
-4. **Find connected edges** — for each matched node ID, Grep for that ID in the `edges` section to find:
-   - What it imports or depends on (downstream)
-   - What calls or imports it (upstream)
-   - This gives you the 1-hop subgraph around the query
+4. **Encontre as arestas conectadas** — para cada ID de nó casado, faça Grep por esse ID na seção `edges` para encontrar:
+   - O que ele importa ou do que depende (downstream)
+   - O que o chama ou importa (upstream)
+   - Isso te dá o subgrafo de 1-hop em torno da consulta
 
-5. **Read layer context** — Grep for `"layers"` to understand which architectural layers the matched nodes belong to.
+5. **Leia o contexto de camada** — Grep por `"layers"` para entender a quais camadas arquiteturais os nós casados pertencem.
 
-6. **Answer the query** using only the relevant subgraph:
-   - Reference specific files, functions, and relationships from the graph
-   - Explain which layer(s) are relevant and why
-   - Be concise but thorough — link concepts to actual code locations
-   - If the query doesn't match any nodes, say so and suggest related terms from the graph
+6. **Responda à consulta** usando apenas o subgrafo relevante:
+   - Referencie arquivos, funções e relações específicos vindos do grafo
+   - Explique qual(is) camada(s) é/são relevante(s) e por quê
+   - Seja conciso mas minucioso — ligue os conceitos a localizações reais de código
+   - Se a pergunta não casar com nenhum nó, diga isso e sugira termos relacionados a partir do grafo

@@ -1,18 +1,18 @@
-# Graph Layout Scaling Implementation Plan
+# Plano de Implementação do Graph Layout Scaling
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Para workers agênticos:** SUB-SKILL OBRIGATÓRIA: Use superpowers:subagent-driven-development (recomendado) ou superpowers:executing-plans para implementar este plano tarefa por tarefa. Os steps usam sintaxe de checkbox (`- [ ]`) para tracking.
 
-**Goal:** Replace dagre with ELK across structural-style dashboard views, add folder/community-based containers in the layer-detail view, and compute layout in two lazy stages so layers with many nodes are readable and large graphs stay performant.
+**Objetivo:** Substituir dagre por ELK em todas as views de dashboard de estilo estrutural, adicionar containers baseados em folder/community na view layer-detail, e computar o layout em dois estágios lazy para que layers com muitos nós fiquem legíveis e graphs grandes mantenham performance.
 
-**Architecture:** Three views (overview, DomainGraphView, layer-detail) call a new `applyElkLayout` instead of `applyDagreLayout`. The layer-detail view gains a `deriveContainers` step (folder strategy with Louvain fallback), aggregated cross-container edges, lazy two-stage ELK calls (Stage 1 = containers; Stage 2 = a container's children on demand), a new `ContainerNode` React Flow node type, and store extensions for expand state and layout caches.
+**Arquitetura:** Três views (overview, DomainGraphView, layer-detail) chamam um novo `applyElkLayout` em vez de `applyDagreLayout`. A view layer-detail ganha um passo `deriveContainers` (estratégia folder com fallback Louvain), arestas cross-container agregadas, chamadas ELK lazy em dois estágios (Stage 1 = containers; Stage 2 = filhos de um container sob demanda), um novo tipo de nó React Flow `ContainerNode`, e extensões na store para estado de expansão e caches de layout.
 
-**Tech Stack:** TypeScript, React 19, Vite, React Flow (`@xyflow/react`), Zustand, Vitest, ELK.js (`elkjs`), `graphology` + `graphology-communities-louvain`.
+**Stack Tecnológica:** TypeScript, React 19, Vite, React Flow (`@xyflow/react`), Zustand, Vitest, ELK.js (`elkjs`), `graphology` + `graphology-communities-louvain`.
 
 **Spec:** `docs/superpowers/specs/2026-05-03-graph-layout-scaling-design.md`
 
 ---
 
-## File Map
+## Mapa de Arquivos
 
 ```
 packages/dashboard/
@@ -40,16 +40,16 @@ packages/dashboard/
 
 ---
 
-## Task 1: Dependencies + Vitest setup
+## Tarefa 1: Dependências + setup do Vitest
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/dashboard/package.json`
-- Create: `understand-anything-plugin/packages/dashboard/src/utils/__tests__/smoke.test.ts`
-- Modify: `understand-anything-plugin/packages/dashboard/vite.config.ts`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/dashboard/package.json`
+- Criar: `understand-anything-plugin/packages/dashboard/src/utils/__tests__/smoke.test.ts`
+- Modificar: `understand-anything-plugin/packages/dashboard/vite.config.ts`
 
-- [ ] **Step 1: Add deps and devDeps to package.json**
+- [ ] **Step 1: Adicionar deps e devDeps ao package.json**
 
-Edit `understand-anything-plugin/packages/dashboard/package.json`. Add to `dependencies`:
+Edite `understand-anything-plugin/packages/dashboard/package.json`. Adicione em `dependencies`:
 
 ```json
     "elkjs": "^0.9.3",
@@ -57,29 +57,29 @@ Edit `understand-anything-plugin/packages/dashboard/package.json`. Add to `depen
     "graphology-communities-louvain": "^2.0.1",
 ```
 
-Add to `devDependencies`:
+Adicione em `devDependencies`:
 
 ```json
     "vitest": "^3.1.0",
     "@vitest/coverage-v8": "^3.2.4",
 ```
 
-Add to `scripts`:
+Adicione em `scripts`:
 
 ```json
     "test": "vitest run",
     "test:watch": "vitest"
 ```
 
-- [ ] **Step 2: Update vite.config.ts to register vitest**
+- [ ] **Step 2: Atualizar vite.config.ts para registrar o vitest**
 
-In `understand-anything-plugin/packages/dashboard/vite.config.ts` add a triple-slash reference at the top and a `test` block. Open the file, then at the very top add:
+Em `understand-anything-plugin/packages/dashboard/vite.config.ts` adicione uma referência triple-slash no topo e um bloco `test`. Abra o arquivo e, no topo, adicione:
 
 ```ts
 /// <reference types="vitest" />
 ```
 
-Inside the `defineConfig({ ... })` object add:
+Dentro do objeto `defineConfig({ ... })` adicione:
 
 ```ts
   test: {
@@ -88,19 +88,19 @@ Inside the `defineConfig({ ... })` object add:
   },
 ```
 
-- [ ] **Step 3: Install deps**
+- [ ] **Step 3: Instalar deps**
 
-Run from the repo root:
+Execute a partir da raiz do repo:
 
 ```bash
 pnpm install
 ```
 
-Expected: pnpm resolves and installs without errors.
+Esperado: pnpm resolve e instala sem erros.
 
-- [ ] **Step 4: Write smoke test**
+- [ ] **Step 4: Escrever smoke test**
 
-Create `understand-anything-plugin/packages/dashboard/src/utils/__tests__/smoke.test.ts`:
+Crie `understand-anything-plugin/packages/dashboard/src/utils/__tests__/smoke.test.ts`:
 
 ```ts
 import { describe, it, expect } from "vitest";
@@ -125,13 +125,13 @@ describe("dependency smoke test", () => {
 });
 ```
 
-- [ ] **Step 5: Run smoke test**
+- [ ] **Step 5: Executar smoke test**
 
 ```bash
 pnpm --filter @understand-anything/dashboard test
 ```
 
-Expected: 3 tests pass.
+Esperado: 3 testes passam.
 
 - [ ] **Step 6: Commit**
 
@@ -145,15 +145,15 @@ git commit -m "chore(dashboard): add elkjs, graphology, vitest"
 
 ---
 
-## Task 2: deriveContainers — folder strategy + edge cases
+## Tarefa 2: deriveContainers — estratégia folder + casos limite
 
-**Files:**
-- Create: `understand-anything-plugin/packages/dashboard/src/utils/containers.ts`
-- Create: `understand-anything-plugin/packages/dashboard/src/utils/__tests__/containers.test.ts`
+**Arquivos:**
+- Criar: `understand-anything-plugin/packages/dashboard/src/utils/containers.ts`
+- Criar: `understand-anything-plugin/packages/dashboard/src/utils/__tests__/containers.test.ts`
 
-- [ ] **Step 1: Write failing tests**
+- [ ] **Step 1: Escrever testes que vão falhar**
 
-Create `understand-anything-plugin/packages/dashboard/src/utils/__tests__/containers.test.ts`:
+Crie `understand-anything-plugin/packages/dashboard/src/utils/__tests__/containers.test.ts`:
 
 ```ts
 import { describe, it, expect } from "vitest";
@@ -247,17 +247,17 @@ describe("deriveContainers — folder strategy", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [ ] **Step 2: Executar os testes para verificar que falham**
 
 ```bash
 pnpm --filter @understand-anything/dashboard test containers
 ```
 
-Expected: import error — `Cannot find module '../containers'`.
+Esperado: erro de import — `Cannot find module '../containers'`.
 
-- [ ] **Step 3: Implement `containers.ts`**
+- [ ] **Step 3: Implementar `containers.ts`**
 
-Create `understand-anything-plugin/packages/dashboard/src/utils/containers.ts`:
+Crie `understand-anything-plugin/packages/dashboard/src/utils/containers.ts`:
 
 ```ts
 import type {
@@ -399,9 +399,9 @@ export function deriveContainers(
 }
 ```
 
-- [ ] **Step 4: Stub `louvain.ts` (real impl in Task 3)**
+- [ ] **Step 4: Stub do `louvain.ts` (impl real na Tarefa 3)**
 
-Create `understand-anything-plugin/packages/dashboard/src/utils/louvain.ts`:
+Crie `understand-anything-plugin/packages/dashboard/src/utils/louvain.ts`:
 
 ```ts
 import type { GraphEdge } from "@understand-anything/core/types";
@@ -418,13 +418,13 @@ export function detectCommunities(
 }
 ```
 
-- [ ] **Step 5: Run tests**
+- [ ] **Step 5: Executar os testes**
 
 ```bash
 pnpm --filter @understand-anything/dashboard test containers
 ```
 
-Expected: 6 tests pass.
+Esperado: 6 testes passam.
 
 - [ ] **Step 6: Commit**
 
@@ -437,15 +437,15 @@ git commit -m "feat(dashboard): deriveContainers folder strategy"
 
 ---
 
-## Task 3: deriveContainers — community fallback (Louvain)
+## Tarefa 3: deriveContainers — fallback de community (Louvain)
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/dashboard/src/utils/louvain.ts`
-- Modify: `understand-anything-plugin/packages/dashboard/src/utils/__tests__/containers.test.ts`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/dashboard/src/utils/louvain.ts`
+- Modificar: `understand-anything-plugin/packages/dashboard/src/utils/__tests__/containers.test.ts`
 
-- [ ] **Step 1: Add failing test for community fallback**
+- [ ] **Step 1: Adicionar teste que falha para o fallback de community**
 
-Append to `containers.test.ts`:
+Adicione no final de `containers.test.ts`:
 
 ```ts
 describe("deriveContainers — community fallback", () => {
@@ -485,17 +485,17 @@ describe("deriveContainers — community fallback", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests, expect failure**
+- [ ] **Step 2: Executar os testes, esperar falha**
 
 ```bash
 pnpm --filter @understand-anything/dashboard test containers
 ```
 
-Expected: the new tests fail because the louvain stub puts every node in community 0 (only 1 container after suppression).
+Esperado: os novos testes falham porque o stub do louvain coloca todo nó em community 0 (apenas 1 container após supressão).
 
-- [ ] **Step 3: Replace louvain stub with real implementation**
+- [ ] **Step 3: Substituir o stub do louvain pela implementação real**
 
-Overwrite `understand-anything-plugin/packages/dashboard/src/utils/louvain.ts`:
+Sobrescreva `understand-anything-plugin/packages/dashboard/src/utils/louvain.ts`:
 
 ```ts
 import Graph from "graphology";
@@ -539,13 +539,13 @@ export function detectCommunities(
 }
 ```
 
-- [ ] **Step 4: Run tests**
+- [ ] **Step 4: Executar os testes**
 
 ```bash
 pnpm --filter @understand-anything/dashboard test containers
 ```
 
-Expected: all 8 tests pass.
+Esperado: todos os 8 testes passam.
 
 - [ ] **Step 5: Commit**
 
@@ -557,15 +557,15 @@ git commit -m "feat(dashboard): deriveContainers community fallback via Louvain"
 
 ---
 
-## Task 4: aggregateContainerEdges
+## Tarefa 4: aggregateContainerEdges
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/dashboard/src/utils/edgeAggregation.ts`
-- Create: `understand-anything-plugin/packages/dashboard/src/utils/__tests__/edgeAggregation.test.ts`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/dashboard/src/utils/edgeAggregation.ts`
+- Criar: `understand-anything-plugin/packages/dashboard/src/utils/__tests__/edgeAggregation.test.ts`
 
-- [ ] **Step 1: Write failing tests**
+- [ ] **Step 1: Escrever testes que vão falhar**
 
-Create `understand-anything-plugin/packages/dashboard/src/utils/__tests__/edgeAggregation.test.ts`:
+Crie `understand-anything-plugin/packages/dashboard/src/utils/__tests__/edgeAggregation.test.ts`:
 
 ```ts
 import { describe, it, expect } from "vitest";
@@ -631,17 +631,17 @@ describe("aggregateContainerEdges", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests, expect failure**
+- [ ] **Step 2: Executar os testes, esperar falha**
 
 ```bash
 pnpm --filter @understand-anything/dashboard test edgeAggregation
 ```
 
-Expected: import error — `aggregateContainerEdges` not exported.
+Esperado: erro de import — `aggregateContainerEdges` não exportado.
 
-- [ ] **Step 3: Implement**
+- [ ] **Step 3: Implementar**
 
-Append to `understand-anything-plugin/packages/dashboard/src/utils/edgeAggregation.ts`:
+Adicione no final de `understand-anything-plugin/packages/dashboard/src/utils/edgeAggregation.ts`:
 
 ```ts
 import type { GraphEdge } from "@understand-anything/core/types";
@@ -717,13 +717,13 @@ export function aggregateContainerEdges(
 }
 ```
 
-- [ ] **Step 4: Run tests**
+- [ ] **Step 4: Executar os testes**
 
 ```bash
 pnpm --filter @understand-anything/dashboard test edgeAggregation
 ```
 
-Expected: 5 tests pass.
+Esperado: 5 testes passam.
 
 - [ ] **Step 5: Commit**
 
@@ -735,15 +735,15 @@ git commit -m "feat(dashboard): aggregateContainerEdges (directional, types-set)
 
 ---
 
-## Task 5: ELK input repair
+## Tarefa 5: Reparo do input do ELK
 
-**Files:**
-- Create: `understand-anything-plugin/packages/dashboard/src/utils/elk-layout.ts`
-- Create: `understand-anything-plugin/packages/dashboard/src/utils/__tests__/elk-layout.test.ts`
+**Arquivos:**
+- Criar: `understand-anything-plugin/packages/dashboard/src/utils/elk-layout.ts`
+- Criar: `understand-anything-plugin/packages/dashboard/src/utils/__tests__/elk-layout.test.ts`
 
-- [ ] **Step 1: Write failing tests for repair functions**
+- [ ] **Step 1: Escrever testes que vão falhar para as funções de reparo**
 
-Create `understand-anything-plugin/packages/dashboard/src/utils/__tests__/elk-layout.test.ts`:
+Crie `understand-anything-plugin/packages/dashboard/src/utils/__tests__/elk-layout.test.ts`:
 
 ```ts
 import { describe, it, expect } from "vitest";
@@ -820,17 +820,17 @@ describe("repairElkInput", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests, expect failure**
+- [ ] **Step 2: Executar os testes, esperar falha**
 
 ```bash
 pnpm --filter @understand-anything/dashboard test elk-layout
 ```
 
-Expected: import error — `../elk-layout` not found.
+Esperado: erro de import — `../elk-layout` não encontrado.
 
-- [ ] **Step 3: Implement repairElkInput**
+- [ ] **Step 3: Implementar repairElkInput**
 
-Create `understand-anything-plugin/packages/dashboard/src/utils/elk-layout.ts`:
+Crie `understand-anything-plugin/packages/dashboard/src/utils/elk-layout.ts`:
 
 ```ts
 import ELK from "elkjs/lib/elk.bundled.js";
@@ -1065,13 +1065,13 @@ export async function applyElkLayout(
 }
 ```
 
-- [ ] **Step 4: Run tests**
+- [ ] **Step 4: Executar os testes**
 
 ```bash
 pnpm --filter @understand-anything/dashboard test elk-layout
 ```
 
-Expected: 5 tests pass.
+Esperado: 5 testes passam.
 
 - [ ] **Step 5: Commit**
 
@@ -1083,14 +1083,14 @@ git commit -m "feat(dashboard): elk-layout repair pipeline + applyElkLayout"
 
 ---
 
-## Task 6: applyElkLayout integration test
+## Tarefa 6: Teste de integração do applyElkLayout
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/dashboard/src/utils/__tests__/elk-layout.test.ts`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/dashboard/src/utils/__tests__/elk-layout.test.ts`
 
-- [ ] **Step 1: Add integration test**
+- [ ] **Step 1: Adicionar teste de integração**
 
-Append to `elk-layout.test.ts`:
+Adicione no final de `elk-layout.test.ts`:
 
 ```ts
 import { applyElkLayout } from "../elk-layout";
@@ -1130,13 +1130,13 @@ describe("applyElkLayout", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests**
+- [ ] **Step 2: Executar os testes**
 
 ```bash
 pnpm --filter @understand-anything/dashboard test elk-layout
 ```
 
-Expected: 7 tests pass.
+Esperado: 7 testes passam.
 
 - [ ] **Step 3: Commit**
 
@@ -1147,18 +1147,18 @@ git commit -m "test(dashboard): applyElkLayout integration cases"
 
 ---
 
-## Task 7: Store extensions
+## Tarefa 7: Extensões da store
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/dashboard/src/store.ts`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/dashboard/src/store.ts`
 
-- [ ] **Step 1: Read current store**
+- [ ] **Step 1: Ler a store atual**
 
-Open `understand-anything-plugin/packages/dashboard/src/store.ts` and locate the `DashboardStore` interface (around line 62) and the `create<DashboardStore>` initializer.
+Abra `understand-anything-plugin/packages/dashboard/src/store.ts` e localize a interface `DashboardStore` (por volta da linha 62) e o inicializador `create<DashboardStore>`.
 
-- [ ] **Step 2: Add fields to interface**
+- [ ] **Step 2: Adicionar campos à interface**
 
-Inside `interface DashboardStore { ... }`, after the existing fields, add:
+Dentro de `interface DashboardStore { ... }`, depois dos campos existentes, adicione:
 
 ```ts
   // Container expand/collapse + lazy layout caches
@@ -1184,9 +1184,9 @@ Inside `interface DashboardStore { ... }`, after the existing fields, add:
   containerSizeMemory: Map<string, { width: number; height: number }>;
 ```
 
-- [ ] **Step 3: Add initializer + methods**
+- [ ] **Step 3: Adicionar inicializador + métodos**
 
-Inside the `create<DashboardStore>((set) => ({ ... }))` block, add:
+Dentro do bloco `create<DashboardStore>((set) => ({ ... }))`, adicione:
 
 ```ts
       expandedContainers: new Set<string>(),
@@ -1221,9 +1221,9 @@ Inside the `create<DashboardStore>((set) => ({ ... }))` block, add:
       containerSizeMemory: new Map(),
 ```
 
-- [ ] **Step 4: Hook clearing into existing graph-load action**
+- [ ] **Step 4: Conectar a limpeza à action existente de graph-load**
 
-Find `setGraph` (or whichever action loads a new graph). Inside its body, add a call to clear container caches when `graph.id` (or the graph object reference) changes. Example: at the end of the `setGraph` setter, append to the `set(...)` call:
+Encontre `setGraph` (ou qualquer action que carregue um novo graph). Dentro do corpo dela, adicione uma chamada para limpar os caches de container quando `graph.id` (ou a referência ao objeto graph) mudar. Exemplo: ao final da call `set(...)` do setter `setGraph`, anexe:
 
 ```ts
         containerLayoutCache: new Map(),
@@ -1231,15 +1231,15 @@ Find `setGraph` (or whichever action loads a new graph). Inside its body, add a 
         containerSizeMemory: new Map(),
 ```
 
-(Keep `containerSizeMemory` resetting only on full graph reload — per spec, it persists across collapses but not across distinct graphs.)
+(Mantenha o reset de `containerSizeMemory` apenas em recargas completas do graph — pelo spec, ele persiste entre colapsos mas não entre graphs distintos.)
 
-- [ ] **Step 5: Sanity-check by building**
+- [ ] **Step 5: Sanity-check pelo build**
 
 ```bash
 pnpm --filter @understand-anything/dashboard build
 ```
 
-Expected: build succeeds.
+Esperado: build OK.
 
 - [ ] **Step 6: Commit**
 
@@ -1250,14 +1250,14 @@ git commit -m "feat(dashboard): store fields for expanded containers + layout ca
 
 ---
 
-## Task 8: ContainerNode component
+## Tarefa 8: Componente ContainerNode
 
-**Files:**
-- Create: `understand-anything-plugin/packages/dashboard/src/components/ContainerNode.tsx`
+**Arquivos:**
+- Criar: `understand-anything-plugin/packages/dashboard/src/components/ContainerNode.tsx`
 
-- [ ] **Step 1: Create the component**
+- [ ] **Step 1: Criar o componente**
 
-Create `understand-anything-plugin/packages/dashboard/src/components/ContainerNode.tsx`:
+Crie `understand-anything-plugin/packages/dashboard/src/components/ContainerNode.tsx`:
 
 ```tsx
 import { memo } from "react";
@@ -1347,13 +1347,13 @@ const ContainerNode = memo(({ data, width, height }: NodeProps<ContainerFlowNode
 export default ContainerNode;
 ```
 
-- [ ] **Step 2: Build to verify it type-checks**
+- [ ] **Step 2: Build para verificar type-check**
 
 ```bash
 pnpm --filter @understand-anything/dashboard build
 ```
 
-Expected: build succeeds.
+Esperado: build OK.
 
 - [ ] **Step 3: Commit**
 
@@ -1364,18 +1364,18 @@ git commit -m "feat(dashboard): ContainerNode component (visual + click toggle)"
 
 ---
 
-## Task 9: Switch overview-level layout to ELK
+## Tarefa 9: Migrar layout overview-level para ELK
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/GraphView.tsx`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/GraphView.tsx`
 
-- [ ] **Step 1: Read current useOverviewGraph**
+- [ ] **Step 1: Ler o useOverviewGraph atual**
 
-Open `GraphView.tsx`. Locate `useOverviewGraph` (starts ~line 125). Identify the `applyDagreLayout(clusterNodes ..., flowEdges, "TB", dims)` call (line ~202).
+Abra `GraphView.tsx`. Localize `useOverviewGraph` (começa na linha ~125). Identifique a chamada `applyDagreLayout(clusterNodes ..., flowEdges, "TB", dims)` (linha ~202).
 
-- [ ] **Step 2: Convert to async ELK**
+- [ ] **Step 2: Converter para ELK assíncrono**
 
-Replace the sync layout block. The current shape returns `{ nodes, edges }` from `useMemo`. Change to use `useState` + `useEffect` so the async ELK call sets state. Example replacement (keep existing code building `clusterNodes` and `flowEdges` and `dims`; only change the layout call and surrounding hooks):
+Substitua o bloco de layout síncrono. O formato atual retorna `{ nodes, edges }` de `useMemo`. Mude para usar `useState` + `useEffect` para que a chamada async ao ELK faça setState. Exemplo de substituição (mantenha o código existente que constrói `clusterNodes`, `flowEdges` e `dims`; mude apenas a chamada de layout e os hooks ao redor):
 
 ```tsx
   const [overview, setOverview] = useState<{ nodes: Node[]; edges: Edge[] }>({
@@ -1403,9 +1403,9 @@ Replace the sync layout block. The current shape returns `{ nodes, edges }` from
   return overview;
 ```
 
-- [ ] **Step 3: Add helpers `clusterNodesToElkInput` and `mergeElkPositions`**
+- [ ] **Step 3: Adicionar helpers `clusterNodesToElkInput` e `mergeElkPositions`**
 
-Append to the bottom of `utils/layout.ts`:
+Adicione no final de `utils/layout.ts`:
 
 ```ts
 import type { ElkInput } from "./elk-layout";
@@ -1462,20 +1462,20 @@ export function mergeElkPositions<T extends Node>(
 }
 ```
 
-In `GraphView.tsx` rename the helper call from `clusterNodesToElkInput` (used in step 2) to `nodesToElkInput`. Update the import:
+Em `GraphView.tsx`, renomeie a chamada do helper de `clusterNodesToElkInput` (usado no step 2) para `nodesToElkInput`. Atualize o import:
 
 ```tsx
 import { applyDagreLayout, nodesToElkInput, mergeElkPositions, NODE_WIDTH, NODE_HEIGHT, LAYER_CLUSTER_WIDTH, LAYER_CLUSTER_HEIGHT, PORTAL_NODE_WIDTH, PORTAL_NODE_HEIGHT } from "../utils/layout";
 import { applyElkLayout } from "../utils/elk-layout";
 ```
 
-- [ ] **Step 4: Manually verify overview**
+- [ ] **Step 4: Verificar manualmente o overview**
 
 ```bash
 pnpm dev:dashboard
 ```
 
-In the browser, open the project overview view (the layer-cluster level). Expected: layer clusters laid out top-to-bottom (DOWN direction matches dagre TB), edges visible, no console errors.
+No browser, abra a view de project overview (o nível de layer-cluster). Esperado: layer clusters dispostos top-to-bottom (DOWN combina com TB do dagre), arestas visíveis, sem erros no console.
 
 - [ ] **Step 5: Commit**
 
@@ -1487,18 +1487,18 @@ git commit -m "feat(dashboard): overview view uses ELK"
 
 ---
 
-## Task 10: Switch DomainGraphView to ELK
+## Tarefa 10: Migrar DomainGraphView para ELK
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/DomainGraphView.tsx`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/DomainGraphView.tsx`
 
-- [ ] **Step 1: Read current DomainGraphView**
+- [ ] **Step 1: Ler a DomainGraphView atual**
 
-Open the file and find every `applyDagreLayout(...)` call.
+Abra o arquivo e encontre toda chamada de `applyDagreLayout(...)`.
 
-- [ ] **Step 2: Replace with ELK in the same async pattern**
+- [ ] **Step 2: Substituir por ELK no mesmo padrão assíncrono**
 
-For each `applyDagreLayout` site, swap to:
+Para cada local de `applyDagreLayout`, troque por:
 
 ```tsx
 import { applyElkLayout } from "../utils/elk-layout";
@@ -1521,16 +1521,16 @@ useEffect(() => {
 }, [/* same deps as the previous useMemo */]);
 ```
 
-Match the deps array exactly to whatever the original `useMemo` used.
+Combine o array de deps exatamente com o que o `useMemo` original usava.
 
-- [ ] **Step 3: Build + manual smoke**
+- [ ] **Step 3: Build + smoke manual**
 
 ```bash
 pnpm --filter @understand-anything/dashboard build
 pnpm dev:dashboard
 ```
 
-Open a graph with domain data and switch to the Domain view. Expected: nodes render, edges visible, no console errors.
+Abra um graph com domain data e troque para a view Domain. Esperado: nós renderizam, arestas visíveis, sem erros no console.
 
 - [ ] **Step 4: Commit**
 
@@ -1541,16 +1541,16 @@ git commit -m "feat(dashboard): DomainGraphView uses ELK"
 
 ---
 
-## Task 11: Layer-detail Stage 1
+## Tarefa 11: Layer-detail Stage 1
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/GraphView.tsx`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/GraphView.tsx`
 
-This task replaces dagre with ELK in `useLayerDetailTopology` AND introduces `deriveContainers` + edge aggregation, but renders containers as opaque nodes only (no children visible). Stage 2 expansion is wired in Task 12.
+Esta tarefa substitui dagre por ELK em `useLayerDetailTopology` E introduz `deriveContainers` + agregação de arestas, mas renderiza containers como nós opacos apenas (sem filhos visíveis). A expansão Stage 2 é conectada na Tarefa 12.
 
-- [ ] **Step 1: Register the ContainerNode type**
+- [ ] **Step 1: Registrar o tipo de nó ContainerNode**
 
-Near the top of `GraphView.tsx`, find the `nodeTypes` registration and add `container`:
+Próximo ao topo de `GraphView.tsx`, encontre o registro de `nodeTypes` e adicione `container`:
 
 ```tsx
 import ContainerNode from "./ContainerNode";
@@ -1563,9 +1563,9 @@ const nodeTypes = {
 };
 ```
 
-- [ ] **Step 2: Inside `useLayerDetailTopology`, add container derivation**
+- [ ] **Step 2: Dentro de `useLayerDetailTopology`, adicionar derivação de containers**
 
-After the existing filtering logic (`filteredGraphNodes`, `filteredGraphEdges`) but before flow node construction, add:
+Depois da lógica existente de filtragem (`filteredGraphNodes`, `filteredGraphEdges`) mas antes da construção dos flow nodes, adicione:
 
 ```tsx
 import { deriveContainers } from "../utils/containers";
@@ -1583,9 +1583,9 @@ const { intraContainer, interContainerAggregated } =
   aggregateContainerEdges(filteredGraphEdges, nodeToContainer);
 ```
 
-- [ ] **Step 3: Build Stage 1 ELK input from containers + ungrouped**
+- [ ] **Step 3: Construir input ELK do Stage 1 a partir de containers + ungrouped**
 
-Continue inside `useLayerDetailTopology`:
+Continue dentro de `useLayerDetailTopology`:
 
 ```tsx
 const colorIndexFor = (containerId: string) => {
@@ -1615,11 +1615,11 @@ const stage1Edges: ElkEdge[] = interContainerAggregated.map((agg, i) => ({
 }));
 ```
 
-(`ElkChild` and `ElkEdge` types come from `../utils/elk-layout` — add to imports.)
+(Os types `ElkChild` e `ElkEdge` vêm de `../utils/elk-layout` — adicione aos imports.)
 
-- [ ] **Step 4: Replace `useMemo` with `useState + useEffect`**
+- [ ] **Step 4: Substituir `useMemo` por `useState + useEffect`**
 
-Convert `useLayerDetailTopology` from returning a memoized value to managing state with effects, mirroring Task 9. Keep all the existing visual prep (`flowNodes`, `flowEdges`, `portalNodes`, `portalEdges`) but feed Stage 1 layout into a state setter:
+Converta `useLayerDetailTopology` de retornar um valor memoizado para gerenciar estado com effects, espelhando a Tarefa 9. Mantenha toda a preparação visual existente (`flowNodes`, `flowEdges`, `portalNodes`, `portalEdges`) mas alimente o layout do Stage 1 em um state setter:
 
 ```tsx
 const [topology, setTopology] = useState<{
@@ -1718,15 +1718,15 @@ useEffect(() => {
 return topology;
 ```
 
-The helper `buildCustomFlowNode` is the existing inline logic that converts a `GraphNode` into the existing `CustomFlowNode` shape — extract it from the current code (the same data fields populated for `flowNodes`).
+O helper `buildCustomFlowNode` é a lógica inline existente que converte um `GraphNode` no formato `CustomFlowNode` existente — extraia do código atual (os mesmos campos de dados populados para `flowNodes`).
 
-- [ ] **Step 5: Manual smoke**
+- [ ] **Step 5: Smoke test manual**
 
 ```bash
 pnpm dev:dashboard
 ```
 
-Drill into a layer in microservices-demo (or any sample). Expected: containers visible as gold-bordered boxes, with name + count, no children rendered yet, aggregated edges between containers.
+Faça drill-down em uma layer no microservices-demo (ou qualquer sample). Esperado: containers visíveis como caixas com borda dourada, com nome + count, sem filhos renderizados ainda, arestas agregadas entre containers.
 
 - [ ] **Step 6: Commit**
 
@@ -1737,14 +1737,14 @@ git commit -m "feat(dashboard): layer-detail Stage 1 — containers + ELK"
 
 ---
 
-## Task 12: Layer-detail Stage 2 + edge expansion
+## Tarefa 12: Layer-detail Stage 2 + expansão de arestas
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/GraphView.tsx`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/GraphView.tsx`
 
-- [ ] **Step 1: Add Stage 2 effect**
+- [ ] **Step 1: Adicionar effect do Stage 2**
 
-After the Stage 1 effect from Task 11, add another effect that watches `expandedContainers` and runs Stage 2 ELK for any newly expanded container without a cache entry:
+Depois do effect do Stage 1 da Tarefa 11, adicione outro effect que observa `expandedContainers` e roda ELK Stage 2 para qualquer container recém-expandido sem entrada de cache:
 
 ```tsx
 const expandedContainers = useDashboardStore((s) => s.expandedContainers);
@@ -1806,9 +1806,9 @@ useEffect(() => {
 }, [expandedContainers, containers, intraContainer, filteredGraphNodes, containerLayoutCache, setContainerLayout]);
 ```
 
-- [ ] **Step 2: Render expanded children + replace edges in visual overlay**
+- [ ] **Step 2: Renderizar filhos expandidos + substituir arestas no overlay visual**
 
-In the visual-overlay function (`useLayerDetailGraph`), after retrieving `topo`, fold in the expanded state:
+Na função de visual-overlay (`useLayerDetailGraph`), depois de obter `topo`, integre o estado de expansão:
 
 ```tsx
 // Build child flow nodes for each expanded container with cached layout
@@ -1859,17 +1859,17 @@ for (const e of topo.edges) {
 }
 ```
 
-Then return `{ nodes: [...topo.nodes, ...expandedChildNodes], edges: expandedEdges, ... }`.
+Em seguida, retorne `{ nodes: [...topo.nodes, ...expandedChildNodes], edges: expandedEdges, ... }`.
 
-(Update Stage 1 effect to also expose `containers` and `nodeToContainer` in the topology return so they're reachable here.)
+(Atualize o effect do Stage 1 para também expor `containers` e `nodeToContainer` no retorno do topology, para que sejam acessíveis aqui.)
 
-- [ ] **Step 3: Manual smoke**
+- [ ] **Step 3: Smoke test manual**
 
 ```bash
 pnpm dev:dashboard
 ```
 
-Drill into a layer. Click a container. Expected: container shows children laid out inside; aggregated edges from/to that container replaced by individual file→file edges. Click again to collapse.
+Faça drill-down em uma layer. Clique em um container. Esperado: container mostra filhos posicionados dentro; arestas agregadas de/para esse container substituídas por arestas individuais file→file. Clique novamente para colapsar.
 
 - [ ] **Step 4: Commit**
 
@@ -1880,14 +1880,14 @@ git commit -m "feat(dashboard): layer-detail Stage 2 — lazy children layout + 
 
 ---
 
-## Task 13: Auto-expand triggers (zoom + search/focus/tour)
+## Tarefa 13: Triggers de auto-expand (zoom + search/focus/tour)
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/GraphView.tsx`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/GraphView.tsx`
 
-- [ ] **Step 1: Zoom-driven auto-expand inside the ReactFlow component**
+- [ ] **Step 1: Auto-expand dirigido por zoom dentro do componente ReactFlow**
 
-Inside the inner component that mounts `<ReactFlow>` (where you have access to React Flow viewport via `useReactFlow` or the `onMove` prop), add a debounced viewport listener:
+Dentro do componente interno que monta `<ReactFlow>` (onde você tem acesso ao viewport do React Flow via `useReactFlow` ou a prop `onMove`), adicione um listener de viewport com debounce:
 
 ```tsx
 import { useReactFlow } from "@xyflow/react";
@@ -1928,11 +1928,11 @@ function ZoomAutoExpand({ containers }: { containers: Array<{ id: string }> }) {
 }
 ```
 
-Then wire `onMove={onMoveDebounced}` on the `<ReactFlow>` element. The component above is illustrative — you can inline `onMove` directly in the layer-detail render path for simplicity.
+Em seguida conecte `onMove={onMoveDebounced}` no elemento `<ReactFlow>`. O componente acima é ilustrativo — você pode inlinhar `onMove` direto no caminho de render do layer-detail por simplicidade.
 
-- [ ] **Step 2: Search/focus/tour auto-expand**
+- [ ] **Step 2: Auto-expand por search/focus/tour**
 
-Add to the layer-detail component:
+Adicione no componente layer-detail:
 
 ```tsx
 const searchResults = useDashboardStore((s) => s.searchResults);
@@ -1959,15 +1959,15 @@ useEffect(() => {
 // (this is consumed in Task 14's visual overlay update)
 ```
 
-- [ ] **Step 3: Manual smoke**
+- [ ] **Step 3: Smoke test manual**
 
 ```bash
 pnpm dev:dashboard
 ```
 
-- Drill into layer. Zoom in past ~1.0. Expected: visible containers expand within ~200ms.
-- Use search to find a node inside a container. Expected: container shows search badge but does **not** auto-expand. Click the badge → container expands and `fitView`s.
-- Use focus mode on a child file. Expected: its container expands, neighbors fade.
+- Drill into layer. Zoom in past ~1.0. Esperado: visible containers expand within ~200ms.
+- Use search to find a node inside a container. Esperado: container shows search badge but does **not** auto-expand. Click the badge → container expands and `fitView`s.
+- Use focus mode on a child file. Esperado: its container expands, neighbors fade.
 
 - [ ] **Step 4: Commit**
 
@@ -1978,14 +1978,14 @@ git commit -m "feat(dashboard): auto-expand on zoom, focus, and tour"
 
 ---
 
-## Task 14: Container visual overlays — search hit, diff, focused-via-child
+## Tarefa 14: Overlays visuais de container — search hit, diff, focused-via-child
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/GraphView.tsx`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/GraphView.tsx`
 
-- [ ] **Step 1: Compute container overlay data in `useLayerDetailGraph`**
+- [ ] **Step 1: Computar dados de overlay de container em `useLayerDetailGraph`**
 
-Inside the visual overlay pass, compute per-container flags and update the container nodes' `data` accordingly:
+Dentro do passo de visual overlay, compute flags por container e atualize o `data` dos container nodes de acordo:
 
 ```tsx
 const searchByContainer = new Map<string, number>();
@@ -2022,15 +2022,15 @@ const visualNodes = topo.nodes.map((n) => {
 });
 ```
 
-- [ ] **Step 2: Manual smoke**
+- [ ] **Step 2: Smoke test manual**
 
 ```bash
 pnpm dev:dashboard
 ```
 
-- Search "login" in a layer with `auth/` files. Expected: auth container shows `🔍 N` badge.
-- Open a diff view. Expected: containers with changed files have red borders.
-- Use focus mode. Expected: container with focused child has gold border + chevron.
+- Search "login" in a layer with `auth/` files. Esperado: auth container shows `🔍 N` badge.
+- Open a diff view. Esperado: containers with changed files have red borders.
+- Use focus mode. Esperado: container with focused child has gold border + chevron.
 
 - [ ] **Step 3: Commit**
 
@@ -2041,30 +2041,30 @@ git commit -m "feat(dashboard): container overlays — search/diff/focus"
 
 ---
 
-## Task 15: Stage 2 size-deviation re-layout
+## Tarefa 15: Re-layout do Stage 2 por desvio de tamanho
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/GraphView.tsx`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/GraphView.tsx`
 
-- [ ] **Step 1: Detect deviation after Stage 2**
+- [ ] **Step 1: Detectar desvio depois do Stage 2**
 
-In Task 12's Stage 2 effect, after `setContainerLayout` is called, compare `actualSize` against the Stage 1 estimate that was used. If the deviation exceeds 20% in width or height, schedule a Stage 1 re-run by invalidating its dependency.
+No effect Stage 2 da Tarefa 12, depois que `setContainerLayout` for chamado, compare `actualSize` com a estimativa do Stage 1 que foi usada. Se o desvio passar de 20% em width ou height, agende uma re-execução do Stage 1 invalidando sua dependência.
 
-The simplest mechanism: bump a `stage1Tick` counter in the store on deviation. Add to the store:
+O mecanismo mais simples: incrementar um contador `stage1Tick` na store em desvios. Adicione na store:
 
 ```ts
 stage1Tick: number;
 bumpStage1Tick: () => void;
 ```
 
-Initializer:
+Inicializador:
 
 ```ts
 stage1Tick: 0,
 bumpStage1Tick: () => set((s) => ({ stage1Tick: s.stage1Tick + 1 })),
 ```
 
-In Stage 2 effect, after caching:
+No effect Stage 2, depois do cache:
 
 ```tsx
 const stage1Estimate = stage1Children.find((sc) => sc.id === r.containerId);
@@ -2077,15 +2077,15 @@ if (stage1Estimate) {
 }
 ```
 
-Add `stage1Tick` to the Stage 1 effect's dependency array.
+Adicione `stage1Tick` no array de dependências do effect Stage 1.
 
-- [ ] **Step 2: Manual smoke**
+- [ ] **Step 2: Smoke test manual**
 
 ```bash
 pnpm dev:dashboard
 ```
 
-Drill into a layer with a folder that has many files. Click to expand. The container should grow to its actual size and the surrounding layout should reflow once.
+Faça drill-down em uma layer com uma pasta que tenha muitos arquivos. Clique para expandir. O container deve crescer até o tamanho real e o layout ao redor deve refluir uma vez.
 
 - [ ] **Step 3: Commit**
 
@@ -2097,16 +2097,16 @@ git commit -m "feat(dashboard): Stage 2 size-deviation triggers Stage 1 re-layou
 
 ---
 
-## Task 16: WarningBanner copy for layout issues + Computing layout overlay
+## Tarefa 16: Texto do WarningBanner para issues de layout + overlay Computing layout
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/WarningBanner.tsx`
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/GraphView.tsx`
-- Modify: `understand-anything-plugin/packages/dashboard/src/store.ts`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/WarningBanner.tsx`
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/GraphView.tsx`
+- Modificar: `understand-anything-plugin/packages/dashboard/src/store.ts`
 
-- [ ] **Step 1: Add layout-issue funnel to store**
+- [ ] **Step 1: Adicionar funil de issues de layout à store**
 
-Add to store:
+Adicione na store:
 
 ```ts
 layoutIssues: GraphIssue[];
@@ -2114,29 +2114,29 @@ appendLayoutIssues: (issues: GraphIssue[]) => void;
 clearLayoutIssues: () => void;
 ```
 
-Initializer + setters with merge semantics (dedupe by `level + message`).
+Inicializador + setters com semântica de merge (deduplicação por `level + message`).
 
-- [ ] **Step 2: Funnel ELK issues into store after each layout call**
+- [ ] **Step 2: Funilar issues do ELK para a store após cada chamada de layout**
 
-After every `applyElkLayout(...)` resolution in `GraphView.tsx` and `DomainGraphView.tsx`, append `issues` to the store:
+Após cada resolução de `applyElkLayout(...)` em `GraphView.tsx` e `DomainGraphView.tsx`, anexe `issues` à store:
 
 ```tsx
 const { positioned, issues } = await applyElkLayout(input, { strict: import.meta.env.DEV });
 if (issues.length > 0) useDashboardStore.getState().appendLayoutIssues(issues);
 ```
 
-- [ ] **Step 3: Display banner across all sources**
+- [ ] **Step 3: Exibir banner em todas as fontes**
 
-In `App.tsx`, where `<WarningBanner issues={graphIssues} />` is rendered, replace with a merged source:
+Em `App.tsx`, onde `<WarningBanner issues={graphIssues} />` é renderizado, substitua por uma fonte mesclada:
 
 ```tsx
 const layoutIssues = useDashboardStore((s) => s.layoutIssues);
 <WarningBanner issues={[...graphIssues, ...layoutIssues]} />
 ```
 
-- [ ] **Step 4: Update copy text in WarningBanner**
+- [ ] **Step 4: Atualizar texto de copy no WarningBanner**
 
-Edit `buildCopyText` in `WarningBanner.tsx`. Replace the hardcoded preamble with conditional copy based on whether there are any `fatal` issues:
+Edite `buildCopyText` em `WarningBanner.tsx`. Substitua o preâmbulo hardcoded por copy condicional baseado em haver issues `fatal`:
 
 ```ts
 const hasFatal = issues.some((i) => i.level === "fatal");
@@ -2154,9 +2154,9 @@ const lines = hasFatal
     ];
 ```
 
-- [ ] **Step 5: "Computing layout…" overlay**
+- [ ] **Step 5: Overlay "Computing layout…"**
 
-In `GraphView.tsx`, track a `layoutStatus` state (`"computing" | "ready"`) per view. While computing, render an absolute-positioned overlay over the React Flow surface:
+Em `GraphView.tsx`, mantenha um state `layoutStatus` (`"computing" | "ready"`) por view. Enquanto computando, renderize um overlay posicionado absolutamente sobre a superfície do React Flow:
 
 ```tsx
 {layoutStatus === "computing" && (
@@ -2177,15 +2177,15 @@ In `GraphView.tsx`, track a `layoutStatus` state (`"computing" | "ready"`) per v
 )}
 ```
 
-Set `layoutStatus` to `"computing"` before `applyElkLayout(...)` and `"ready"` after.
+Defina `layoutStatus` para `"computing"` antes de `applyElkLayout(...)` e `"ready"` depois.
 
-- [ ] **Step 6: Manual smoke**
+- [ ] **Step 6: Smoke test manual**
 
 ```bash
 pnpm dev:dashboard
 ```
 
-- Open a graph. Expected: brief "Computing layout…" overlay during initial layout.
+- Open a graph. Esperado: brief "Computing layout…" overlay during initial layout.
 - Manually corrupt a graph (e.g., introduce an edge to a nonexistent node) → expected: WarningBanner shows the dropped-edge issue with the graph-data copy text.
 - Force a fatal (set an invalid ELK option in dev tools) → expected: WarningBanner shows fatal with the rendering-bug copy text.
 
@@ -2202,14 +2202,14 @@ git commit -m "feat(dashboard): layout-issue banner + Computing layout overlay"
 
 ---
 
-## Task 17: Performance benchmark
+## Tarefa 17: Benchmark de performance
 
-**Files:**
-- Create: `understand-anything-plugin/packages/dashboard/scripts/benchmark-layout.mjs`
+**Arquivos:**
+- Criar: `understand-anything-plugin/packages/dashboard/scripts/benchmark-layout.mjs`
 
-- [ ] **Step 1: Write benchmark**
+- [ ] **Step 1: Escrever benchmark**
 
-Create `understand-anything-plugin/packages/dashboard/scripts/benchmark-layout.mjs`:
+Crie `understand-anything-plugin/packages/dashboard/scripts/benchmark-layout.mjs`:
 
 ```js
 import { performance } from "node:perf_hooks";
@@ -2245,21 +2245,21 @@ await bench("Stage1", 1000);
 await bench("Stage1", 3000);
 ```
 
-- [ ] **Step 2: Build dashboard so the script can import dist**
+- [ ] **Step 2: Buildar dashboard para que o script consiga importar dist**
 
 ```bash
 pnpm --filter @understand-anything/dashboard build
 ```
 
-- [ ] **Step 3: Run benchmark**
+- [ ] **Step 3: Executar benchmark**
 
 ```bash
 node understand-anything-plugin/packages/dashboard/scripts/benchmark-layout.mjs
 ```
 
-Expected: prints three lines. Verify Stage 1 < 200ms at 500 nodes, < 500ms at 3000 nodes per spec §8.3.
+Esperado: imprime três linhas. Verifique Stage 1 < 200ms a 500 nós, < 500ms a 3000 nós conforme spec §8.3.
 
-If a budget is missed, **investigate** — don't lower the budget. Likely culprits: container size estimation creating overlapping initial positions, ELK options misconfigured, or main-thread blocking that should move to a worker.
+Se um budget for ultrapassado, **investigue** — não baixe o budget. Suspeitos prováveis: estimativa de tamanho de container criando posições iniciais sobrepostas, opções do ELK mal configuradas, ou bloqueio na main thread que deveria ir para um worker.
 
 - [ ] **Step 4: Commit**
 
@@ -2296,9 +2296,9 @@ git commit -m "test(dashboard): layout perf benchmark script"
 
 ## Execution Handoff
 
-Plan complete and saved to `docs/superpowers/plans/2026-05-03-graph-layout-scaling.md`. Two execution options:
+Plano completo e salvo em `docs/superpowers/plans/2026-05-03-graph-layout-scaling.md`. Duas opções de execução:
 
-1. **Subagent-Driven (recommended)** — Dispatch a fresh subagent per task, review between tasks, fast iteration.
-2. **Inline Execution** — Execute tasks in this session using executing-plans, batch execution with checkpoints.
+1. **Subagent-Driven (recomendado)** — Despache um subagent novo por tarefa, revise entre tarefas, iteração rápida.
+2. **Inline Execution** — Execute as tarefas nesta sessão usando executing-plans, execução em lote com checkpoints.
 
-Which approach?
+Qual abordagem?

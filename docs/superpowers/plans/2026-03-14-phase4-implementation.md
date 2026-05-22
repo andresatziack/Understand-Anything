@@ -1,16 +1,16 @@
-# Understand Anything — Phase 4 (Advanced) Implementation Plan
+# Understand Anything — Plano de Implementação da Fase 4 (Avançado)
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **Para o Claude:** SUB-SKILL OBRIGATÓRIA: Use superpowers:executing-plans para implementar este plano tarefa por tarefa.
 
-**Goal:** Add the "Advanced" layer — three new skill commands (`/understand-diff`, `/understand-explain`, `/understand-onboard`), a community plugin system, and optional embedding-based semantic search.
+**Objetivo:** Adicionar a camada "Avançada" — três novos comandos de skill (`/understand-diff`, `/understand-explain`, `/understand-onboard`), um sistema de plugins comunitário, e busca semântica baseada em embeddings opcional.
 
-**Architecture:** Extends the skill package with three new Claude Code skill definitions + supporting core utilities. Adds a plugin registry to core for community extensibility. Optionally adds embedding-based search as an upgrade path from the existing fuse.js search.
+**Arquitetura:** Estende o pacote skill com três novas definições de skill do Claude Code + utilitários de suporte no core. Adiciona um plugin registry ao core para extensibilidade comunitária. Opcionalmente adiciona busca por embeddings como caminho de upgrade a partir da busca atual com fuse.js.
 
-**Tech Stack:** No new dependencies for Tasks 1-5. Task 6-7 (embedding search) adds a vector similarity library or uses raw cosine calculation.
+**Stack Tecnológica:** Sem novas dependências para as Tarefas 1-5. As Tarefas 6-7 (busca por embedding) adicionam uma biblioteca de similaridade vetorial ou usam cálculo de cosseno cru.
 
 ---
 
-## Dependency Graph
+## Grafo de Dependências
 
 ```
 Task 1 (understand-diff) ─── (independent)
@@ -20,21 +20,21 @@ Task 4 (Plugin Registry Core) ───→ Task 5 (Plugin CLI Integration)
 Task 6 (Embedding Search Core) ───→ Task 7 (Embedding Dashboard)
 ```
 
-Tasks 1, 2, 3, 4, 6 are fully independent and can be implemented in any order.
+Tarefas 1, 2, 3, 4, 6 são totalmente independentes e podem ser implementadas em qualquer ordem.
 
 ---
 
-## Task 1: /understand-diff Skill — PR/Diff Analysis
+## Tarefa 1: Skill /understand-diff — Análise de PR/Diff
 
-**Files:**
-- Create: `packages/skill/src/diff-analyzer.ts`
-- Create: `packages/skill/src/__tests__/diff-analyzer.test.ts`
-- Create: `packages/skill/.claude/skills/understand-diff.md`
-- Modify: `packages/skill/src/index.ts` (add exports)
+**Arquivos:**
+- Criar: `packages/skill/src/diff-analyzer.ts`
+- Criar: `packages/skill/src/__tests__/diff-analyzer.test.ts`
+- Criar: `packages/skill/.claude/skills/understand-diff.md`
+- Modificar: `packages/skill/src/index.ts` (add exports)
 
-**Context:** The `/understand-diff` skill analyzes the current git diff (or PR) against the knowledge graph. It maps changed files to affected nodes, identifies impacted relationships and layers, and generates a structured analysis of changes, affected areas, and risks. This is designed to run inside Claude Code where the LLM can read the analysis and explain it to the user.
+**Contexto:** A skill `/understand-diff` analisa o git diff atual (ou PR) contra o knowledge graph. Ela mapeia arquivos alterados para nós afetados, identifica relações e layers impactadas, e gera uma análise estruturada das mudanças, áreas afetadas e riscos. Foi desenhada para rodar dentro do Claude Code, onde o LLM pode ler a análise e explicá-la ao usuário.
 
-**Step 1: Write failing tests**
+**Step 1: Escrever testes que vão falhar**
 
 ```typescript
 // packages/skill/src/__tests__/diff-analyzer.test.ts
@@ -148,13 +148,13 @@ describe("diff-analyzer", () => {
 });
 ```
 
-**Step 2: Run tests to verify they fail**
+**Step 2: Executar os testes para verificar que falham**
 
 ```bash
 cd packages/skill && pnpm test -- --reporter verbose src/__tests__/diff-analyzer.test.ts
 ```
 
-**Step 3: Implement diff-analyzer.ts**
+**Step 3: Implementar diff-analyzer.ts**
 
 ```typescript
 // packages/skill/src/diff-analyzer.ts
@@ -342,13 +342,13 @@ export function formatDiffAnalysis(ctx: DiffContext): string {
 }
 ```
 
-**Step 4: Run tests**
+**Step 4: Executar os testes**
 
 ```bash
 cd packages/skill && pnpm test -- --reporter verbose src/__tests__/diff-analyzer.test.ts
 ```
 
-**Step 5: Add exports to index.ts**
+**Step 5: Adicionar exports ao index.ts**
 
 ```typescript
 export {
@@ -358,7 +358,7 @@ export {
 } from "./diff-analyzer.js";
 ```
 
-**Step 6: Create the skill definition**
+**Step 6: Criar a definição da skill**
 
 ```markdown
 <!-- packages/skill/.claude/skills/understand-diff.md -->
@@ -406,17 +406,17 @@ git commit -m "feat(skill): add /understand-diff command for PR/diff analysis"
 
 ---
 
-## Task 2: /understand-explain Skill — Deep-Dive on Files
+## Tarefa 2: Skill /understand-explain — Aprofundamento em Arquivos
 
-**Files:**
-- Create: `packages/skill/src/explain-builder.ts`
-- Create: `packages/skill/src/__tests__/explain-builder.test.ts`
-- Create: `packages/skill/.claude/skills/understand-explain.md`
-- Modify: `packages/skill/src/index.ts` (add exports)
+**Arquivos:**
+- Criar: `packages/skill/src/explain-builder.ts`
+- Criar: `packages/skill/src/__tests__/explain-builder.test.ts`
+- Criar: `packages/skill/.claude/skills/understand-explain.md`
+- Modificar: `packages/skill/src/index.ts` (add exports)
 
-**Context:** The `/understand-explain <path>` skill provides a deep-dive explanation of a specific file or function. It gathers all nodes that belong to that file, their connections, layer membership, and constructs a comprehensive context for the LLM to explain the component. This differs from `/understand-chat` which answers any question — `/understand-explain` is focused on thorough explanation of a single component.
+**Contexto:** A skill `/understand-explain <path>` fornece uma explicação aprofundada de um arquivo ou função específica. Ela reúne todos os nós que pertencem àquele arquivo, suas conexões, pertencimento a layers, e constrói um contexto abrangente para o LLM explicar o componente. Isso difere de `/understand-chat`, que responde qualquer pergunta — `/understand-explain` é focada em explicação completa de um único componente.
 
-**Step 1: Write failing tests**
+**Step 1: Escrever testes que vão falhar**
 
 ```typescript
 // packages/skill/src/__tests__/explain-builder.test.ts
@@ -504,13 +504,13 @@ describe("explain-builder", () => {
 });
 ```
 
-**Step 2: Run tests to verify they fail**
+**Step 2: Executar os testes para verificar que falham**
 
 ```bash
 cd packages/skill && pnpm test -- --reporter verbose src/__tests__/explain-builder.test.ts
 ```
 
-**Step 3: Implement explain-builder.ts**
+**Step 3: Implementar explain-builder.ts**
 
 ```typescript
 // packages/skill/src/explain-builder.ts
@@ -693,15 +693,15 @@ export function formatExplainPrompt(ctx: ExplainContext): string {
 }
 ```
 
-**Step 4: Run tests**
+**Step 4: Executar os testes**
 
 ```bash
 cd packages/skill && pnpm test -- --reporter verbose src/__tests__/explain-builder.test.ts
 ```
 
-**Step 5: Add exports + create skill definition**
+**Step 5: Adicionar exports + criar definição da skill**
 
-Add to `packages/skill/src/index.ts`:
+Adicione em `packages/skill/src/index.ts`:
 ```typescript
 export {
   buildExplainContext,
@@ -710,7 +710,7 @@ export {
 } from "./explain-builder.js";
 ```
 
-Create `packages/skill/.claude/skills/understand-explain.md`:
+Crie `packages/skill/.claude/skills/understand-explain.md`:
 ```markdown
 ---
 name: understand-explain
@@ -753,17 +753,17 @@ git commit -m "feat(skill): add /understand-explain command for deep-dive file a
 
 ---
 
-## Task 3: /understand-onboard Skill — Onboarding Guide Generation
+## Tarefa 3: Skill /understand-onboard — Geração de Guia de Onboarding
 
-**Files:**
-- Create: `packages/skill/src/onboard-builder.ts`
-- Create: `packages/skill/src/__tests__/onboard-builder.test.ts`
-- Create: `packages/skill/.claude/skills/understand-onboard.md`
-- Modify: `packages/skill/src/index.ts` (add exports)
+**Arquivos:**
+- Criar: `packages/skill/src/onboard-builder.ts`
+- Criar: `packages/skill/src/__tests__/onboard-builder.test.ts`
+- Criar: `packages/skill/.claude/skills/understand-onboard.md`
+- Modificar: `packages/skill/src/index.ts` (add exports)
 
-**Context:** The `/understand-onboard` skill generates a structured onboarding guide for new team members. It synthesizes the knowledge graph — project overview, architecture layers, key concepts, tour steps, and complexity hotspots — into a comprehensive document. The output is a well-structured markdown guide that can be committed to the repo or shared in a wiki.
+**Contexto:** A skill `/understand-onboard` gera um guia de onboarding estruturado para novos membros do time. Ela sintetiza o knowledge graph — overview do projeto, layers de arquitetura, conceitos-chave, passos do tour e hotspots de complexidade — em um documento abrangente. O output é um guia em markdown bem estruturado que pode ser commitado no repo ou compartilhado em um wiki.
 
-**Step 1: Write failing tests**
+**Step 1: Escrever testes que vão falhar**
 
 ```typescript
 // packages/skill/src/__tests__/onboard-builder.test.ts
@@ -856,13 +856,13 @@ describe("onboard-builder", () => {
 });
 ```
 
-**Step 2: Run tests to verify they fail**
+**Step 2: Executar os testes para verificar que falham**
 
 ```bash
 cd packages/skill && pnpm test -- --reporter verbose src/__tests__/onboard-builder.test.ts
 ```
 
-**Step 3: Implement onboard-builder.ts**
+**Step 3: Implementar onboard-builder.ts**
 
 ```typescript
 // packages/skill/src/onboard-builder.ts
@@ -991,20 +991,20 @@ export function buildOnboardingGuide(graph: KnowledgeGraph): string {
 }
 ```
 
-**Step 4: Run tests**
+**Step 4: Executar os testes**
 
 ```bash
 cd packages/skill && pnpm test -- --reporter verbose src/__tests__/onboard-builder.test.ts
 ```
 
-**Step 5: Add exports + create skill definition**
+**Step 5: Adicionar exports + criar definição da skill**
 
-Add to `packages/skill/src/index.ts`:
+Adicione em `packages/skill/src/index.ts`:
 ```typescript
 export { buildOnboardingGuide } from "./onboard-builder.js";
 ```
 
-Create `packages/skill/.claude/skills/understand-onboard.md`:
+Crie `packages/skill/.claude/skills/understand-onboard.md`:
 ```markdown
 ---
 name: understand-onboard
@@ -1046,16 +1046,16 @@ git commit -m "feat(skill): add /understand-onboard command for team onboarding 
 
 ---
 
-## Task 4: Plugin Registry + Loader (Core)
+## Tarefa 4: Plugin Registry + Loader (Core)
 
-**Files:**
-- Create: `packages/core/src/plugins/registry.ts`
-- Create: `packages/core/src/__tests__/plugin-registry.test.ts`
-- Modify: `packages/core/src/index.ts` (add exports)
+**Arquivos:**
+- Criar: `packages/core/src/plugins/registry.ts`
+- Criar: `packages/core/src/__tests__/plugin-registry.test.ts`
+- Modificar: `packages/core/src/index.ts` (add exports)
 
-**Context:** The `AnalyzerPlugin` interface already exists in `packages/core/src/types.ts`. Currently only `TreeSitterPlugin` implements it. This task creates a plugin registry that discovers, registers, and manages analyzer plugins. The registry maps file extensions to plugins and provides a unified `analyzeFile` entrypoint. This is the foundation for community plugins.
+**Contexto:** A interface `AnalyzerPlugin` já existe em `packages/core/src/types.ts`. Atualmente apenas `TreeSitterPlugin` a implementa. Esta tarefa cria um plugin registry que descobre, registra e gerencia plugins analisadores. O registry mapeia extensões de arquivo para plugins e fornece um entrypoint unificado `analyzeFile`. Esta é a base para plugins comunitários.
 
-**Step 1: Write failing tests**
+**Step 1: Escrever testes que vão falhar**
 
 ```typescript
 // packages/core/src/__tests__/plugin-registry.test.ts
@@ -1175,13 +1175,13 @@ describe("PluginRegistry", () => {
 });
 ```
 
-**Step 2: Run tests to verify they fail**
+**Step 2: Executar os testes para verificar que falham**
 
 ```bash
 cd packages/core && pnpm test -- --reporter verbose src/__tests__/plugin-registry.test.ts
 ```
 
-**Step 3: Implement registry.ts**
+**Step 3: Implementar registry.ts**
 
 ```typescript
 // packages/core/src/plugins/registry.ts
@@ -1297,19 +1297,19 @@ export class PluginRegistry {
 }
 ```
 
-**Step 4: Run tests**
+**Step 4: Executar os testes**
 
 ```bash
 cd packages/core && pnpm test -- --reporter verbose src/__tests__/plugin-registry.test.ts
 ```
 
-**Step 5: Add exports to index.ts**
+**Step 5: Adicionar exports ao index.ts**
 
 ```typescript
 export { PluginRegistry } from "./plugins/registry.js";
 ```
 
-**Step 6: Build + full test suite**
+**Step 6: Build + suíte de testes completa**
 
 ```bash
 cd packages/core && pnpm build && pnpm test
@@ -1324,16 +1324,16 @@ git commit -m "feat(core): add plugin registry for community analyzer plugins"
 
 ---
 
-## Task 5: Plugin Configuration + Discovery
+## Tarefa 5: Configuração e Discovery de Plugins
 
-**Files:**
-- Create: `packages/core/src/plugins/discovery.ts`
-- Create: `packages/core/src/__tests__/plugin-discovery.test.ts`
-- Modify: `packages/core/src/index.ts` (add exports)
+**Arquivos:**
+- Criar: `packages/core/src/plugins/discovery.ts`
+- Criar: `packages/core/src/__tests__/plugin-discovery.test.ts`
+- Modificar: `packages/core/src/index.ts` (add exports)
 
-**Context:** The plugin registry from Task 4 manages runtime plugins, but we also need a way to discover and configure plugins from the project's `.understand-anything/` directory. This task adds a plugin configuration file schema and a discovery mechanism that scans for installed plugins and auto-registers them.
+**Contexto:** O plugin registry da Tarefa 4 gerencia plugins em runtime, mas também precisamos de uma forma de descobrir e configurar plugins a partir do diretório `.understand-anything/` do projeto. Esta tarefa adiciona um schema de arquivo de configuração de plugin e um mecanismo de discovery que escaneia plugins instalados e os auto-registra.
 
-**Step 1: Write failing tests**
+**Step 1: Escrever testes que vão falhar**
 
 ```typescript
 // packages/core/src/__tests__/plugin-discovery.test.ts
@@ -1404,13 +1404,13 @@ describe("plugin-discovery", () => {
 });
 ```
 
-**Step 2: Run tests to verify they fail**
+**Step 2: Executar os testes para verificar que falham**
 
 ```bash
 cd packages/core && pnpm test -- --reporter verbose src/__tests__/plugin-discovery.test.ts
 ```
 
-**Step 3: Implement discovery.ts**
+**Step 3: Implementar discovery.ts**
 
 ```typescript
 // packages/core/src/plugins/discovery.ts
@@ -1481,13 +1481,13 @@ export function serializePluginConfig(config: PluginConfig): string {
 }
 ```
 
-**Step 4: Run tests**
+**Step 4: Executar os testes**
 
 ```bash
 cd packages/core && pnpm test -- --reporter verbose src/__tests__/plugin-discovery.test.ts
 ```
 
-**Step 5: Add exports**
+**Step 5: Adicionar exports**
 
 ```typescript
 export {
@@ -1514,16 +1514,16 @@ git commit -m "feat(core): add plugin configuration and discovery system"
 
 ---
 
-## Task 6: Embedding-Based Semantic Search (Core)
+## Tarefa 6: Busca Semântica baseada em Embedding (Core)
 
-**Files:**
-- Create: `packages/core/src/embedding-search.ts`
-- Create: `packages/core/src/__tests__/embedding-search.test.ts`
-- Modify: `packages/core/src/index.ts` (add exports)
+**Arquivos:**
+- Criar: `packages/core/src/embedding-search.ts`
+- Criar: `packages/core/src/__tests__/embedding-search.test.ts`
+- Modificar: `packages/core/src/index.ts` (add exports)
 
-**Context:** The current `SearchEngine` uses fuse.js for fuzzy keyword matching. Embedding-based search enables true semantic queries like "find code that handles authentication" even if the word "authentication" doesn't appear in the node data. This task adds a `SemanticSearchEngine` that stores and searches vector embeddings. The embeddings themselves are generated externally (by calling an embedding API) — this module handles storage and cosine similarity search. It falls back to the existing `SearchEngine` when no embeddings are available.
+**Contexto:** O `SearchEngine` atual usa fuse.js para fuzzy keyword matching. A busca por embedding habilita queries semânticas verdadeiras como "find code that handles authentication" mesmo que a palavra "authentication" não apareça nos dados do nó. Esta tarefa adiciona um `SemanticSearchEngine` que armazena e busca vector embeddings. Os embeddings em si são gerados externamente (chamando uma API de embeddings) — este módulo lida com armazenamento e busca por similaridade de cosseno. Faz fallback para o `SearchEngine` existente quando não há embeddings disponíveis.
 
-**Step 1: Write failing tests**
+**Step 1: Escrever testes que vão falhar**
 
 ```typescript
 // packages/core/src/__tests__/embedding-search.test.ts
@@ -1621,13 +1621,13 @@ describe("embedding-search", () => {
 });
 ```
 
-**Step 2: Run tests to verify they fail**
+**Step 2: Executar os testes para verificar que falham**
 
 ```bash
 cd packages/core && pnpm test -- --reporter verbose src/__tests__/embedding-search.test.ts
 ```
 
-**Step 3: Implement embedding-search.ts**
+**Step 3: Implementar embedding-search.ts**
 
 ```typescript
 // packages/core/src/embedding-search.ts
@@ -1734,13 +1734,13 @@ export class SemanticSearchEngine {
 }
 ```
 
-**Step 4: Run tests**
+**Step 4: Executar os testes**
 
 ```bash
 cd packages/core && pnpm test -- --reporter verbose src/__tests__/embedding-search.test.ts
 ```
 
-**Step 5: Add exports**
+**Step 5: Adicionar exports**
 
 ```typescript
 export {
@@ -1765,17 +1765,17 @@ git commit -m "feat(core): add embedding-based semantic search engine"
 
 ---
 
-## Task 7: Embedding Search Dashboard Integration
+## Tarefa 7: Integração da Busca por Embedding no Dashboard
 
-**Files:**
-- Modify: `packages/dashboard/src/store.ts` (add semantic search state)
-- Modify: `packages/dashboard/src/components/SearchBar.tsx` (semantic search toggle)
+**Arquivos:**
+- Modificar: `packages/dashboard/src/store.ts` (add semantic search state)
+- Modificar: `packages/dashboard/src/components/SearchBar.tsx` (semantic search toggle)
 
-**Context:** This task integrates the `SemanticSearchEngine` into the dashboard. When the knowledge graph includes pre-computed embeddings (stored as a separate field or companion file), the SearchBar offers a toggle between "Fuzzy" and "Semantic" search modes. The semantic mode uses vector similarity for queries like "where is authentication handled" even if those exact words aren't in any node. For MVP, we'll add the UI toggle and wiring — actual embedding generation requires an API call that would be part of the analysis pipeline.
+**Contexto:** Esta tarefa integra o `SemanticSearchEngine` ao dashboard. Quando o knowledge graph inclui embeddings pré-computados (armazenados como campo separado ou arquivo companheiro), a SearchBar oferece um toggle entre os modos de busca "Fuzzy" e "Semântico". O modo semântico usa similaridade vetorial para queries como "where is authentication handled" mesmo que essas palavras exatas não estejam em nenhum nó. Para MVP, vamos adicionar o toggle de UI e a fiação — a geração de embedding propriamente dita requer uma chamada de API que faria parte do pipeline de análise.
 
-**Step 1: Add semantic search state to the store**
+**Step 1: Adicionar state de busca semântica à store**
 
-In `packages/dashboard/src/store.ts`:
+Em `packages/dashboard/src/store.ts`:
 
 ```typescript
 // Add to interface
@@ -1787,7 +1787,7 @@ searchMode: "fuzzy",
 setSearchMode: (mode) => set({ searchMode: mode }),
 ```
 
-Update `setSearchQuery` to check `searchMode`:
+Atualize `setSearchQuery` para checar `searchMode`:
 ```typescript
 setSearchQuery: (query) => {
   const engine = get().searchEngine;
@@ -1803,9 +1803,9 @@ setSearchQuery: (query) => {
 },
 ```
 
-**Step 2: Add search mode toggle to SearchBar**
+**Step 2: Adicionar toggle de modo de busca à SearchBar**
 
-In `packages/dashboard/src/components/SearchBar.tsx`, add:
+Em `packages/dashboard/src/components/SearchBar.tsx`, adicione:
 
 ```tsx
 const searchMode = useDashboardStore((s) => s.searchMode);
@@ -1836,7 +1836,7 @@ const setSearchMode = useDashboardStore((s) => s.setSearchMode);
 </div>
 ```
 
-**Step 3: Verify dashboard compiles**
+**Step 3: Verificar que o dashboard compila**
 
 ```bash
 cd packages/dashboard && pnpm build
@@ -1851,22 +1851,22 @@ git commit -m "feat(dashboard): add fuzzy/semantic search mode toggle"
 
 ---
 
-## Verification Checklist
+## Checklist de Verificação
 
-After all tasks are complete:
+Depois de todas as tarefas estarem completas:
 
-1. `cd packages/core && pnpm build && pnpm test` — all tests pass (existing + ~35 new)
-2. `cd packages/skill && pnpm build && pnpm test` — all tests pass (existing 14 + ~25 new)
-3. `cd packages/dashboard && pnpm build` — compiles without errors
-4. Skill definitions exist:
+1. `cd packages/core && pnpm build && pnpm test` — todos os testes passam (existentes + ~35 novos)
+2. `cd packages/skill && pnpm build && pnpm test` — todos os testes passam (14 existentes + ~25 novos)
+3. `cd packages/dashboard && pnpm build` — compila sem erros
+4. Definições de skill existem:
    - `packages/skill/.claude/skills/understand-diff.md`
    - `packages/skill/.claude/skills/understand-explain.md`
    - `packages/skill/.claude/skills/understand-onboard.md`
-5. Plugin registry works:
+5. Plugin registry funciona:
    - `PluginRegistry.register()`, `getPluginForFile()`, `analyzeFile()`
-   - `parsePluginConfig()` handles valid/invalid JSON
-6. Semantic search:
-   - `cosineSimilarity()` produces correct values
-   - `SemanticSearchEngine.search()` returns sorted results
-   - Dashboard toggle renders and switches modes
-7. All existing Phase 1 + Phase 2 + Phase 3 features still work
+   - `parsePluginConfig()` lida com JSON válido/inválido
+6. Busca semântica:
+   - `cosineSimilarity()` produz valores corretos
+   - `SemanticSearchEngine.search()` retorna resultados ordenados
+   - Toggle do dashboard renderiza e troca de modos
+7. Todas as features das Fases 1 + 2 + 3 anteriores ainda funcionam

@@ -1,49 +1,49 @@
-# .understandignore Implementation Plan
+# Plano de Implementação do .understandignore
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Para workers agênticos:** SUB-SKILL OBRIGATÓRIA: Use superpowers:subagent-driven-development (recomendado) ou superpowers:executing-plans para implementar este plano tarefa por tarefa. Os steps usam sintaxe de checkbox (`- [ ]`) para tracking.
 
-**Goal:** Add user-configurable file exclusion via `.understandignore` files using `.gitignore` syntax, with auto-generated starter files and a pre-analysis review pause.
+**Objetivo:** Adicionar exclusão de arquivos configurável pelo usuário via arquivos `.understandignore` usando sintaxe `.gitignore`, com arquivos starter gerados automaticamente e uma pausa de revisão pré-análise.
 
-**Architecture:** An `IgnoreFilter` module in `packages/core` uses the `ignore` npm package to parse `.understandignore` files and filter paths. A companion `IgnoreGenerator` scans the project for common patterns and produces a commented-out starter file. The `project-scanner` agent applies the filter as a second pass after its existing hardcoded exclusions. The `/understand` skill adds a Phase 0.5 that generates the starter file and pauses for user review.
+**Arquitetura:** Um módulo `IgnoreFilter` em `packages/core` usa o pacote npm `ignore` para parsear arquivos `.understandignore` e filtrar paths. Um `IgnoreGenerator` companheiro escaneia o projeto em busca de padrões comuns e produz um arquivo starter comentado. O agent `project-scanner` aplica o filtro como uma segunda passada após suas exclusões hardcoded existentes. A skill `/understand` adiciona uma Phase 0.5 que gera o arquivo starter e pausa para revisão do usuário.
 
-**Tech Stack:** TypeScript, `ignore` npm package, Vitest
+**Stack Tecnológica:** TypeScript, pacote npm `ignore`, Vitest
 
 **Spec:** `docs/superpowers/specs/2026-04-10-understandignore-design.md`
 
 ---
 
-## File Structure
+## Estrutura de Arquivos
 
-### Core package
-- Create: `understand-anything-plugin/packages/core/src/ignore-filter.ts` — parse .understandignore, merge with defaults, filter paths
-- Create: `understand-anything-plugin/packages/core/src/ignore-generator.ts` — generate starter .understandignore by scanning project
-- Create: `understand-anything-plugin/packages/core/src/__tests__/ignore-filter.test.ts` — filter tests
-- Create: `understand-anything-plugin/packages/core/src/__tests__/ignore-generator.test.ts` — generator tests
-- Modify: `understand-anything-plugin/packages/core/src/index.ts` — export new modules
-- Modify: `understand-anything-plugin/packages/core/package.json` — add `ignore` dependency
+### Pacote core
+- Criar: `understand-anything-plugin/packages/core/src/ignore-filter.ts` — parsear .understandignore, mesclar com defaults, filtrar paths
+- Criar: `understand-anything-plugin/packages/core/src/ignore-generator.ts` — gerar starter .understandignore escaneando o projeto
+- Criar: `understand-anything-plugin/packages/core/src/__tests__/ignore-filter.test.ts` — testes do filter
+- Criar: `understand-anything-plugin/packages/core/src/__tests__/ignore-generator.test.ts` — testes do generator
+- Modificar: `understand-anything-plugin/packages/core/src/index.ts` — exportar novos módulos
+- Modificar: `understand-anything-plugin/packages/core/package.json` — adicionar dependência `ignore`
 
-### Agents & skills
-- Modify: `understand-anything-plugin/agents/project-scanner.md` — add Layer 2 filtering step
-- Modify: `understand-anything-plugin/skills/understand/SKILL.md` — add Phase 0.5
+### Agents e skills
+- Modificar: `understand-anything-plugin/agents/project-scanner.md` — adicionar step de filtragem da Layer 2
+- Modificar: `understand-anything-plugin/skills/understand/SKILL.md` — adicionar Phase 0.5
 
 ---
 
-## Task 1: Add `ignore` dependency
+## Tarefa 1: Adicionar dependência `ignore`
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/core/package.json`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/core/package.json`
 
-- [ ] **Step 1: Install the `ignore` npm package**
+- [ ] **Step 1: Instalar o pacote npm `ignore`**
 
-Run:
+Execute:
 ```bash
 cd understand-anything-plugin && pnpm add --filter @understand-anything/core ignore
 ```
 
-- [ ] **Step 2: Verify it was added**
+- [ ] **Step 2: Verificar se foi adicionado**
 
-Run: `grep ignore understand-anything-plugin/packages/core/package.json`
-Expected: `"ignore": "^7.x.x"` (or similar) in dependencies
+Execute: `grep ignore understand-anything-plugin/packages/core/package.json`
+Esperado: `"ignore": "^7.x.x"` (ou similar) em dependencies
 
 - [ ] **Step 3: Commit**
 
@@ -54,15 +54,15 @@ git commit -m "chore(core): add ignore package for .understandignore support"
 
 ---
 
-## Task 2: Create IgnoreFilter module with tests (TDD)
+## Tarefa 2: Criar módulo IgnoreFilter com testes (TDD)
 
-**Files:**
-- Create: `understand-anything-plugin/packages/core/src/ignore-filter.ts`
-- Create: `understand-anything-plugin/packages/core/src/__tests__/ignore-filter.test.ts`
+**Arquivos:**
+- Criar: `understand-anything-plugin/packages/core/src/ignore-filter.ts`
+- Criar: `understand-anything-plugin/packages/core/src/__tests__/ignore-filter.test.ts`
 
-- [ ] **Step 1: Write the failing tests**
+- [ ] **Step 1: Escrever os testes que falham**
 
-Create `understand-anything-plugin/packages/core/src/__tests__/ignore-filter.test.ts`:
+Crie `understand-anything-plugin/packages/core/src/__tests__/ignore-filter.test.ts`:
 
 ```typescript
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
@@ -221,14 +221,14 @@ describe("IgnoreFilter", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [ ] **Step 2: Executar os testes para verificar que falham**
 
-Run: `pnpm --filter @understand-anything/core test -- --run src/__tests__/ignore-filter.test.ts`
-Expected: FAIL — module not found
+Execute: `pnpm --filter @understand-anything/core test -- --run src/__tests__/ignore-filter.test.ts`
+Esperado: FAIL — módulo não encontrado
 
-- [ ] **Step 3: Implement IgnoreFilter**
+- [ ] **Step 3: Implementar IgnoreFilter**
 
-Create `understand-anything-plugin/packages/core/src/ignore-filter.ts`:
+Crie `understand-anything-plugin/packages/core/src/ignore-filter.ts`:
 
 ```typescript
 import ignore, { type Ignore } from "ignore";
@@ -345,15 +345,15 @@ export function createIgnoreFilter(projectRoot: string): IgnoreFilter {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [ ] **Step 4: Executar os testes para verificar que passam**
 
-Run: `pnpm --filter @understand-anything/core test -- --run src/__tests__/ignore-filter.test.ts`
-Expected: All tests PASS
+Execute: `pnpm --filter @understand-anything/core test -- --run src/__tests__/ignore-filter.test.ts`
+Esperado: Todos os testes PASSAM
 
-- [ ] **Step 5: Build to verify no type errors**
+- [ ] **Step 5: Build para verificar que não há erros de tipo**
 
-Run: `pnpm --filter @understand-anything/core build`
-Expected: Clean build
+Execute: `pnpm --filter @understand-anything/core build`
+Esperado: Build limpo
 
 - [ ] **Step 6: Commit**
 
@@ -364,15 +364,15 @@ git commit -m "feat(core): add IgnoreFilter module with .understandignore parsin
 
 ---
 
-## Task 3: Create IgnoreGenerator module with tests (TDD)
+## Tarefa 3: Criar módulo IgnoreGenerator com testes (TDD)
 
-**Files:**
-- Create: `understand-anything-plugin/packages/core/src/ignore-generator.ts`
-- Create: `understand-anything-plugin/packages/core/src/__tests__/ignore-generator.test.ts`
+**Arquivos:**
+- Criar: `understand-anything-plugin/packages/core/src/ignore-generator.ts`
+- Criar: `understand-anything-plugin/packages/core/src/__tests__/ignore-generator.test.ts`
 
-- [ ] **Step 1: Write the failing tests**
+- [ ] **Step 1: Escrever os testes que falham**
 
-Create `understand-anything-plugin/packages/core/src/__tests__/ignore-generator.test.ts`:
+Crie `understand-anything-plugin/packages/core/src/__tests__/ignore-generator.test.ts`:
 
 ```typescript
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
@@ -477,14 +477,14 @@ describe("generateStarterIgnoreFile", () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [ ] **Step 2: Executar os testes para verificar que falham**
 
-Run: `pnpm --filter @understand-anything/core test -- --run src/__tests__/ignore-generator.test.ts`
-Expected: FAIL — module not found
+Execute: `pnpm --filter @understand-anything/core test -- --run src/__tests__/ignore-generator.test.ts`
+Esperado: FAIL — módulo não encontrado
 
-- [ ] **Step 3: Implement IgnoreGenerator**
+- [ ] **Step 3: Implementar IgnoreGenerator**
 
-Create `understand-anything-plugin/packages/core/src/ignore-generator.ts`:
+Crie `understand-anything-plugin/packages/core/src/ignore-generator.ts`:
 
 ```typescript
 import { existsSync } from "node:fs";
@@ -558,15 +558,15 @@ export function generateStarterIgnoreFile(projectRoot: string): string {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [ ] **Step 4: Executar os testes para verificar que passam**
 
-Run: `pnpm --filter @understand-anything/core test -- --run src/__tests__/ignore-generator.test.ts`
-Expected: All tests PASS
+Execute: `pnpm --filter @understand-anything/core test -- --run src/__tests__/ignore-generator.test.ts`
+Esperado: Todos os testes PASSAM
 
 - [ ] **Step 5: Build**
 
-Run: `pnpm --filter @understand-anything/core build`
-Expected: Clean build
+Execute: `pnpm --filter @understand-anything/core build`
+Esperado: Build limpo
 
 - [ ] **Step 6: Commit**
 
@@ -577,14 +577,14 @@ git commit -m "feat(core): add IgnoreGenerator for starter .understandignore fil
 
 ---
 
-## Task 4: Export new modules from core
+## Tarefa 4: Exportar novos módulos do core
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/core/src/index.ts`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/core/src/index.ts`
 
-- [ ] **Step 1: Add exports**
+- [ ] **Step 1: Adicionar exports**
 
-Add to the end of `understand-anything-plugin/packages/core/src/index.ts`:
+Adicione ao final de `understand-anything-plugin/packages/core/src/index.ts`:
 
 ```typescript
 export {
@@ -595,10 +595,10 @@ export {
 export { generateStarterIgnoreFile } from "./ignore-generator.js";
 ```
 
-- [ ] **Step 2: Build and run all tests**
+- [ ] **Step 2: Build e executar todos os testes**
 
-Run: `pnpm --filter @understand-anything/core build && pnpm --filter @understand-anything/core test -- --run`
-Expected: Clean build, all tests pass
+Execute: `pnpm --filter @understand-anything/core build && pnpm --filter @understand-anything/core test -- --run`
+Esperado: Build limpo, todos os testes passam
 
 - [ ] **Step 3: Commit**
 
@@ -609,32 +609,32 @@ git commit -m "feat(core): export IgnoreFilter and IgnoreGenerator from core ind
 
 ---
 
-## Task 5: Update project-scanner agent
+## Tarefa 5: Atualizar o agent project-scanner
 
-**Files:**
-- Modify: `understand-anything-plugin/agents/project-scanner.md`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/agents/project-scanner.md`
 
-- [ ] **Step 1: Read the current project-scanner.md**
+- [ ] **Step 1: Ler o project-scanner.md atual**
 
-Read `understand-anything-plugin/agents/project-scanner.md` to understand the current structure.
+Leia `understand-anything-plugin/agents/project-scanner.md` para entender a estrutura atual.
 
-- [ ] **Step 2: Add bin/ and obj/ to hardcoded exclusions**
+- [ ] **Step 2: Adicionar bin/ e obj/ às exclusões hardcoded**
 
-In Step 2 (Exclusion Filtering), add `bin/` and `obj/` to the "Build output" line:
+No Step 2 (Exclusion Filtering), adicione `bin/` e `obj/` à linha "Build output":
 
-Change:
+Substitua:
 ```
 - **Build output:** paths with a directory segment matching `dist/`, `build/`, `out/`, `coverage/`, `.next/`, `.cache/`, `.turbo/`, `target/` (Rust)
 ```
 
-To:
+Por:
 ```
 - **Build output:** paths with a directory segment matching `dist/`, `build/`, `out/`, `coverage/`, `.next/`, `.cache/`, `.turbo/`, `target/` (Rust), `bin/` (.NET), `obj/` (.NET)
 ```
 
-- [ ] **Step 3: Add Layer 2 filtering step**
+- [ ] **Step 3: Adicionar step de filtragem da Layer 2**
 
-After Step 2 (Exclusion Filtering), add a new step:
+Após o Step 2 (Exclusion Filtering), adicione um novo step:
 
 ```markdown
 **Step 2.5 -- User-Configured Filtering (.understandignore)**
@@ -651,9 +651,9 @@ After applying the hardcoded exclusion filters above, apply user-configured patt
 This filtering must be deterministic (not LLM-based). Use a Node.js script with the `ignore` npm package if implementing programmatically, or apply the patterns manually if the file list is small.
 ```
 
-- [ ] **Step 4: Update scan output schema**
+- [ ] **Step 4: Atualizar o schema de saída do scan**
 
-Find the output JSON schema section and add `filteredByIgnore` field:
+Encontre a seção do schema JSON de saída e adicione o campo `filteredByIgnore`:
 
 ```json
 {
@@ -678,18 +678,18 @@ git commit -m "feat(agent): add .understandignore support and bin/obj exclusions
 
 ---
 
-## Task 6: Update /understand skill with Phase 0.5
+## Tarefa 6: Atualizar a skill /understand com Phase 0.5
 
-**Files:**
-- Modify: `understand-anything-plugin/skills/understand/SKILL.md`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/skills/understand/SKILL.md`
 
-- [ ] **Step 1: Read the current SKILL.md Phase 0 section**
+- [ ] **Step 1: Ler a seção Phase 0 atual do SKILL.md**
 
-Read `understand-anything-plugin/skills/understand/SKILL.md` lines 22-80 to understand Phase 0.
+Leia as linhas 22-80 de `understand-anything-plugin/skills/understand/SKILL.md` para entender a Phase 0.
 
-- [ ] **Step 2: Add Phase 0.5 after Phase 0**
+- [ ] **Step 2: Adicionar a Phase 0.5 após a Phase 0**
 
-After the Phase 0 section (after the `---` separator before Phase 1), insert:
+Após a seção Phase 0 (após o separador `---` antes da Phase 1), insira:
 
 ```markdown
 ## Phase 0.5 — Ignore Configuration
@@ -713,9 +713,9 @@ Set up and verify the `.understandignore` file before scanning.
 ---
 ```
 
-- [ ] **Step 3: Update Phase 1 reporting**
+- [ ] **Step 3: Atualizar reporting da Phase 1**
 
-In the Phase 1 section, after the gate check (~line 114), add a note about reporting ignore stats:
+Na seção Phase 1, após o gate check (~linha 114), adicione uma nota sobre reportar as estatísticas de ignore:
 
 ```markdown
 After scanning, if the scan result includes `filteredByIgnore > 0`, report:
@@ -731,46 +731,46 @@ git commit -m "feat(skill): add Phase 0.5 for .understandignore setup and review
 
 ---
 
-## Task 7: Build, test, and verify end-to-end
+## Tarefa 7: Build, testar e verificar end-to-end
 
-**Files:**
-- All modified files
+**Arquivos:**
+- Todos os arquivos modificados
 
-- [ ] **Step 1: Build core**
+- [ ] **Step 1: Build do core**
 
-Run: `pnpm --filter @understand-anything/core build`
-Expected: Clean build
+Execute: `pnpm --filter @understand-anything/core build`
+Esperado: Build limpo
 
-- [ ] **Step 2: Run all core tests**
+- [ ] **Step 2: Executar todos os testes do core**
 
-Run: `pnpm --filter @understand-anything/core test -- --run`
-Expected: All tests pass (existing + new ignore-filter + ignore-generator tests)
+Execute: `pnpm --filter @understand-anything/core test -- --run`
+Esperado: Todos os testes passam (existentes + novos testes ignore-filter + ignore-generator)
 
-- [ ] **Step 3: Build skill package**
+- [ ] **Step 3: Build do pacote skill**
 
-Run: `pnpm --filter @understand-anything/skill build`
-Expected: Clean build
+Execute: `pnpm --filter @understand-anything/skill build`
+Esperado: Build limpo
 
-- [ ] **Step 4: Verify files exist**
+- [ ] **Step 4: Verificar que os arquivos existem**
 
-Run:
+Execute:
 ```bash
 ls understand-anything-plugin/packages/core/src/ignore-filter.ts understand-anything-plugin/packages/core/src/ignore-generator.ts
 ```
-Expected: Both files listed
+Esperado: Ambos os arquivos listados
 
-- [ ] **Step 5: Verify exports work**
+- [ ] **Step 5: Verificar que os exports funcionam**
 
-Run:
+Execute:
 ```bash
 node -e "import('@understand-anything/core').then(m => { console.log('IgnoreFilter:', typeof m.createIgnoreFilter); console.log('Generator:', typeof m.generateStarterIgnoreFile); })"
 ```
-Expected: Both show `function`
+Esperado: Ambos mostram `function`
 
-- [ ] **Step 6: Final commit (if any unstaged changes)**
+- [ ] **Step 6: Commit final (se houver mudanças não staged)**
 
 ```bash
 git status
-# If clean, skip. If changes exist:
+# Se estiver limpo, pule. Se houver mudanças:
 git add -A && git commit -m "chore: final verification for .understandignore support"
 ```

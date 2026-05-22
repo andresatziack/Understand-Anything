@@ -1,16 +1,16 @@
-# Language-Specific Extractor Architecture Implementation Plan
+# Plano de Implementação da Arquitetura de Extractors Específicos por Linguagem
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Para workers agênticos:** SUB-SKILL OBRIGATÓRIA: Use superpowers:subagent-driven-development (recomendado) ou superpowers:executing-plans para implementar este plano tarefa por tarefa. Os steps usam sintaxe de checkbox (`- [ ]`) para tracking.
 
-**Goal:** (1) Decouple AST extraction logic from TS/JS-specific node types so 8 additional code languages (Python, Go, Rust, Java, Ruby, PHP, C/C++, C#) get tree-sitter-powered structural analysis. Swift and Kotlin are excluded — no WASM grammar packages available. (2) Replace the file-analyzer agent's ad-hoc regex script generation with a deterministic, pre-built tree-sitter extraction script.
+**Objetivo:** (1) Desacoplar a lógica de extração de AST dos node types específicos de TS/JS para que 8 linguagens adicionais (Python, Go, Rust, Java, Ruby, PHP, C/C++, C#) ganhem análise estrutural via tree-sitter. Swift e Kotlin estão excluídos — não há pacotes de gramática WASM disponíveis. (2) Substituir a geração ad-hoc de scripts regex do agent file-analyzer por um script de extração tree-sitter pré-construído e determinístico.
 
-**Architecture:** Introduce a `LanguageExtractor` interface that each language implements. `TreeSitterPlugin` delegates extraction to the registered extractor for the file's language. A bundled `extract-structure.mjs` script in `skills/understand/` uses `PluginRegistry` (which includes both `TreeSitterPlugin` and the non-code parsers) to provide deterministic structural extraction for the file-analyzer agent — replacing the current approach where the LLM writes throwaway regex scripts every run.
+**Arquitetura:** Introduz uma interface `LanguageExtractor` que cada linguagem implementa. `TreeSitterPlugin` delega a extração para o extractor registrado da linguagem do arquivo. Um script bundleado `extract-structure.mjs` em `skills/understand/` usa `PluginRegistry` (que inclui tanto `TreeSitterPlugin` quanto os parsers não-código) para fornecer extração estrutural determinística para o agent file-analyzer — substituindo a abordagem atual em que o LLM escreve scripts regex descartáveis a cada execução.
 
-**Tech Stack:** web-tree-sitter (WASM), TypeScript, Vitest
+**Stack Tecnológica:** web-tree-sitter (WASM), TypeScript, Vitest
 
 ---
 
-## File Structure
+## Estrutura de Arquivos
 
 ```
 packages/core/src/plugins/
@@ -43,13 +43,13 @@ agents/
 
 ---
 
-### Task 1: Create LanguageExtractor interface and shared utilities
+### Tarefa 1: Criar a interface LanguageExtractor e utilidades compartilhadas
 
-**Files:**
-- Create: `packages/core/src/plugins/extractors/types.ts`
-- Create: `packages/core/src/plugins/extractors/base-extractor.ts`
+**Arquivos:**
+- Criar: `packages/core/src/plugins/extractors/types.ts`
+- Criar: `packages/core/src/plugins/extractors/base-extractor.ts`
 
-- [ ] **Step 1: Create the extractor interface**
+- [ ] **Step 1: Criar a interface do extractor**
 
 ```typescript
 // packages/core/src/plugins/extractors/types.ts
@@ -74,9 +74,9 @@ export interface LanguageExtractor {
 }
 ```
 
-- [ ] **Step 2: Create base-extractor with shared utilities**
+- [ ] **Step 2: Criar base-extractor com utilidades compartilhadas**
 
-Move `traverse()` and `getStringValue()` from `tree-sitter-plugin.ts` into a shared module:
+Mova `traverse()` e `getStringValue()` de `tree-sitter-plugin.ts` para um módulo compartilhado:
 
 ```typescript
 // packages/core/src/plugins/extractors/base-extractor.ts
@@ -143,23 +143,23 @@ git commit -m "feat: add LanguageExtractor interface and shared base utilities"
 
 ---
 
-### Task 2: Move TS/JS extraction logic into TypeScriptExtractor
+### Tarefa 2: Mover a lógica de extração de TS/JS para TypeScriptExtractor
 
-**Files:**
-- Create: `packages/core/src/plugins/extractors/typescript-extractor.ts`
-- Modify: `packages/core/src/plugins/tree-sitter-plugin.ts`
+**Arquivos:**
+- Criar: `packages/core/src/plugins/extractors/typescript-extractor.ts`
+- Modificar: `packages/core/src/plugins/tree-sitter-plugin.ts`
 
-This is a pure refactor. All existing tests must still pass with zero changes.
+Este é um refator puro. Todos os testes existentes devem continuar passando com zero mudanças.
 
-- [ ] **Step 1: Create TypeScriptExtractor**
+- [ ] **Step 1: Criar TypeScriptExtractor**
 
-Move all the TS/JS-specific extraction methods (`extractFunction`, `extractClass`, `extractVariableDeclarations`, `extractImport`, `processExportStatement`, `extractParams`, `extractReturnType`, `extractImportSpecifiers`, and the call graph walker) from `tree-sitter-plugin.ts` into `typescript-extractor.ts`, implementing the `LanguageExtractor` interface.
+Mova todos os métodos de extração específicos de TS/JS (`extractFunction`, `extractClass`, `extractVariableDeclarations`, `extractImport`, `processExportStatement`, `extractParams`, `extractReturnType`, `extractImportSpecifiers`, e o walker do call graph) de `tree-sitter-plugin.ts` para `typescript-extractor.ts`, implementando a interface `LanguageExtractor`.
 
-The `languageIds` should be `["typescript", "javascript"]`. Do NOT include `"tsx"` — it is a synthetic key internal to `TreeSitterPlugin` for grammar selection, not a `LanguageConfig.id`. The tsx→typescript mapping is handled in `getExtractor()` below.
+O `languageIds` deve ser `["typescript", "javascript"]`. NÃO inclua `"tsx"` — é uma chave sintética interna ao `TreeSitterPlugin` para seleção de gramática, não um `LanguageConfig.id`. O mapeamento tsx→typescript é tratado em `getExtractor()` abaixo.
 
-- [ ] **Step 2: Refactor TreeSitterPlugin to use extractors**
+- [ ] **Step 2: Refatorar TreeSitterPlugin para usar extractors**
 
-Replace the hardcoded extraction logic in `TreeSitterPlugin` with extractor dispatch:
+Substitua a lógica de extração hardcoded em `TreeSitterPlugin` por dispatch de extractor:
 
 ```typescript
 // In TreeSitterPlugin
@@ -178,7 +178,7 @@ private getExtractor(langKey: string): LanguageExtractor | null {
 }
 ```
 
-The `analyzeFile()` method becomes:
+O método `analyzeFile()` se torna:
 
 ```typescript
 analyzeFile(filePath: string, content: string): StructuralAnalysis {
@@ -204,7 +204,7 @@ analyzeFile(filePath: string, content: string): StructuralAnalysis {
 }
 ```
 
-The `extractCallGraph()` method follows the same pattern — parser lifecycle must be managed identically:
+O método `extractCallGraph()` segue o mesmo padrão — o ciclo de vida do parser deve ser gerenciado identicamente:
 
 ```typescript
 extractCallGraph(filePath: string, content: string): CallGraphEntry[] {
@@ -224,12 +224,12 @@ extractCallGraph(filePath: string, content: string): CallGraphEntry[] {
 }
 ```
 
-The constructor should accept an optional `extractors` array and register them. If none provided, register the built-in `TypeScriptExtractor` for backward compatibility.
+O construtor deve aceitar um array opcional `extractors` e registrá-los. Se nenhum for fornecido, registre o `TypeScriptExtractor` built-in para compatibilidade retroativa.
 
-- [ ] **Step 3: Run existing tests to verify zero behavior change**
+- [ ] **Step 3: Executar os testes existentes para verificar mudança comportamental zero**
 
-Run: `pnpm --filter @understand-anything/core test`
-Expected: All 426 tests pass (identical to before)
+Execute: `pnpm --filter @understand-anything/core test`
+Esperado: Todos os 426 testes passam (idêntico ao anterior)
 
 - [ ] **Step 4: Commit**
 
@@ -240,15 +240,15 @@ git commit -m "refactor: move TS/JS extraction logic to TypeScriptExtractor, dis
 
 ---
 
-### Task 2.5: Add extractCallGraph to PluginRegistry and update DEFAULT_PLUGIN_CONFIG
+### Tarefa 2.5: Adicionar extractCallGraph ao PluginRegistry e atualizar DEFAULT_PLUGIN_CONFIG
 
-**Files:**
-- Modify: `packages/core/src/plugins/registry.ts`
-- Modify: `packages/core/src/plugins/discovery.ts`
+**Arquivos:**
+- Modificar: `packages/core/src/plugins/registry.ts`
+- Modificar: `packages/core/src/plugins/discovery.ts`
 
-**Context:** `PluginRegistry` currently only exposes `analyzeFile` and `resolveImports` — it has no `extractCallGraph`. The `extract-structure.mjs` script (Task 13) needs call graph data through the registry. Also, `DEFAULT_PLUGIN_CONFIG` hardcodes `["typescript", "javascript"]` which needs to reflect all supported languages.
+**Contexto:** `PluginRegistry` atualmente expõe apenas `analyzeFile` e `resolveImports` — ele não tem `extractCallGraph`. O script `extract-structure.mjs` (Tarefa 13) precisa de dados do call graph através do registry. Além disso, `DEFAULT_PLUGIN_CONFIG` hardcoda `["typescript", "javascript"]` que precisa refletir todas as linguagens suportadas.
 
-- [ ] **Step 1: Add extractCallGraph to PluginRegistry**
+- [ ] **Step 1: Adicionar extractCallGraph ao PluginRegistry**
 
 ```typescript
 // In PluginRegistry (registry.ts)
@@ -259,9 +259,9 @@ extractCallGraph(filePath: string, content: string): CallGraphEntry[] | null {
 }
 ```
 
-- [ ] **Step 2: Update DEFAULT_PLUGIN_CONFIG to derive languages dynamically**
+- [ ] **Step 2: Atualizar DEFAULT_PLUGIN_CONFIG para derivar linguagens dinamicamente**
 
-In `discovery.ts`, replace the hardcoded `["typescript", "javascript"]` with a dynamic derivation from `builtinLanguageConfigs`:
+Em `discovery.ts`, substitua o hardcoded `["typescript", "javascript"]` por uma derivação dinâmica de `builtinLanguageConfigs`:
 
 ```typescript
 import { builtinLanguageConfigs } from "../languages/configs/index.js";
@@ -279,7 +279,7 @@ export const DEFAULT_PLUGIN_CONFIG: PluginConfig = {
 };
 ```
 
-- [ ] **Step 3: Run tests, commit**
+- [ ] **Step 3: Executar os testes, commit**
 
 ```bash
 pnpm --filter @understand-anything/core test
@@ -289,15 +289,15 @@ git commit -m "feat: add extractCallGraph to PluginRegistry, derive DEFAULT_PLUG
 
 ---
 
-### Task 3: Add npm dependencies and treeSitter configs for all 10 languages
+### Tarefa 3: Adicionar dependências npm e configs treeSitter para todas as 10 linguagens
 
-**Files:**
-- Modify: `packages/core/package.json` (add 8 deps: python, go, rust, java, ruby, php, cpp, c-sharp)
-- Modify: 10 config files in `packages/core/src/languages/configs/`
+**Arquivos:**
+- Modificar: `packages/core/package.json` (add 8 deps: python, go, rust, java, ruby, php, cpp, c-sharp)
+- Modificar: 10 config files in `packages/core/src/languages/configs/`
 
-- [ ] **Step 1: Add tree-sitter grammar dependencies to package.json**
+- [ ] **Step 1: Adicionar dependências de gramática tree-sitter ao package.json**
 
-Add to `dependencies`:
+Adicione em `dependencies`:
 
 ```json
 "tree-sitter-c-sharp": "^0.23.1",
@@ -310,11 +310,11 @@ Add to `dependencies`:
 "tree-sitter-rust": "^0.24.0"
 ```
 
-Then run `pnpm install`.
+Em seguida execute `pnpm install`.
 
-- [ ] **Step 2: Add treeSitter field to all 10 language configs**
+- [ ] **Step 2: Adicionar campo treeSitter em todas as 10 configs de linguagem**
 
-Each config gets a `treeSitter` block. Examples:
+Cada config recebe um bloco `treeSitter`. Exemplos:
 
 ```typescript
 // python.ts
@@ -342,9 +342,9 @@ treeSitter: { wasmPackage: "tree-sitter-cpp", wasmFile: "tree-sitter-cpp.wasm" }
 treeSitter: { wasmPackage: "tree-sitter-c-sharp", wasmFile: "tree-sitter-c_sharp.wasm" },
 ```
 
-Note: Swift and Kotlin configs are NOT changed (no WASM packages available).
+Nota: configs de Swift e Kotlin NÃO são alteradas (não há pacotes WASM disponíveis).
 
-- [ ] **Step 3: Run pnpm install and verify WASM files resolve**
+- [ ] **Step 3: Executar pnpm install e verificar que os arquivos WASM resolvem**
 
 ```bash
 pnpm install
@@ -360,28 +360,28 @@ git commit -m "feat: add tree-sitter grammar deps and treeSitter configs for 10 
 
 ---
 
-### Task 4: Create Python extractor
+### Tarefa 4: Criar extractor Python
 
-**Files:**
-- Create: `packages/core/src/plugins/extractors/python-extractor.ts`
+**Arquivos:**
+- Criar: `packages/core/src/plugins/extractors/python-extractor.ts`
 
-- [ ] **Step 1: Write the Python extractor**
+- [ ] **Step 1: Escrever o extractor Python**
 
-Key Python tree-sitter node types:
+Tipos de nó tree-sitter chave do Python:
 - Functions: `function_definition` (name, parameters, return_type)
-- Classes: `class_definition` (name, body → methods + assignments as properties)
+- Classes: `class_definition` (name, body → métodos + assignments como properties)
 - Imports: `import_statement`, `import_from_statement`
-- Decorated: `decorated_definition` wrapping function_definition or class_definition
+- Decorated: `decorated_definition` envolvendo function_definition ou class_definition
 - Calls: `call` (function field)
-- No formal exports (all top-level names are "exported")
+- Sem exports formais (todos os nomes top-level são "exportados")
 
 ```typescript
 languageIds: ["python"]
 ```
 
-- [ ] **Step 2: Write tests for Python extractor**
+- [ ] **Step 2: Escrever testes para o extractor Python**
 
-Test with representative Python code:
+Teste com código Python representativo:
 
 ```python
 import os
@@ -405,39 +405,39 @@ def decorated_func():
     pass
 ```
 
-Verify: 2 functions (helper, decorated_func), 1 class (DataProcessor with methods __init__/process and property name), 3 imports, call graph (process→transform).
+Verifique: 2 functions (helper, decorated_func), 1 class (DataProcessor com métodos __init__/process e propriedade name), 3 imports, call graph (process→transform).
 
-- [ ] **Step 3: Run tests**
+- [ ] **Step 3: Executar os testes**
 
-Run: `pnpm --filter @understand-anything/core test`
+Execute: `pnpm --filter @understand-anything/core test`
 
 - [ ] **Step 4: Commit**
 
 ---
 
-### Task 5: Create Go extractor
+### Tarefa 5: Criar extractor Go
 
-**Files:**
-- Create: `packages/core/src/plugins/extractors/go-extractor.ts`
+**Arquivos:**
+- Criar: `packages/core/src/plugins/extractors/go-extractor.ts`
 
-- [ ] **Step 1: Write the Go extractor**
+- [ ] **Step 1: Escrever o extractor Go**
 
-Key Go tree-sitter node types:
+Tipos de nó tree-sitter chave do Go:
 - Functions: `function_declaration` (name, parameter_list, result)
 - Methods: `method_declaration` (receiver, name, parameter_list, result)
 - Structs: `type_declaration` → `type_spec` → `struct_type`
 - Interfaces: `type_declaration` → `type_spec` → `interface_type`
 - Imports: `import_declaration` → `import_spec_list` → `import_spec`
-- Exports: capitalized first letter of name
+- Exports: primeira letra do nome capitalizada
 - Calls: `call_expression` (function field)
 
 ```typescript
 languageIds: ["go"]
 ```
 
-- [ ] **Step 2: Write tests**
+- [ ] **Step 2: Escrever testes**
 
-Test with:
+Teste com:
 ```go
 package main
 
@@ -461,36 +461,36 @@ func NewServer(host string, port int) *Server {
 }
 ```
 
-Verify: 2 functions (Start, NewServer), 1 class/struct (Server with method Start, properties Host/Port), 2 imports, exports (Server, Start, NewServer — all capitalized), call graph (Start→fmt.Println).
+Verifique: 2 functions (Start, NewServer), 1 class/struct (Server com método Start, propriedades Host/Port), 2 imports, exports (Server, Start, NewServer — todos capitalizados), call graph (Start→fmt.Println).
 
-- [ ] **Step 3: Run tests and commit**
+- [ ] **Step 3: Executar os testes e commit**
 
 ---
 
-### Task 6: Create Rust extractor
+### Tarefa 6: Criar extractor Rust
 
-**Files:**
-- Create: `packages/core/src/plugins/extractors/rust-extractor.ts`
+**Arquivos:**
+- Criar: `packages/core/src/plugins/extractors/rust-extractor.ts`
 
-- [ ] **Step 1: Write the Rust extractor**
+- [ ] **Step 1: Escrever o extractor Rust**
 
-Key Rust tree-sitter node types:
+Tipos de nó tree-sitter chave do Rust:
 - Functions: `function_item` (name, parameters, return_type via `->`)
 - Structs: `struct_item` (name, field_declaration_list)
 - Enums: `enum_item`
-- Impl blocks: `impl_item` (type, body containing function_items)
+- Impl blocks: `impl_item` (type, body contendo function_items)
 - Traits: `trait_item`
 - Imports: `use_declaration` (scoped_identifier, use_list, use_wildcard)
-- Exports: `visibility_modifier` containing `pub`
+- Exports: `visibility_modifier` contendo `pub`
 - Calls: `call_expression` (function field)
 
 ```typescript
 languageIds: ["rust"]
 ```
 
-- [ ] **Step 2: Write tests**
+- [ ] **Step 2: Escrever testes**
 
-Test with:
+Teste com:
 ```rust
 use std::collections::HashMap;
 use std::io::{self, Read};
@@ -515,118 +515,118 @@ pub fn check_port(port: u16) -> bool {
 }
 ```
 
-Verify: 3 functions (new, validate, check_port), 1 class/struct (Config with methods new/validate, properties name/port), 2 imports, exports (Config, new, check_port — those with `pub`), call graph (validate→check_port).
+Verifique: 3 functions (new, validate, check_port), 1 class/struct (Config com métodos new/validate, propriedades name/port), 2 imports, exports (Config, new, check_port — aqueles com `pub`), call graph (validate→check_port).
 
-- [ ] **Step 3: Run tests and commit**
+- [ ] **Step 3: Executar os testes e commit**
 
 ---
 
-### Task 7: Create Java extractor
+### Tarefa 7: Criar extractor Java
 
-**Files:**
-- Create: `packages/core/src/plugins/extractors/java-extractor.ts`
+**Arquivos:**
+- Criar: `packages/core/src/plugins/extractors/java-extractor.ts`
 
-- [ ] **Step 1: Write the Java extractor**
+- [ ] **Step 1: Escrever o extractor Java**
 
-Key Java tree-sitter node types:
+Tipos de nó tree-sitter chave do Java:
 - Methods: `method_declaration` (name, formal_parameters, type/dimensions)
 - Constructors: `constructor_declaration` (name, formal_parameters)
 - Classes: `class_declaration` (name, class_body)
 - Interfaces: `interface_declaration`
 - Fields: `field_declaration` (declarator → variable_declarator → identifier)
 - Imports: `import_declaration` (scoped_identifier)
-- Exports: `public` modifier (modifiers node)
+- Exports: modifier `public` (modifiers node)
 - Calls: `method_invocation` (name, object, arguments)
 
 ```typescript
 languageIds: ["java"]
 ```
 
-- [ ] **Step 2: Write tests with representative Java code, run, commit**
+- [ ] **Step 2: Escrever testes com código Java representativo, executar, commit**
 
 ---
 
-### Task 8: Create Ruby extractor
+### Tarefa 8: Criar extractor Ruby
 
-**Files:**
-- Create: `packages/core/src/plugins/extractors/ruby-extractor.ts`
+**Arquivos:**
+- Criar: `packages/core/src/plugins/extractors/ruby-extractor.ts`
 
-- [ ] **Step 1: Write the Ruby extractor**
+- [ ] **Step 1: Escrever o extractor Ruby**
 
-Key Ruby tree-sitter node types:
+Tipos de nó tree-sitter chave do Ruby:
 - Methods: `method` (name, parameters)
-- Classes: `class` (name, body containing methods)
+- Classes: `class` (name, body contendo métodos)
 - Modules: `module` (name)
-- Imports: `call` where method is `require` or `require_relative` (Ruby uses method calls for imports)
+- Imports: `call` onde method é `require` ou `require_relative` (Ruby usa method calls para imports)
 - Calls: `call` (method, receiver, arguments)
-- No formal export syntax
+- Sem sintaxe de export formal
 
 ```typescript
 languageIds: ["ruby"]
 ```
 
-- [ ] **Step 2: Write tests, run, commit**
+- [ ] **Step 2: Escrever testes, executar, commit**
 
 ---
 
-### Task 9: Create PHP extractor
+### Tarefa 9: Criar extractor PHP
 
-**Files:**
-- Create: `packages/core/src/plugins/extractors/php-extractor.ts`
+**Arquivos:**
+- Criar: `packages/core/src/plugins/extractors/php-extractor.ts`
 
-- [ ] **Step 1: Write the PHP extractor**
+- [ ] **Step 1: Escrever o extractor PHP**
 
-Key PHP tree-sitter node types:
+Tipos de nó tree-sitter chave do PHP:
 - Functions: `function_definition` (name, formal_parameters, return_type)
 - Methods: `method_declaration` (name, formal_parameters, return_type)
 - Classes: `class_declaration` (name, declaration_list)
 - Imports: `namespace_use_declaration` (namespace_use_clause)
 - Calls: `function_call_expression` / `member_call_expression`
-- Note: PHP tree wraps everything in a `program` → `php_tag` + statements
+- Nota: a árvore PHP envolve tudo em `program` → `php_tag` + statements
 
 ```typescript
 languageIds: ["php"]
 ```
 
-- [ ] **Step 2: Write tests, run, commit**
+- [ ] **Step 2: Escrever testes, executar, commit**
 
 ---
 
-### Task 10: Create C/C++ extractor
+### Tarefa 10: Criar extractor C/C++
 
-**Files:**
-- Create: `packages/core/src/plugins/extractors/cpp-extractor.ts`
+**Arquivos:**
+- Criar: `packages/core/src/plugins/extractors/cpp-extractor.ts`
 
-- [ ] **Step 1: Write the C/C++ extractor**
+- [ ] **Step 1: Escrever o extractor C/C++**
 
-Key C/C++ tree-sitter node types:
+Tipos de nó tree-sitter chave de C/C++:
 - Functions: `function_definition` (declarator → function_declarator → identifier + parameter_list)
 - Classes: `class_specifier` (name, body → field_declaration_list)
 - Structs: `struct_specifier` (name, body)
-- Includes: `preproc_include` (path → string_literal or system_lib_string)
+- Includes: `preproc_include` (path → string_literal ou system_lib_string)
 - Namespaces: `namespace_definition`
 - Calls: `call_expression` (function, arguments)
 
-Note: C/C++ function signatures are nested (the name is inside a `function_declarator` inside the `declarator` field).
+Nota: assinaturas de função em C/C++ são aninhadas (o nome está dentro de um `function_declarator` dentro do campo `declarator`).
 
-The `cppConfig` has `id: "cpp"` and `extensions: [".cpp", ".cc", ".cxx", ".c", ".h", ".hpp", ".hxx"]`. Pure C files (`.c`, `.h`) are parsed with the C++ grammar, which works but won't produce C++-specific node types like `class_specifier`. The extractor must handle their absence gracefully (return empty arrays for classes when parsing pure C).
+O `cppConfig` tem `id: "cpp"` e `extensions: [".cpp", ".cc", ".cxx", ".c", ".h", ".hpp", ".hxx"]`. Arquivos C puros (`.c`, `.h`) são parseados com a gramática C++, o que funciona mas não produz node types específicos de C++ como `class_specifier`. O extractor deve lidar com a ausência deles graciosamente (retornar arrays vazios para classes ao parsear C puro).
 
 ```typescript
 languageIds: ["cpp"]
 ```
 
-- [ ] **Step 2: Write tests for both C++ and pure C code, run, commit**
+- [ ] **Step 2: Escrever testes para código C++ e C puro, executar, commit**
 
 ---
 
-### Task 11: Create C# extractor
+### Tarefa 11: Criar extractor C#
 
-**Files:**
-- Create: `packages/core/src/plugins/extractors/csharp-extractor.ts`
+**Arquivos:**
+- Criar: `packages/core/src/plugins/extractors/csharp-extractor.ts`
 
-- [ ] **Step 1: Write the C# extractor**
+- [ ] **Step 1: Escrever o extractor C#**
 
-Key C# tree-sitter node types:
+Tipos de nó tree-sitter chave do C#:
 - Methods: `method_declaration` (name, parameter_list, return type)
 - Constructors: `constructor_declaration`
 - Classes: `class_declaration` (name, declaration_list)
@@ -639,17 +639,17 @@ Key C# tree-sitter node types:
 languageIds: ["csharp"]
 ```
 
-- [ ] **Step 2: Write tests, run, commit**
+- [ ] **Step 2: Escrever testes, executar, commit**
 
 ---
 
-### Task 12: Create extractor index and wire into TreeSitterPlugin
+### Tarefa 12: Criar índice de extractors e conectar ao TreeSitterPlugin
 
-**Files:**
-- Create: `packages/core/src/plugins/extractors/index.ts`
-- Modify: `packages/core/src/plugins/tree-sitter-plugin.ts` (import builtinExtractors)
+**Arquivos:**
+- Criar: `packages/core/src/plugins/extractors/index.ts`
+- Modificar: `packages/core/src/plugins/tree-sitter-plugin.ts` (import builtinExtractors)
 
-- [ ] **Step 1: Create index.ts exporting all extractors**
+- [ ] **Step 1: Criar index.ts exportando todos os extractors**
 
 ```typescript
 // packages/core/src/plugins/extractors/index.ts
@@ -689,39 +689,39 @@ export const builtinExtractors: LanguageExtractor[] = [
 ];
 ```
 
-- [ ] **Step 2: Wire builtinExtractors into TreeSitterPlugin constructor**
+- [ ] **Step 2: Conectar builtinExtractors no construtor do TreeSitterPlugin**
 
-When no extractors are provided, default to `builtinExtractors`.
+Quando nenhum extractor for fornecido, default para `builtinExtractors`.
 
-- [ ] **Step 3: Run full test suite**
+- [ ] **Step 3: Executar a suíte de testes completa**
 
-Run: `pnpm --filter @understand-anything/core test`
-Expected: All tests pass (existing + new extractor tests)
+Execute: `pnpm --filter @understand-anything/core test`
+Esperado: Todos os testes passam (existentes + novos testes de extractor)
 
 - [ ] **Step 4: Commit**
 
 ---
 
-### Task 13: Create bundled extract-structure.mjs script
+### Tarefa 13: Criar o script bundleado extract-structure.mjs
 
-**Files:**
-- Create: `skills/understand/extract-structure.mjs`
+**Arquivos:**
+- Criar: `skills/understand/extract-structure.mjs`
 
-**Context:** Currently the file-analyzer agent (Phase 1) instructs the LLM to write a throwaway regex-based Node.js/Python script every run. This is slow, non-deterministic, and ignores the tree-sitter infrastructure we just built. This task replaces that with a pre-built script that uses `PluginRegistry` (which routes to `TreeSitterPlugin` for code files and to the regex parsers for non-code files).
+**Contexto:** Atualmente o agent file-analyzer (Fase 1) instrui o LLM a escrever um script Node.js/Python descartável baseado em regex a cada execução. Isto é lento, não-determinístico e ignora a infraestrutura tree-sitter que acabamos de construir. Esta tarefa substitui isso por um script pré-construído que usa `PluginRegistry` (que roteia para `TreeSitterPlugin` para arquivos de código e para os parsers regex para arquivos não-código).
 
-- [ ] **Step 1: Create extract-structure.mjs**
+- [ ] **Step 1: Criar extract-structure.mjs**
 
-The script:
-1. Accepts input JSON path (arg 1) and output JSON path (arg 2)
-2. Input format matches what file-analyzer.md already specifies: `{ projectRoot, batchFiles: [{path, language, sizeLines, fileCategory}], batchImportData }`
-3. Resolves `@understand-anything/core` from the plugin's own `node_modules` using `createRequire` relative to the script's own location (two directories up to plugin root)
-4. Creates a `PluginRegistry` with `TreeSitterPlugin` (all builtin language configs) + all non-code parsers registered
-5. For each file: reads content, calls `registry.analyzeFile()`, formats output to match the existing script output schema (functions, classes, exports, sections, definitions, services, etc.)
-6. For code files with tree-sitter support: also extracts call graph via `plugin.extractCallGraph()`
-7. For files where no plugin exists (Swift, Kotlin, unknown languages): outputs `{ path, language, fileCategory, totalLines, nonEmptyLines, metrics }` with empty structural data — the LLM agent handles these in Phase 2
-8. Writes output JSON matching the existing `scriptCompleted/filesAnalyzed/filesSkipped/results` schema
+O script:
+1. Aceita o path do JSON de input (arg 1) e o path do JSON de output (arg 2)
+2. O formato de input bate com o que o file-analyzer.md já especifica: `{ projectRoot, batchFiles: [{path, language, sizeLines, fileCategory}], batchImportData }`
+3. Resolve `@understand-anything/core` a partir do próprio `node_modules` do plugin usando `createRequire` relativo ao próprio local do script (dois diretórios acima até o root do plugin)
+4. Cria um `PluginRegistry` com `TreeSitterPlugin` (todas as configs builtin de linguagem) + todos os parsers não-código registrados
+5. Para cada arquivo: lê o conteúdo, chama `registry.analyzeFile()`, formata a saída para bater com o schema de saída do script existente (functions, classes, exports, sections, definitions, services, etc.)
+6. Para arquivos de código com suporte tree-sitter: também extrai o call graph via `plugin.extractCallGraph()`
+7. Para arquivos onde nenhum plugin existe (Swift, Kotlin, linguagens desconhecidas): emite `{ path, language, fileCategory, totalLines, nonEmptyLines, metrics }` com dados estruturais vazios — o agent LLM lida com eles na Fase 2
+8. Escreve JSON de saída batendo com o schema existente `scriptCompleted/filesAnalyzed/filesSkipped/results`
 
-Key resolution logic (with fallback for different install layouts):
+Lógica de resolução chave (com fallback para diferentes layouts de instalação):
 ```javascript
 import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
@@ -740,13 +740,13 @@ try {
 }
 ```
 
-- [ ] **Step 2: Test the script locally**
+- [ ] **Step 2: Testar o script localmente**
 
-Create a small test input JSON with a TS file, a Python file, and a YAML file. Run:
+Crie um pequeno JSON de input de teste com um arquivo TS, um arquivo Python e um arquivo YAML. Execute:
 ```bash
 node skills/understand/extract-structure.mjs test-input.json test-output.json
 ```
-Verify the output contains structural data for all three.
+Verifique que o output contém dados estruturais para todos os três.
 
 - [ ] **Step 3: Commit**
 
@@ -757,18 +757,18 @@ git commit -m "feat: add bundled tree-sitter extraction script for file-analyzer
 
 ---
 
-### Task 14: Rewrite file-analyzer.md Phase 1 to use bundled script
+### Tarefa 14: Reescrever a Fase 1 do file-analyzer.md para usar o script bundleado
 
-**Files:**
-- Modify: `agents/file-analyzer.md`
+**Arquivos:**
+- Modificar: `agents/file-analyzer.md`
 
-**Context:** Phase 1 currently has ~150 lines instructing the agent to write a custom extraction script from scratch. Replace this with a short section that tells the agent to execute the pre-built `extract-structure.mjs` script.
+**Contexto:** A Fase 1 atualmente tem ~150 linhas instruindo o agent a escrever um script de extração customizado do zero. Substitua isto por uma seção curta que diz ao agent para executar o script pré-construído `extract-structure.mjs`.
 
-- [ ] **Step 1: Replace Phase 1 in file-analyzer.md**
+- [ ] **Step 1: Substituir a Fase 1 no file-analyzer.md**
 
-Delete the entire current Phase 1 (~150 lines of regex script generation instructions). Replace with:
+Delete a Fase 1 atual inteira (~150 linhas de instruções de geração de script regex). Substitua por:
 
-1. Tell the agent to prepare the input JSON file (same format as before):
+1. Diga ao agent para preparar o arquivo JSON de input (mesmo formato de antes):
    ```bash
    cat > $PROJECT_ROOT/.understand-anything/tmp/ua-file-analyzer-input-<batchIndex>.json << 'ENDJSON'
    {
@@ -779,31 +779,31 @@ Delete the entire current Phase 1 (~150 lines of regex script generation instruc
    ENDJSON
    ```
 
-2. Execute the bundled script:
+2. Execute o script bundleado:
    ```bash
    node <SKILL_DIR>/extract-structure.mjs \
      $PROJECT_ROOT/.understand-anything/tmp/ua-file-analyzer-input-<batchIndex>.json \
      $PROJECT_ROOT/.understand-anything/tmp/ua-file-extract-results-<batchIndex>.json
    ```
 
-3. If the script exits non-zero, read stderr, diagnose and report the error. Do NOT fall back to writing a manual script — the bundled script is the sole extraction path.
+3. Se o script sair com código não-zero, leia o stderr, diagnostique e reporte o erro. NÃO faça fallback para escrever um script manual — o script bundleado é o único caminho de extração.
 
-4. Keep the existing output format — Phase 2 (semantic analysis) is unchanged.
+4. Mantenha o formato de output existente — a Fase 2 (análise semântica) está inalterada.
 
-- [ ] **Step 2: Update SKILL.md to pass SKILL_DIR to file-analyzer dispatch**
+- [ ] **Step 2: Atualizar SKILL.md para passar SKILL_DIR no dispatch do file-analyzer**
 
-In SKILL.md Phase 2, the file-analyzer dispatch prompt must include the skill directory path so the agent can locate `extract-structure.mjs`.
+No SKILL.md Fase 2, o prompt de dispatch do file-analyzer precisa incluir o path do diretório do skill para que o agent possa localizar `extract-structure.mjs`.
 
-Add to the dispatch parameters:
+Adicione aos parâmetros de dispatch:
 ```
 > Skill directory (for bundled scripts): `<SKILL_DIR>`
 ```
 
-This follows the established pattern — SKILL.md already passes `<SKILL_DIR>` for `merge-batch-graphs.py` (line 213) and `merge-subdomain-graphs.py` (line 44) using the same mechanism.
+Isto segue o padrão estabelecido — o SKILL.md já passa `<SKILL_DIR>` para `merge-batch-graphs.py` (linha 213) e `merge-subdomain-graphs.py` (linha 44) usando o mesmo mecanismo.
 
-- [ ] **Step 3: Verify the file-analyzer output format is unchanged**
+- [ ] **Step 3: Verificar que o formato de saída do file-analyzer está inalterado**
 
-Phase 2 of file-analyzer.md should NOT need changes — it reads the same JSON structure from the script results. Verify the output schema from `extract-structure.mjs` matches what Phase 2 expects.
+A Fase 2 do file-analyzer.md NÃO deve precisar de mudanças — ela lê a mesma estrutura JSON dos resultados do script. Verifique que o schema de output do `extract-structure.mjs` bate com o que a Fase 2 espera.
 
 - [ ] **Step 4: Commit**
 
@@ -814,30 +814,30 @@ git commit -m "feat: file-analyzer uses bundled tree-sitter script instead of LL
 
 ---
 
-### Task 15: Final integration verification and cleanup
+### Tarefa 15: Verificação final de integração e cleanup
 
-- [ ] **Step 1: Add exports to packages/core/src/index.ts**
+- [ ] **Step 1: Adicionar exports em packages/core/src/index.ts**
 
-This is required — `extract-structure.mjs` and external consumers need these exports:
+Isto é necessário — `extract-structure.mjs` e consumidores externos precisam destes exports:
 
 ```typescript
 export type { LanguageExtractor } from "./plugins/extractors/types.js";
 export { builtinExtractors } from "./plugins/extractors/index.js";
 ```
 
-- [ ] **Step 2: Build the full package**
+- [ ] **Step 2: Buildar o pacote completo**
 
 ```bash
 pnpm --filter @understand-anything/core build
 ```
 
-- [ ] **Step 3: Run full test suite one final time**
+- [ ] **Step 3: Executar a suíte de testes completa uma última vez**
 
 ```bash
 pnpm --filter @understand-anything/core test
 ```
 
-- [ ] **Step 4: Final commit**
+- [ ] **Step 4: Commit final**
 
 ```bash
 git commit -m "feat: complete language extractor architecture — 10 languages with tree-sitter support"
@@ -845,12 +845,12 @@ git commit -m "feat: complete language extractor architecture — 10 languages w
 
 ---
 
-## Implementation Notes
+## Notas de Implementação
 
-**Test file convention:** Each language extractor gets its own test file at `packages/core/src/plugins/extractors/__tests__/<language>-extractor.test.ts`. This follows the existing pattern where `tree-sitter-plugin.test.ts` is co-located.
+**Convenção de arquivo de teste:** Cada extractor de linguagem ganha seu próprio arquivo de teste em `packages/core/src/plugins/extractors/__tests__/<language>-extractor.test.ts`. Isso segue o padrão existente onde `tree-sitter-plugin.test.ts` é co-localizado.
 
-**Lazy grammar loading (future optimization):** The current `TreeSitterPlugin.init()` loads all grammar WASMs upfront via `Promise.all`. With 10 grammars (~12MB total WASM), this may cause noticeable init delay. A future improvement: load TS/JS eagerly (most common), defer others to first use. Not required for this PR — measure first.
+**Lazy grammar loading (otimização futura):** O `TreeSitterPlugin.init()` atual carrega todos os WASMs de gramática upfront via `Promise.all`. Com 10 gramáticas (~12MB total de WASM), isso pode causar atraso perceptível na inicialização. Uma melhoria futura: carregar TS/JS eagerly (mais comum), deferir os outros para o primeiro uso. Não é necessário para este PR — meça primeiro.
 
-**Fingerprint side effect:** `buildFingerprintStore` in `fingerprint.ts` uses `PluginRegistry.analyzeFile` internally. Once the new extractors are wired up, fingerprinting for Python/Go/Rust/etc. will automatically produce structural fingerprints instead of content-hash-only. No code changes needed — it happens for free.
+**Efeito colateral do fingerprint:** `buildFingerprintStore` em `fingerprint.ts` usa `PluginRegistry.analyzeFile` internamente. Uma vez que os novos extractors estiverem conectados, o fingerprinting para Python/Go/Rust/etc. vai produzir automaticamente fingerprints estruturais em vez de só content-hash. Não são necessárias mudanças de código — acontece de graça.
 
-**PHP grammar note:** `tree-sitter-php` ships both `tree-sitter-php.wasm` (full PHP + embedded HTML/CSS/JS) and `tree-sitter-php_only.wasm` (PHP only). We use `tree-sitter-php.wasm`. The PHP extractor should be robust to non-PHP AST nodes that appear when parsing files with embedded HTML templates.
+**Nota da gramática PHP:** `tree-sitter-php` ships tanto `tree-sitter-php.wasm` (PHP completo + HTML/CSS/JS embutidos) quanto `tree-sitter-php_only.wasm` (só PHP). Usamos `tree-sitter-php.wasm`. O extractor PHP deve ser robusto a nós AST não-PHP que aparecem ao parsear arquivos com templates HTML embutidos.

@@ -1,38 +1,38 @@
-# Terraform Language Prompt Snippet
+# Snippet de Prompt da Linguagem Terraform
 
-## Key Concepts
+## Conceitos-Chave
 
-- **Declarative Infrastructure**: Define desired state; Terraform computes and applies the diff
-- **Providers**: Plugins connecting to cloud APIs (AWS, GCP, Azure, Kubernetes, etc.)
-- **Resources**: `resource "type" "name"` blocks declaring infrastructure components
-- **Data Sources**: `data "type" "name"` blocks reading existing infrastructure state
-- **Variables**: `variable` blocks for parameterizing configurations with defaults and validation
-- **Outputs**: `output` blocks exposing values for cross-module references or human consumption
-- **Modules**: Reusable, composable infrastructure packages with their own variables and outputs
-- **State Management**: `.tfstate` files tracking real-world resource mapping (never commit to git)
-- **Workspaces**: Isolated state environments for managing dev/staging/prod from one codebase
-- **Plan and Apply**: `terraform plan` previews changes, `terraform apply` executes them
+- **Infraestrutura Declarativa**: define o estado desejado; o Terraform calcula e aplica o diff
+- **Providers**: plugins que conectam a APIs de cloud (AWS, GCP, Azure, Kubernetes, etc.)
+- **Resources**: blocos `resource "type" "name"` declarando componentes de infraestrutura
+- **Data Sources**: blocos `data "type" "name"` lendo o estado de infraestrutura existente
+- **Variables**: blocos `variable` para parametrizar configurações com defaults e validação
+- **Outputs**: blocos `output` expondo valores para referências entre módulos ou consumo humano
+- **Modules**: pacotes de infraestrutura reutilizáveis e composáveis com suas próprias variables e outputs
+- **Gerenciamento de State**: arquivos `.tfstate` rastreando o mapeamento de recursos do mundo real (nunca commite no git)
+- **Workspaces**: ambientes de state isolados para gerenciar dev/staging/prod a partir de um único codebase
+- **Plan e Apply**: `terraform plan` pré-visualiza mudanças, `terraform apply` as executa
 
-## Notable File Patterns
+## Padrões de Arquivo Notáveis
 
-- `main.tf` — Primary resource definitions
-- `variables.tf` — Input variable declarations with types and defaults
-- `outputs.tf` — Output value definitions
-- `providers.tf` — Provider configuration and version constraints
-- `backend.tf` — Remote state backend configuration (S3, GCS, etc.)
-- `modules/**/*.tf` — Reusable infrastructure modules
-- `*.tfvars` — Variable value files for different environments
-- `terraform.lock.hcl` — Provider version lock file
+- `main.tf` — definições primárias de resources
+- `variables.tf` — declarações de input variables com tipos e defaults
+- `outputs.tf` — definições de output values
+- `providers.tf` — configuração de providers e constraints de versão
+- `backend.tf` — configuração de remote state backend (S3, GCS, etc.)
+- `modules/**/*.tf` — módulos de infraestrutura reutilizáveis
+- `*.tfvars` — arquivos de valores de variables para diferentes ambientes
+- `terraform.lock.hcl` — arquivo de lock de versão dos providers
 
-## Edge Patterns
+## Padrões de Aresta
 
-- Terraform files `provisions` the infrastructure resources they define
-- Module references create `depends_on` edges between terraform files
-- Terraform `deploys` application code by referencing container images or deployment targets
-- Variable files `configures` the terraform modules they parameterize
+- Arquivos terraform `provisions` os recursos de infraestrutura que definem
+- Referências entre módulos criam arestas `depends_on` entre arquivos terraform
+- Terraform `deploys` código de aplicação ao referenciar imagens de container ou alvos de deploy
+- Arquivos de variables `configures` os módulos terraform que parametrizam
 
-## Summary Style
+## Estilo de Resumo
 
-> "Terraform configuration provisioning N AWS resources including VPC, ECS cluster, and RDS instance."
-> "Infrastructure module defining a reusable Kubernetes namespace with RBAC and network policies."
-> "Variable definitions for N environment-specific settings (region, instance type, scaling)."
+> "Configuração Terraform provisionando N recursos AWS, incluindo VPC, cluster ECS e instância RDS."
+> "Módulo de infraestrutura definindo um namespace Kubernetes reutilizável com RBAC e network policies."
+> "Definições de variables para N configurações específicas de ambiente (region, instance type, scaling)."

@@ -1,58 +1,58 @@
-# FastAPI Framework Addendum
+# Adendo do Framework FastAPI
 
-> Injected into file-analyzer and architecture-analyzer prompts when FastAPI is detected.
-> Do NOT use as a standalone prompt — always appended to the base prompt template.
+> Injetado nos prompts do file-analyzer e do architecture-analyzer quando FastAPI é detectado.
+> NÃO use como prompt independente — sempre anexado ao template de prompt base.
 
-## FastAPI Project Structure
+## Estrutura de Projeto FastAPI
 
-When analyzing a FastAPI project, apply these additional conventions on top of the base analysis rules.
+Ao analisar um projeto FastAPI, aplique estas convenções adicionais sobre as regras base de análise.
 
-### Canonical File Roles
+### Funções Canônicas de Arquivos
 
-| File / Pattern | Role | Tags |
+| Arquivo / Padrão | Função | Tags |
 |---|---|---|
-| `main.py`, `app.py` | Application factory — creates and configures the `FastAPI()` instance | `entry-point`, `config` |
-| `*/routers/*.py`, `*/api/*.py` | `APIRouter` modules — group related endpoints by domain | `api-handler`, `routing` |
-| `*/schemas.py`, `*/schemas/*.py` | Pydantic request/response models | `type-definition`, `serialization` |
-| `*/models.py`, `*/models/*.py` | SQLAlchemy ORM models or other DB models | `data-model` |
-| `*/dependencies.py`, `*/deps.py` | `Depends()` provider functions — shared logic injected into routes | `service`, `middleware` |
-| `*/crud.py`, `*/repository.py` | Database access layer — CRUD operations | `data-model`, `service` |
-| `*/database.py`, `*/db.py` | DB engine, session factory, connection management | `config`, `data-model` |
-| `*/config.py`, `*/settings.py` | `pydantic-settings` / `BaseSettings` config classes | `config` |
-| `*/middleware.py` | Starlette middleware classes | `middleware` |
-| `*/exceptions.py` | Custom exception classes and exception handlers | `utility` |
-| `*/security.py`, `*/auth.py` | Auth utilities — JWT decoding, password hashing, OAuth helpers | `service`, `middleware` |
-| `*/tasks.py` | Background tasks or Celery task definitions | `service`, `event-handler` |
-| `*/tests/*.py`, `test_*.py` | pytest test files | `test` |
-| `conftest.py` | pytest fixtures and test configuration | `test`, `config` |
+| `main.py`, `app.py` | Application factory — cria e configura a instância `FastAPI()` | `entry-point`, `config` |
+| `*/routers/*.py`, `*/api/*.py` | Módulos `APIRouter` — agrupam endpoints relacionados por domínio | `api-handler`, `routing` |
+| `*/schemas.py`, `*/schemas/*.py` | Modelos Pydantic de request/response | `type-definition`, `serialization` |
+| `*/models.py`, `*/models/*.py` | Modelos do ORM SQLAlchemy ou outros modelos de banco | `data-model` |
+| `*/dependencies.py`, `*/deps.py` | Funções provedoras de `Depends()` — lógica compartilhada injetada nas rotas | `service`, `middleware` |
+| `*/crud.py`, `*/repository.py` | Camada de acesso a dados — operações CRUD | `data-model`, `service` |
+| `*/database.py`, `*/db.py` | Engine do banco, factory de session, gerenciamento de conexão | `config`, `data-model` |
+| `*/config.py`, `*/settings.py` | Classes de configuração `pydantic-settings` / `BaseSettings` | `config` |
+| `*/middleware.py` | Classes de middleware do Starlette | `middleware` |
+| `*/exceptions.py` | Classes de exceção customizadas e tratadores de exceção | `utility` |
+| `*/security.py`, `*/auth.py` | Utilitários de autenticação — decodificação de JWT, hashing de senha, helpers de OAuth | `service`, `middleware` |
+| `*/tasks.py` | Definições de tasks em background ou tasks do Celery | `service`, `event-handler` |
+| `*/tests/*.py`, `test_*.py` | Arquivos de teste do pytest | `test` |
+| `conftest.py` | Fixtures e configuração de teste do pytest | `test`, `config` |
 
-### Edge Patterns to Look For
+### Padrões de Aresta a Procurar
 
-**Router inclusion chain** — When `app.include_router(some_router, prefix="/api")` appears in `main.py` or a router aggregator, create `imports` + `depends_on` edges from the main app file to each router module. This builds the URL hierarchy graph.
+**Cadeia de inclusão de routers** — Quando `app.include_router(some_router, prefix="/api")` aparece em `main.py` ou em um agregador de routers, crie arestas `imports` + `depends_on` do arquivo principal do app para cada módulo de router. Isso constrói o grafo da hierarquia de URLs.
 
-**Dependency injection tree** — When a route function or another `Depends()` provider imports and calls `Depends(some_function)`, create `depends_on` edges from the caller to the dependency provider. Trace these chains — they often span multiple files (e.g., route → auth dependency → DB session dependency).
+**Árvore de injeção de dependências** — Quando uma função de rota ou outro provedor `Depends()` importa e chama `Depends(some_function)`, crie arestas `depends_on` do chamador para o provedor da dependência. Rastreie essas cadeias — frequentemente atravessam múltiplos arquivos (por exemplo, rota → dependência de auth → dependência de session de banco).
 
-**Pydantic model inheritance** — When a schema class inherits from another (e.g., `class UserCreate(UserBase)`), create `inherits` edges between the schema class nodes.
+**Herança de modelos Pydantic** — Quando uma classe de schema herda de outra (por exemplo, `class UserCreate(UserBase)`), crie arestas `inherits` entre os nós das classes de schema.
 
-**ORM model relationships** — When SQLAlchemy models use `relationship()`, `ForeignKey`, create `depends_on` edges between the model classes.
+**Relacionamentos de modelos do ORM** — Quando modelos do SQLAlchemy usam `relationship()` ou `ForeignKey`, crie arestas `depends_on` entre as classes de modelo.
 
-**CRUD-to-model binding** — When a `crud.py` function takes a model type as an argument or directly references a model class, create `depends_on` edges from the CRUD file to the model file.
+**Ligação CRUD-modelo** — Quando uma função de `crud.py` recebe um tipo de modelo como argumento ou referencia diretamente uma classe de modelo, crie arestas `depends_on` do arquivo CRUD para o arquivo de modelo.
 
-### Architectural Layers for FastAPI
+### Camadas Arquiteturais para FastAPI
 
-| Layer ID | Layer Name | What Goes Here |
+| ID da Camada | Nome da Camada | O Que Vai Aqui |
 |---|---|---|
-| `layer:api` | API Layer | Router files, endpoint functions with `@router.get/post/...` decorators |
-| `layer:types` | Types Layer | Pydantic schema files, request/response models |
-| `layer:service` | Service Layer | `dependencies.py`, `crud.py`, business logic modules |
-| `layer:data` | Data Layer | ORM models, `database.py`, migrations |
-| `layer:config` | Config Layer | `main.py` / `app.py` factory, `settings.py`, `config.py` |
-| `layer:middleware` | Middleware Layer | `middleware.py`, `security.py`, `auth.py`, exception handlers |
+| `layer:api` | API Layer | Arquivos de router, funções de endpoint com decorators `@router.get/post/...` |
+| `layer:types` | Types Layer | Arquivos de schema Pydantic, modelos de request/response |
+| `layer:service` | Service Layer | `dependencies.py`, `crud.py`, módulos de lógica de negócio |
+| `layer:data` | Data Layer | Modelos do ORM, `database.py`, migrations |
+| `layer:config` | Config Layer | Factory `main.py` / `app.py`, `settings.py`, `config.py` |
+| `layer:middleware` | Middleware Layer | `middleware.py`, `security.py`, `auth.py`, tratadores de exceção |
 | `layer:test` | Test Layer | `tests/`, `conftest.py` |
 
-### Notable Patterns to Capture in languageLesson
+### Padrões Notáveis a Capturar em languageLesson
 
-- **Dependency injection as composition**: FastAPI's `Depends()` is a first-class DI system — a route can declare any number of dependencies, each of which can have their own dependencies, forming a tree resolved at request time
-- **Pydantic for validation**: Request bodies, query params, and path params are automatically validated by Pydantic — invalid input raises `422 Unprocessable Entity` before your code runs
-- **Async endpoints**: `async def` routes run in the event loop; `def` routes run in a threadpool — mixing them incorrectly can cause performance issues
-- **Path operation order**: FastAPI matches routes in declaration order; a catch-all route before a specific one will shadow it
+- **Injeção de dependências como composição**: `Depends()` do FastAPI é um sistema de DI de primeira classe — uma rota pode declarar qualquer número de dependências, e cada uma pode ter suas próprias dependências, formando uma árvore resolvida em tempo de requisição
+- **Pydantic para validação**: bodies de requisição, query params e path params são validados automaticamente pelo Pydantic — entradas inválidas geram `422 Unprocessable Entity` antes de seu código rodar
+- **Endpoints async**: rotas `async def` rodam no event loop; rotas `def` rodam em um threadpool — misturá-las incorretamente pode causar problemas de performance
+- **Ordem de path operations**: o FastAPI casa rotas na ordem de declaração; uma rota catch-all antes de uma específica vai sobrescrevê-la

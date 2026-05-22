@@ -1,59 +1,59 @@
-# Next.js Framework Addendum
+# Adendo do Framework Next.js
 
-> Injected into file-analyzer and architecture-analyzer prompts when Next.js is detected.
-> Do NOT use as a standalone prompt — always appended to the base prompt template.
+> Injetado nos prompts do file-analyzer e do architecture-analyzer quando Next.js é detectado.
+> NÃO use como prompt independente — sempre anexado ao template de prompt base.
 
-## Next.js Project Structure
+## Estrutura de Projeto Next.js
 
-When analyzing a Next.js project, apply these additional conventions on top of the base analysis rules.
+Ao analisar um projeto Next.js, aplique estas convenções adicionais sobre as regras base de análise.
 
-### Canonical File Roles
+### Funções Canônicas de Arquivos
 
-| File / Pattern | Role | Tags |
+| Arquivo / Padrão | Função | Tags |
 |---|---|---|
-| `app/layout.tsx` | Root layout — wraps all pages, defines HTML shell and global providers | `entry-point`, `config`, `ui` |
-| `app/page.tsx` | Root page component — renders at `/` | `ui`, `routing` |
-| `app/**/page.tsx` | Route page components — file path determines URL | `ui`, `routing` |
-| `app/**/layout.tsx` | Nested layouts — wrap child routes with shared UI | `ui`, `config` |
-| `app/**/loading.tsx` | Loading UI — shown as Suspense fallback during route transitions | `ui` |
-| `app/**/error.tsx` | Error boundary — catches errors in the route segment | `ui` |
-| `app/**/not-found.tsx` | 404 UI — shown when `notFound()` is called | `ui` |
-| `app/api/**/route.ts` | API route handlers — serverless endpoint functions (GET, POST, etc.) | `api-handler` |
-| `middleware.ts` | Edge middleware — intercepts requests before they reach routes | `middleware` |
-| `lib/*.ts`, `lib/**/*.ts` | Shared server-side utilities, data access, and business logic | `service` |
-| `components/*.tsx`, `components/**/*.tsx` | Reusable UI components | `ui` |
-| `next.config.js`, `next.config.mjs`, `next.config.ts` | Next.js configuration — redirects, rewrites, env, webpack overrides | `config` |
-| `actions/*.ts`, `app/**/actions.ts` | Server Actions — server-side mutation functions callable from client | `service`, `api-handler` |
+| `app/layout.tsx` | Layout raiz — envolve todas as páginas, define o shell HTML e providers globais | `entry-point`, `config`, `ui` |
+| `app/page.tsx` | Componente de página raiz — renderiza em `/` | `ui`, `routing` |
+| `app/**/page.tsx` | Componentes de página de rota — o caminho do arquivo determina a URL | `ui`, `routing` |
+| `app/**/layout.tsx` | Layouts aninhados — envolvem rotas filhas com UI compartilhada | `ui`, `config` |
+| `app/**/loading.tsx` | UI de loading — exibida como fallback do Suspense durante transições de rota | `ui` |
+| `app/**/error.tsx` | Boundary de erro — captura erros no segmento de rota | `ui` |
+| `app/**/not-found.tsx` | UI 404 — exibida quando `notFound()` é chamado | `ui` |
+| `app/api/**/route.ts` | Handlers de rota de API — funções de endpoint serverless (GET, POST, etc.) | `api-handler` |
+| `middleware.ts` | Edge middleware — intercepta requisições antes que cheguem às rotas | `middleware` |
+| `lib/*.ts`, `lib/**/*.ts` | Utilitários, acesso a dados e lógica de negócio compartilhados no servidor | `service` |
+| `components/*.tsx`, `components/**/*.tsx` | Componentes de UI reutilizáveis | `ui` |
+| `next.config.js`, `next.config.mjs`, `next.config.ts` | Configuração do Next.js — redirects, rewrites, env, overrides do webpack | `config` |
+| `actions/*.ts`, `app/**/actions.ts` | Server Actions — funções de mutação no servidor invocáveis pelo cliente | `service`, `api-handler` |
 
-### Edge Patterns to Look For
+### Padrões de Aresta a Procurar
 
-**Layout nesting** — When `app/foo/layout.tsx` wraps `app/foo/page.tsx` and `app/foo/bar/page.tsx`, create `contains` edges from the layout to the pages it wraps. Layouts compose via the file-system hierarchy.
+**Aninhamento de layouts** — Quando `app/foo/layout.tsx` envolve `app/foo/page.tsx` e `app/foo/bar/page.tsx`, crie arestas `contains` do layout para as páginas que ele envolve. Layouts compõem via a hierarquia do sistema de arquivos.
 
-**API route handlers** — When a `route.ts` file exports named functions (GET, POST, PUT, DELETE), create edges from consuming components or server actions to the route handler based on fetch calls.
+**Handlers de rotas de API** — Quando um arquivo `route.ts` exporta funções nomeadas (GET, POST, PUT, DELETE), crie arestas dos componentes consumidores ou server actions para o handler de rota com base nas chamadas de fetch.
 
-**Server/Client component boundary** — Files with `"use client"` directive at the top are Client Components. All other components in the `app/` directory are Server Components by default. Create `depends_on` edges that cross this boundary and note the boundary in the edge description.
+**Fronteira Server/Client Component** — Arquivos com a diretiva `"use client"` no topo são Client Components. Todos os outros componentes no diretório `app/` são Server Components por padrão. Crie arestas `depends_on` que cruzem essa fronteira e registre a fronteira na descrição da aresta.
 
-**Parallel routes** — When `app/@slot/page.tsx` patterns appear, create `contains` edges from the parent layout to each parallel slot. These render simultaneously in the same layout.
+**Parallel routes** — Quando padrões `app/@slot/page.tsx` aparecem, crie arestas `contains` do layout pai para cada slot paralelo. Eles renderizam simultaneamente no mesmo layout.
 
-**Route groups** — Directories wrapped in parentheses `(group)` organize routes without affecting the URL path. Note these in node descriptions.
+**Route groups** — Diretórios envolvidos por parênteses `(group)` organizam rotas sem afetar o caminho da URL. Anote isso nas descrições dos nós.
 
-### Architectural Layers for Next.js
+### Camadas Arquiteturais para Next.js
 
-Assign nodes to these layers when detected:
+Atribua nós a estas camadas quando detectadas:
 
-| Layer ID | Layer Name | What Goes Here |
+| ID da Camada | Nome da Camada | O Que Vai Aqui |
 |---|---|---|
-| `layer:ui` | UI Layer | `app/**/page.tsx`, `app/**/layout.tsx`, `components/`, loading/error boundaries |
-| `layer:api` | API Layer | `app/api/**/route.ts`, API route handlers |
-| `layer:service` | Service Layer | `lib/`, server actions, data-fetching utilities |
+| `layer:ui` | UI Layer | `app/**/page.tsx`, `app/**/layout.tsx`, `components/`, boundaries de loading/error |
+| `layer:api` | API Layer | `app/api/**/route.ts`, handlers de rota de API |
+| `layer:service` | Service Layer | `lib/`, server actions, utilitários de data fetching |
 | `layer:middleware` | Middleware Layer | `middleware.ts`, edge functions |
-| `layer:config` | Config Layer | `next.config.*`, root layout, `tailwind.config.*`, environment setup |
+| `layer:config` | Config Layer | `next.config.*`, layout raiz, `tailwind.config.*`, configuração de ambiente |
 | `layer:test` | Test Layer | `__tests__/`, `*.test.tsx`, `*.spec.tsx`, `e2e/` |
 
-### Notable Patterns to Capture in languageLesson
+### Padrões Notáveis a Capturar em languageLesson
 
-- **Server Components by default**: Components in the `app/` directory are Server Components — no JavaScript is sent to the client unless `"use client"` is declared
-- **Server Actions for mutations**: Functions marked with `"use server"` can be called directly from client components, replacing traditional API routes for form submissions and mutations
-- **App Router file conventions**: Special files (`page`, `layout`, `loading`, `error`, `not-found`, `route`) define behavior by naming convention within the file-system router
-- **ISR and static generation**: `generateStaticParams` pre-renders pages at build time; revalidation strategies control cache freshness
-- **Parallel and intercepting routes**: `@slot` directories enable parallel rendering; `(.)` prefix directories enable route interception for modal patterns
+- **Server Components por padrão**: componentes no diretório `app/` são Server Components — nenhum JavaScript é enviado ao cliente a menos que `"use client"` seja declarado
+- **Server Actions para mutações**: funções marcadas com `"use server"` podem ser chamadas diretamente de client components, substituindo rotas de API tradicionais para submissões de formulário e mutações
+- **Convenções de arquivos do App Router**: arquivos especiais (`page`, `layout`, `loading`, `error`, `not-found`, `route`) definem comportamento por convenção de nome dentro do roteador baseado em sistema de arquivos
+- **ISR e geração estática**: `generateStaticParams` pré-renderiza páginas em build time; estratégias de revalidação controlam o frescor do cache
+- **Parallel e intercepting routes**: diretórios `@slot` habilitam renderização paralela; diretórios prefixados com `(.)` habilitam interceptação de rota para padrões de modal

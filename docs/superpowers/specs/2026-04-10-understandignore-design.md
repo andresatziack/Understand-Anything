@@ -1,31 +1,31 @@
-# .understandignore Design Spec
+# Spec de Design do .understandignore
 
-## Overview
+## Visão Geral
 
-Add user-configurable file exclusion via `.understandignore` files, using `.gitignore` syntax. This makes analysis faster by skipping irrelevant files (vendor code, generated output, test fixtures) without modifying hardcoded defaults.
+Adicionar exclusão de arquivos configurável pelo usuário via arquivos `.understandignore`, usando a sintaxe `.gitignore`. Isso torna a análise mais rápida ao pular arquivos irrelevantes (vendor code, output gerado, fixtures de teste) sem modificar os defaults hardcoded.
 
-## Goals
+## Objetivos
 
-- Let users exclude files/directories from analysis via `.understandignore`
-- Use `.gitignore` syntax (familiar, no learning curve)
-- Keep hardcoded defaults as built-in — `.understandignore` adds patterns on top
-- Allow `!` negation to force-include files excluded by defaults
-- Auto-generate a commented-out starter file on first run (deterministic code, not LLM)
-- Pause before analysis to let user review the ignore file
+- Deixar usuários excluírem arquivos/diretórios da análise via `.understandignore`
+- Usar sintaxe `.gitignore` (familiar, sem curva de aprendizado)
+- Manter os defaults hardcoded como built-in — `.understandignore` adiciona padrões por cima
+- Permitir negação `!` para forçar a inclusão de arquivos excluídos pelos defaults
+- Auto-gerar um arquivo starter com sugestões comentadas no primeiro run (código determinístico, não LLM)
+- Pausar antes da análise para deixar o usuário revisar o arquivo de ignore
 
-## Non-Goals
+## Não-Objetivos
 
-- Replacing `.gitignore` — this is analysis-specific
-- Per-directory `.understandignore` files (project root and `.understand-anything/` only)
-- GUI for editing ignore patterns
+- Substituir o `.gitignore` — este é específico para análise
+- Arquivos `.understandignore` por diretório (apenas project root e `.understand-anything/`)
+- GUI para edição de padrões de ignore
 
 ---
 
-## IgnoreFilter Module
+## Módulo IgnoreFilter
 
-New file: `packages/core/src/ignore-filter.ts`
+Novo arquivo: `packages/core/src/ignore-filter.ts`
 
-Uses the [`ignore`](https://www.npmjs.com/package/ignore) npm package for gitignore-compatible pattern matching.
+Usa o pacote npm [`ignore`](https://www.npmjs.com/package/ignore) para matching de padrões compatível com gitignore.
 
 ### API
 
@@ -37,19 +37,19 @@ export interface IgnoreFilter {
 export function createIgnoreFilter(projectRoot: string): IgnoreFilter;
 ```
 
-### Behavior
+### Comportamento
 
-`createIgnoreFilter` loads patterns in this order (later entries can override earlier ones):
+`createIgnoreFilter` carrega padrões nesta ordem (entradas posteriores podem sobrescrever as anteriores):
 
-1. **Hardcoded defaults** — the existing exclusion patterns from project-scanner (node_modules/, .git/, dist/, build/, bin/, obj/, *.lock, *.min.js, etc.)
-2. **`.understand-anything/.understandignore`** — project-level, lives alongside the output
-3. **`.understandignore`** at project root — alternative location for visibility
+1. **Defaults hardcoded** — os padrões de exclusão existentes do project-scanner (node_modules/, .git/, dist/, build/, bin/, obj/, *.lock, *.min.js, etc.)
+2. **`.understand-anything/.understandignore`** — em nível de projeto, fica junto com a saída
+3. **`.understandignore`** no project root — localização alternativa para visibilidade
 
-Patterns merge additively. `!` negation in user files can override hardcoded defaults (e.g., `!dist/` force-includes dist/).
+Os padrões mesclam de forma aditiva. A negação `!` em arquivos do usuário pode sobrescrever os defaults hardcoded (ex: `!dist/` força a inclusão de dist/).
 
-### Hardcoded Default Patterns
+### Padrões Default Hardcoded
 
-These are the built-in defaults (matching current project-scanner behavior, plus bin/obj for .NET):
+Estes são os defaults built-in (combinando com o comportamento atual do project-scanner, mais bin/obj para .NET):
 
 ```
 # Dependency directories
@@ -117,9 +117,9 @@ LICENSE
 
 ---
 
-## Starter File Generator
+## Gerador de Arquivo Starter
 
-New file: `packages/core/src/ignore-generator.ts`
+Novo arquivo: `packages/core/src/ignore-generator.ts`
 
 ### API
 
@@ -127,30 +127,30 @@ New file: `packages/core/src/ignore-generator.ts`
 export function generateStarterIgnoreFile(projectRoot: string): string;
 ```
 
-### Behavior
+### Comportamento
 
-- Deterministic code — scans the project directory for common patterns
-- Returns the file content as a string (caller writes it to disk)
-- All suggestions are **commented out** — user must uncomment to activate
-- Header comment explains the file, syntax, and built-in defaults
+- Código determinístico — escaneia o diretório do projeto por padrões comuns
+- Retorna o conteúdo do arquivo como string (o caller escreve em disco)
+- Todas as sugestões são **comentadas** — o usuário precisa descomentar para ativar
+- Comentário de cabeçalho explica o arquivo, a sintaxe e os defaults built-in
 
-### Detection Logic
+### Lógica de Detecção
 
-| If exists | Suggest |
+| Se existe | Sugerir |
 |-----------|---------|
-| `__tests__/` or `*.test.*` files | `# __tests__/`, `# *.test.*`, `# *.spec.*` |
-| `fixtures/` or `testdata/` | `# fixtures/`, `# testdata/` |
-| `test/` or `tests/` | `# test/`, `# tests/` |
+| Arquivos `__tests__/` ou `*.test.*` | `# __tests__/`, `# *.test.*`, `# *.spec.*` |
+| `fixtures/` ou `testdata/` | `# fixtures/`, `# testdata/` |
+| `test/` ou `tests/` | `# test/`, `# tests/` |
 | `.storybook/` | `# .storybook/` |
 | `docs/` | `# docs/` |
 | `examples/` | `# examples/` |
 | `scripts/` | `# scripts/` |
 | `migrations/` | `# migrations/` |
-| `*.snap` files | `# *.snap` |
-| `bin/` (non-.NET, i.e. shell scripts) | `# bin/` |
+| Arquivos `*.snap` | `# *.snap` |
+| `bin/` (não-.NET, ou seja, shell scripts) | `# bin/` |
 | `obj/` | `# obj/` |
 
-### Generated File Format
+### Formato do Arquivo Gerado
 
 ```
 # .understandignore — patterns for files/dirs to exclude from analysis
@@ -179,80 +179,80 @@ export function generateStarterIgnoreFile(projectRoot: string): string;
 # ... (more suggestions based on detection)
 ```
 
-Only generated if `.understand-anything/.understandignore` doesn't already exist.
+Gerado apenas se `.understand-anything/.understandignore` ainda não existir.
 
 ---
 
-## Skill Integration
+## Integração com a Skill
 
-### Phase 0.5: Ignore Setup (new phase in SKILL.md)
+### Fase 0.5: Ignore Setup (nova fase no SKILL.md)
 
-Added between Pre-flight (Phase 0) and SCAN (Phase 1):
+Adicionada entre o Pre-flight (Fase 0) e o SCAN (Fase 1):
 
-1. Check if `.understand-anything/.understandignore` exists
-2. If not, run `generateStarterIgnoreFile(projectRoot)` and write the result to `.understand-anything/.understandignore`
-3. Report to user:
-   - **First run:** "Generated `.understand-anything/.understandignore` with suggested exclusions. Please review it and uncomment any patterns you'd like to exclude. When ready, confirm to continue."
-   - **Subsequent runs:** "Found `.understand-anything/.understandignore`. Review it if needed, then confirm to continue."
-4. Wait for user confirmation before proceeding
+1. Verifica se `.understand-anything/.understandignore` existe
+2. Se não, roda `generateStarterIgnoreFile(projectRoot)` e escreve o resultado em `.understand-anything/.understandignore`
+3. Reporta ao usuário:
+   - **Primeiro run:** "Generated `.understand-anything/.understandignore` with suggested exclusions. Please review it and uncomment any patterns you'd like to exclude. When ready, confirm to continue."
+   - **Runs subsequentes:** "Found `.understand-anything/.understandignore`. Review it if needed, then confirm to continue."
+4. Aguarda confirmação do usuário antes de prosseguir
 
-### Phase 1: SCAN changes
+### Mudanças na Fase 1: SCAN
 
-The `project-scanner` agent's scan script is updated to:
+O script de scan do agente `project-scanner` é atualizado para:
 
-1. Collect files via `git ls-files` (or fallback)
-2. Apply agent's hardcoded pattern filter (Layer 1 — existing behavior)
-3. Apply `IgnoreFilter` from core (Layer 2 — user patterns)
-4. Add `filteredByIgnore` count to scan output
-5. Report: "Scanned {totalFiles} files ({filteredByIgnore} excluded by .understandignore)"
+1. Coletar arquivos via `git ls-files` (ou fallback)
+2. Aplicar o filtro de padrões hardcoded do agente (Camada 1 — comportamento existente)
+3. Aplicar o `IgnoreFilter` do core (Camada 2 — padrões do usuário)
+4. Adicionar contagem `filteredByIgnore` à saída do scan
+5. Reportar: "Scanned {totalFiles} files ({filteredByIgnore} excluded by .understandignore)"
 
-Two-layer filtering:
-- **Layer 1:** Agent's hardcoded patterns in the prompt (fast, coarse filter)
-- **Layer 2:** `IgnoreFilter` from core (deterministic code, user-configurable)
-
----
-
-## Project Scanner Agent Update
-
-Changes to `understand-anything-plugin/agents/project-scanner.md`:
-
-- After the file list is built and Layer 1 filtering is applied, the agent runs a Node.js script that imports `createIgnoreFilter` from `@understand-anything/core` and filters the remaining paths
-- The scan result JSON includes a new `filteredByIgnore: number` field
-- Existing hardcoded exclusion patterns in the agent prompt remain for backward compatibility
+Filtragem em duas camadas:
+- **Camada 1:** Padrões hardcoded do agente no prompt (filtro rápido e grosseiro)
+- **Camada 2:** `IgnoreFilter` do core (código determinístico, configurável pelo usuário)
 
 ---
 
-## Testing
+## Atualização do Agente Project Scanner
+
+Mudanças em `understand-anything-plugin/agents/project-scanner.md`:
+
+- Após a lista de arquivos ser construída e a filtragem da Camada 1 aplicada, o agente roda um script Node.js que importa `createIgnoreFilter` de `@understand-anything/core` e filtra os caminhos restantes
+- O JSON de resultado do scan inclui um novo campo `filteredByIgnore: number`
+- Os padrões de exclusão hardcoded existentes no prompt do agente permanecem para compatibilidade retroativa
+
+---
+
+## Testes
 
 ### `packages/core/src/__tests__/ignore-filter.test.ts`
 
-- Parses basic glob patterns (`*.log`, `dist/`)
-- Handles `#` comments and blank lines
-- Handles `!` negation (force-include)
-- Handles `**/` recursive matching
-- Handles trailing `/` for directory-only patterns
-- Merges defaults + user patterns correctly
-- `!` in user file overrides hardcoded defaults
-- Returns `false` for paths not matching any pattern
+- Parsea padrões glob básicos (`*.log`, `dist/`)
+- Lida com comentários `#` e linhas em branco
+- Lida com negação `!` (force-include)
+- Lida com matching recursivo `**/`
+- Lida com `/` no final para padrões de apenas-diretório
+- Mescla defaults + padrões do usuário corretamente
+- `!` em arquivo do usuário sobrescreve defaults hardcoded
+- Retorna `false` para caminhos que não correspondem a nenhum padrão
 
 ### `packages/core/src/__tests__/ignore-generator.test.ts`
 
-- Generates starter file with header comment
-- Detects existing directories and suggests relevant patterns
-- All suggestions are commented out (prefixed with `# `)
-- Doesn't overwrite existing file
-- Includes bin/obj suggestions when relevant
+- Gera o arquivo starter com comentário de cabeçalho
+- Detecta diretórios existentes e sugere padrões relevantes
+- Todas as sugestões são comentadas (prefixadas com `# `)
+- Não sobrescreve arquivo existente
+- Inclui sugestões de bin/obj quando relevante
 
 ---
 
-## File Structure
+## Estrutura de Arquivos
 
-| File | Purpose |
+| Arquivo | Propósito |
 |------|---------|
-| `packages/core/src/ignore-filter.ts` | Parse .understandignore, merge with defaults, filter paths |
-| `packages/core/src/ignore-generator.ts` | Generate starter file by scanning project structure |
-| `packages/core/src/__tests__/ignore-filter.test.ts` | Filter logic tests |
-| `packages/core/src/__tests__/ignore-generator.test.ts` | Generator tests |
-| `agents/project-scanner.md` | Add Layer 2 filtering via IgnoreFilter |
-| `skills/understand/SKILL.md` | Add Phase 0.5 (generate + pause for review) |
-| `packages/core/package.json` | Add `ignore` npm dependency |
+| `packages/core/src/ignore-filter.ts` | Parsear .understandignore, mesclar com defaults, filtrar caminhos |
+| `packages/core/src/ignore-generator.ts` | Gerar arquivo starter escaneando a estrutura do projeto |
+| `packages/core/src/__tests__/ignore-filter.test.ts` | Testes da lógica de filtro |
+| `packages/core/src/__tests__/ignore-generator.test.ts` | Testes do generator |
+| `agents/project-scanner.md` | Adicionar filtragem da Camada 2 via IgnoreFilter |
+| `skills/understand/SKILL.md` | Adicionar Fase 0.5 (gerar + pausar para review) |
+| `packages/core/package.json` | Adicionar dependência npm `ignore` |

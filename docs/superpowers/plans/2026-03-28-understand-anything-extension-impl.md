@@ -1,24 +1,24 @@
-# Universal File Type Support — Implementation Plan
+# Suporte Universal a Tipos de Arquivo — Plano de Implementação
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **Para o Claude:** SUB-SKILL OBRIGATÓRIA: Use superpowers:executing-plans para implementar este plano tarefa por tarefa.
 
-**Goal:** Extend Understand Anything to analyze 26+ non-code file types (Markdown, Dockerfile, YAML, SQL, Terraform, etc.) with new graph node/edge types, custom parsers, updated agent prompts, and dashboard visualization.
+**Objetivo:** Estender o Understand Anything para analisar 26+ tipos de arquivo não-código (Markdown, Dockerfile, YAML, SQL, Terraform, etc.) com novos node/edge types no graph, parsers customizados, prompts de agent atualizados e visualização no dashboard.
 
-**Architecture:** Extend the existing LanguageConfig + AnalyzerPlugin pipeline. Add 8 new node types and 8 new edge types to the schema. Build 12 lightweight regex/parser-based analyzers for structured formats, LLM-only for unstructured. Update all 5 agent prompts to handle non-code files. Add new node colors and sidebar rendering to the dashboard.
+**Arquitetura:** Estende o pipeline existente LanguageConfig + AnalyzerPlugin. Adiciona 8 novos node types e 8 novos edge types ao schema. Constrói 12 analisadores leves baseados em regex/parser para formatos estruturados, LLM-only para os não-estruturados. Atualiza todos os 5 prompts de agent para lidar com arquivos não-código. Adiciona novas cores de nó e renderização na sidebar do dashboard.
 
-**Tech Stack:** TypeScript, Zod, Vitest, React, React Flow, Zustand, TailwindCSS v4, `yaml` npm package, `@iarna/toml`, `jsonc-parser`
+**Stack Tecnológica:** TypeScript, Zod, Vitest, React, React Flow, Zustand, TailwindCSS v4, pacote npm `yaml`, `@iarna/toml`, `jsonc-parser`
 
 **Design doc:** `docs/plans/2026-03-28-understand-anything-extension-design.md`
 
 ---
 
-## Task 1: Extend Core Types — Node & Edge Types
+## Tarefa 1: Estender Tipos do Core — Node & Edge Types
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/core/src/types.ts:1-116`
-- Test: `understand-anything-plugin/packages/core/src/types.test.ts`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/core/src/types.ts:1-116`
+- Teste: `understand-anything-plugin/packages/core/src/types.test.ts`
 
-**Step 1: Write the failing test**
+**Step 1: Escrever o teste que vai falhar**
 
 In `types.test.ts`, add a test that imports and verifies the new node types exist on GraphNode and edge types exist on EdgeType:
 
@@ -69,12 +69,12 @@ describe("Extended types", () => {
 });
 ```
 
-**Step 2: Run test to verify it fails**
+**Step 2: Executar o teste para verificar que falha**
 
-Run: `pnpm --filter @understand-anything/core test -- --run types.test`
-Expected: FAIL — TypeScript compilation errors for new types that don't exist yet
+Execute: `pnpm --filter @understand-anything/core test -- --run types.test`
+Esperado: FAIL — TypeScript compilation errors for new types that don't exist yet
 
-**Step 3: Implement the type extensions**
+**Step 3: Implementar a extensão dos tipos**
 
 In `types.ts`, update the `GraphNode.type` union (line 12):
 
@@ -171,10 +171,10 @@ export interface AnalyzerPlugin {
 }
 ```
 
-**Step 4: Run test to verify it passes**
+**Step 4: Executar o teste para verificar que passa**
 
-Run: `pnpm --filter @understand-anything/core test -- --run types.test`
-Expected: PASS
+Execute: `pnpm --filter @understand-anything/core test -- --run types.test`
+Esperado: PASS
 
 **Step 5: Commit**
 
@@ -185,13 +185,13 @@ git commit -m "feat(core): extend GraphNode/EdgeType/StructuralAnalysis for non-
 
 ---
 
-## Task 2: Extend Schema Validation — Zod Schemas & Aliases
+## Tarefa 2: Estender Validação de Schema — Schemas Zod & Aliases
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/core/src/schema.ts:1-554`
-- Test: `understand-anything-plugin/packages/core/src/__tests__/schema.test.ts`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/core/src/schema.ts:1-554`
+- Teste: `understand-anything-plugin/packages/core/src/__tests__/schema.test.ts`
 
-**Step 1: Write the failing tests**
+**Step 1: Escrever os testes que vão falhar**
 
 Add to `schema.test.ts`:
 
@@ -243,12 +243,12 @@ describe("Extended node/edge types", () => {
 });
 ```
 
-**Step 2: Run test to verify it fails**
+**Step 2: Executar o teste para verificar que falha**
 
-Run: `pnpm --filter @understand-anything/core test -- --run schema.test`
-Expected: FAIL — Zod enum rejects new types
+Execute: `pnpm --filter @understand-anything/core test -- --run schema.test`
+Esperado: FAIL — Zod enum rejects new types
 
-**Step 3: Implement schema extensions**
+**Step 3: Implementar as extensões do schema**
 
 In `schema.ts`:
 
@@ -318,10 +318,10 @@ export const GraphNodeSchema = z.object({
 });
 ```
 
-**Step 4: Run test to verify it passes**
+**Step 4: Executar o teste para verificar que passa**
 
-Run: `pnpm --filter @understand-anything/core test -- --run schema.test`
-Expected: PASS
+Execute: `pnpm --filter @understand-anything/core test -- --run schema.test`
+Esperado: PASS
 
 **Step 5: Commit**
 
@@ -332,13 +332,13 @@ git commit -m "feat(core): extend Zod schemas and aliases for 8 new node/edge ty
 
 ---
 
-## Task 3: Update PluginRegistry — Optional resolveImports
+## Tarefa 3: Atualizar PluginRegistry — resolveImports Opcional
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/core/src/plugins/registry.ts:1-76`
-- Test: `understand-anything-plugin/packages/core/src/__tests__/plugin-registry.test.ts`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/core/src/plugins/registry.ts:1-76`
+- Teste: `understand-anything-plugin/packages/core/src/__tests__/plugin-registry.test.ts`
 
-**Step 1: Write the failing test**
+**Step 1: Escrever o teste que vai falhar**
 
 Add to `plugin-registry.test.ts`:
 
@@ -356,12 +356,12 @@ it("handles plugins with optional resolveImports (non-code plugins)", () => {
 });
 ```
 
-**Step 2: Run test to verify it fails**
+**Step 2: Executar o teste para verificar que falha**
 
-Run: `pnpm --filter @understand-anything/core test -- --run plugin-registry.test`
-Expected: FAIL — current registry calls `plugin.resolveImports(...)` unconditionally
+Execute: `pnpm --filter @understand-anything/core test -- --run plugin-registry.test`
+Esperado: FAIL — current registry calls `plugin.resolveImports(...)` unconditionally
 
-**Step 3: Update PluginRegistry**
+**Step 3: Atualizar o PluginRegistry**
 
 In `registry.ts`, update `resolveImports` (line 62-66):
 
@@ -373,10 +373,10 @@ resolveImports(filePath: string, content: string): ImportResolution[] | null {
 }
 ```
 
-**Step 4: Run test to verify it passes**
+**Step 4: Executar o teste para verificar que passa**
 
-Run: `pnpm --filter @understand-anything/core test -- --run plugin-registry.test`
-Expected: PASS
+Execute: `pnpm --filter @understand-anything/core test -- --run plugin-registry.test`
+Esperado: PASS
 
 **Step 5: Commit**
 
@@ -387,39 +387,39 @@ git commit -m "feat(core): make resolveImports optional on AnalyzerPlugin"
 
 ---
 
-## Task 4: Add Non-Code Language Configs (26 configs)
+## Tarefa 4: Adicionar Configs de Linguagem Não-Código (26 configs)
 
-**Files:**
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/markdown.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/yaml.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/json-config.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/toml.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/env.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/xml.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/dockerfile.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/sql.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/graphql.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/protobuf.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/terraform.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/github-actions.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/makefile.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/shell.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/html.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/css.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/openapi.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/kubernetes.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/docker-compose.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/json-schema.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/csv.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/restructuredtext.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/powershell.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/batch.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/jenkinsfile.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/plaintext.ts`
-- Modify: `understand-anything-plugin/packages/core/src/languages/configs/index.ts`
-- Test: `understand-anything-plugin/packages/core/src/__tests__/language-registry.test.ts`
+**Arquivos:**
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/markdown.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/yaml.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/json-config.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/toml.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/env.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/xml.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/dockerfile.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/sql.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/graphql.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/protobuf.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/terraform.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/github-actions.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/makefile.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/shell.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/html.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/css.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/openapi.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/kubernetes.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/docker-compose.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/json-schema.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/csv.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/restructuredtext.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/powershell.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/batch.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/jenkinsfile.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/plaintext.ts`
+- Modificar: `understand-anything-plugin/packages/core/src/languages/configs/index.ts`
+- Teste: `understand-anything-plugin/packages/core/src/__tests__/language-registry.test.ts`
 
-**Step 1: Write the failing test**
+**Step 1: Escrever o teste que vai falhar**
 
 Add to `language-registry.test.ts`:
 
@@ -454,12 +454,12 @@ describe("Non-code language configs", () => {
 });
 ```
 
-**Step 2: Run test to verify it fails**
+**Step 2: Executar o teste para verificar que falha**
 
-Run: `pnpm --filter @understand-anything/core test -- --run language-registry.test`
-Expected: FAIL — no configs registered for non-code extensions
+Execute: `pnpm --filter @understand-anything/core test -- --run language-registry.test`
+Esperado: FAIL — no configs registered for non-code extensions
 
-**Step 3: Create all config files**
+**Step 3: Criar todos os arquivos de config**
 
 Each config follows the same pattern as `typescript.ts`. Example for markdown:
 
@@ -508,10 +508,10 @@ Create similar configs for all 26 types. Key extension mappings:
 
 Update `configs/index.ts` to import and register all new configs in `builtinLanguageConfigs`.
 
-**Step 4: Run test to verify it passes**
+**Step 4: Executar o teste para verificar que passa**
 
-Run: `pnpm --filter @understand-anything/core test -- --run language-registry.test`
-Expected: PASS
+Execute: `pnpm --filter @understand-anything/core test -- --run language-registry.test`
+Esperado: PASS
 
 **Step 5: Commit**
 
@@ -522,27 +522,27 @@ git commit -m "feat(core): add 26 non-code language configs with filename-based 
 
 ---
 
-## Task 5: Build Custom Parsers (12 parsers)
+## Tarefa 5: Construir Parsers Customizados (12 parsers)
 
-**Files:**
-- Create: `understand-anything-plugin/packages/core/src/plugins/parsers/markdown-parser.ts`
-- Create: `understand-anything-plugin/packages/core/src/plugins/parsers/yaml-parser.ts`
-- Create: `understand-anything-plugin/packages/core/src/plugins/parsers/json-parser.ts`
-- Create: `understand-anything-plugin/packages/core/src/plugins/parsers/toml-parser.ts`
-- Create: `understand-anything-plugin/packages/core/src/plugins/parsers/env-parser.ts`
-- Create: `understand-anything-plugin/packages/core/src/plugins/parsers/dockerfile-parser.ts`
-- Create: `understand-anything-plugin/packages/core/src/plugins/parsers/sql-parser.ts`
-- Create: `understand-anything-plugin/packages/core/src/plugins/parsers/graphql-parser.ts`
-- Create: `understand-anything-plugin/packages/core/src/plugins/parsers/protobuf-parser.ts`
-- Create: `understand-anything-plugin/packages/core/src/plugins/parsers/terraform-parser.ts`
-- Create: `understand-anything-plugin/packages/core/src/plugins/parsers/makefile-parser.ts`
-- Create: `understand-anything-plugin/packages/core/src/plugins/parsers/shell-parser.ts`
-- Create: `understand-anything-plugin/packages/core/src/plugins/parsers/index.ts`
-- Test: `understand-anything-plugin/packages/core/src/__tests__/parsers.test.ts`
+**Arquivos:**
+- Criar: `understand-anything-plugin/packages/core/src/plugins/parsers/markdown-parser.ts`
+- Criar: `understand-anything-plugin/packages/core/src/plugins/parsers/yaml-parser.ts`
+- Criar: `understand-anything-plugin/packages/core/src/plugins/parsers/json-parser.ts`
+- Criar: `understand-anything-plugin/packages/core/src/plugins/parsers/toml-parser.ts`
+- Criar: `understand-anything-plugin/packages/core/src/plugins/parsers/env-parser.ts`
+- Criar: `understand-anything-plugin/packages/core/src/plugins/parsers/dockerfile-parser.ts`
+- Criar: `understand-anything-plugin/packages/core/src/plugins/parsers/sql-parser.ts`
+- Criar: `understand-anything-plugin/packages/core/src/plugins/parsers/graphql-parser.ts`
+- Criar: `understand-anything-plugin/packages/core/src/plugins/parsers/protobuf-parser.ts`
+- Criar: `understand-anything-plugin/packages/core/src/plugins/parsers/terraform-parser.ts`
+- Criar: `understand-anything-plugin/packages/core/src/plugins/parsers/makefile-parser.ts`
+- Criar: `understand-anything-plugin/packages/core/src/plugins/parsers/shell-parser.ts`
+- Criar: `understand-anything-plugin/packages/core/src/plugins/parsers/index.ts`
+- Teste: `understand-anything-plugin/packages/core/src/__tests__/parsers.test.ts`
 
 Each parser implements `AnalyzerPlugin`. Build them TDD-style, one at a time.
 
-**Step 1: Write failing tests for all 12 parsers**
+**Step 1: Escrever testes que vão falhar para todos os 12 parsers**
 
 Create `parsers.test.ts` with test suites for each parser. Example for MarkdownParser:
 
@@ -592,12 +592,12 @@ Similar test suites for:
 - **TOMLParser**: Extract section structure
 - **EnvParser**: Extract variable names
 
-**Step 2: Run tests to verify they fail**
+**Step 2: Executar os testes para verificar que falham**
 
-Run: `pnpm --filter @understand-anything/core test -- --run parsers.test`
-Expected: FAIL — parser modules don't exist
+Execute: `pnpm --filter @understand-anything/core test -- --run parsers.test`
+Esperado: FAIL — parser modules don't exist
 
-**Step 3: Implement all 12 parsers**
+**Step 1: Implementar todos os 12 parsers**
 
 Each parser follows this pattern:
 
@@ -666,10 +666,10 @@ cd understand-anything-plugin/packages/core
 pnpm add yaml @iarna/toml jsonc-parser
 ```
 
-**Step 4: Run tests to verify they pass**
+**Step 4: Executar os testes para verificar que passam**
 
-Run: `pnpm --filter @understand-anything/core test -- --run parsers.test`
-Expected: PASS
+Execute: `pnpm --filter @understand-anything/core test -- --run parsers.test`
+Esperado: PASS
 
 **Step 5: Commit**
 
@@ -680,13 +680,13 @@ git commit -m "feat(core): add 12 custom parsers for non-code file types"
 
 ---
 
-## Task 6: Update GraphBuilder — Support New Node Types
+## Tarefa 6: Atualizar GraphBuilder — Suporte a Novos Node Types
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/core/src/analyzer/graph-builder.ts:1-207`
-- Test: `understand-anything-plugin/packages/core/src/analyzer/graph-builder.test.ts`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/core/src/analyzer/graph-builder.ts:1-207`
+- Teste: `understand-anything-plugin/packages/core/src/analyzer/graph-builder.test.ts`
 
-**Step 1: Write the failing test**
+**Step 1: Escrever o teste que vai falhar**
 
 Add to `graph-builder.test.ts`:
 
@@ -733,12 +733,12 @@ describe("Non-code file support", () => {
 });
 ```
 
-**Step 2: Run test to verify it fails**
+**Step 2: Executar o teste para verificar que falha**
 
-Run: `pnpm --filter @understand-anything/core test -- --run graph-builder.test`
-Expected: FAIL — `addNonCodeFile` and `addNonCodeFileWithAnalysis` methods don't exist
+Execute: `pnpm --filter @understand-anything/core test -- --run graph-builder.test`
+Esperado: FAIL — `addNonCodeFile` and `addNonCodeFileWithAnalysis` methods don't exist
 
-**Step 3: Implement GraphBuilder extensions**
+**Step 3: Implementar as extensões do GraphBuilder**
 
 Add new methods to GraphBuilder:
 
@@ -818,10 +818,10 @@ private mapKindToNodeType(kind: string): GraphNode["type"] {
 }
 ```
 
-**Step 4: Run test to verify it passes**
+**Step 4: Executar o teste para verificar que passa**
 
-Run: `pnpm --filter @understand-anything/core test -- --run graph-builder.test`
-Expected: PASS
+Execute: `pnpm --filter @understand-anything/core test -- --run graph-builder.test`
+Esperado: PASS
 
 **Step 5: Commit**
 
@@ -832,12 +832,12 @@ git commit -m "feat(core): add non-code file support to GraphBuilder"
 
 ---
 
-## Task 7: Update Core Exports
+## Tarefa 7: Atualizar Exports do Core
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/core/src/index.ts`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/core/src/index.ts`
 
-**Step 1: Update exports to include new types and parsers**
+**Step 1: Atualizar exports para incluir novos types e parsers**
 
 Add to `index.ts`:
 
@@ -871,10 +871,10 @@ export {
 } from "./plugins/parsers/index.js";
 ```
 
-**Step 2: Build to verify exports work**
+**Step 2: Build para verificar que os exports funcionam**
 
-Run: `pnpm --filter @understand-anything/core build`
-Expected: Success, no errors
+Execute: `pnpm --filter @understand-anything/core build`
+Esperado: Success, no errors
 
 **Step 3: Commit**
 
@@ -885,12 +885,12 @@ git commit -m "feat(core): export new types and parsers from core"
 
 ---
 
-## Task 8: Update Agent Prompts — Project Scanner
+## Tarefa 8: Atualizar Prompts dos Agents — Project Scanner
 
-**Files:**
-- Modify: `understand-anything-plugin/skills/understand/project-scanner-prompt.md`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/skills/understand/project-scanner-prompt.md`
 
-**Step 1: Update the scanner to discover ALL file types**
+**Step 1: Atualizar o scanner para descobrir TODOS os tipos de arquivo**
 
 Key changes to the prompt:
 1. Remove the code-only file filter — scan `.md`, `.yaml`, `.json`, `.sql`, `.tf`, `Dockerfile`, etc.
@@ -915,12 +915,12 @@ git commit -m "feat(agents): update project-scanner to discover all file types"
 
 ---
 
-## Task 9: Update Agent Prompts — File Analyzer
+## Tarefa 9: Atualizar Prompts dos Agents — File Analyzer
 
-**Files:**
-- Modify: `understand-anything-plugin/skills/understand/file-analyzer-prompt.md`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/skills/understand/file-analyzer-prompt.md`
 
-**Step 1: Add type-aware analysis prompts**
+**Step 1: Adicionar prompts de análise type-aware**
 
 Key changes:
 1. Add a section at the top explaining file categories and how to analyze each:
@@ -960,12 +960,12 @@ git commit -m "feat(agents): add type-aware analysis prompts for non-code files"
 
 ---
 
-## Task 10: Update Agent Prompts — Architecture Analyzer
+## Tarefa 10: Atualizar Prompts dos Agents — Architecture Analyzer
 
-**Files:**
-- Modify: `understand-anything-plugin/skills/understand/architecture-analyzer-prompt.md`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/skills/understand/architecture-analyzer-prompt.md`
 
-**Step 1: Add non-code pattern detection**
+**Step 1: Adicionar detecção de pattern não-código**
 
 Key changes:
 1. Add new architectural patterns to detect:
@@ -989,12 +989,12 @@ git commit -m "feat(agents): add non-code pattern detection to architecture anal
 
 ---
 
-## Task 11: Update Agent Prompts — Tour Builder
+## Tarefa 11: Atualizar Prompts dos Agents — Tour Builder
 
-**Files:**
-- Modify: `understand-anything-plugin/skills/understand/tour-builder-prompt.md`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/skills/understand/tour-builder-prompt.md`
 
-**Step 1: Add non-code tour stops**
+**Step 1: Adicionar paradas de tour não-código**
 
 Key changes:
 1. Update tour step guidance to include non-code files:
@@ -1017,12 +1017,12 @@ git commit -m "feat(agents): extend tour builder for non-code file stops"
 
 ---
 
-## Task 12: Update Agent Prompts — Graph Reviewer
+## Tarefa 12: Atualizar Prompts dos Agents — Graph Reviewer
 
-**Files:**
-- Modify: `understand-anything-plugin/skills/understand/graph-reviewer-prompt.md`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/skills/understand/graph-reviewer-prompt.md`
 
-**Step 1: Update validation for new node/edge types**
+**Step 1: Atualizar a validação para os novos node/edge types**
 
 Key changes:
 1. Add new node types to the valid type list in the validation script
@@ -1042,20 +1042,20 @@ git commit -m "feat(agents): update graph reviewer for new node/edge types"
 
 ---
 
-## Task 13: Add Language Context Snippets
+## Tarefa 13: Adicionar Snippets de Contexto de Linguagem
 
-**Files:**
-- Create: `understand-anything-plugin/skills/understand/languages/markdown.md`
-- Create: `understand-anything-plugin/skills/understand/languages/yaml.md`
-- Create: `understand-anything-plugin/skills/understand/languages/json.md`
-- Create: `understand-anything-plugin/skills/understand/languages/sql.md`
-- Create: `understand-anything-plugin/skills/understand/languages/dockerfile.md`
-- Create: `understand-anything-plugin/skills/understand/languages/terraform.md`
-- Create: `understand-anything-plugin/skills/understand/languages/graphql.md`
-- Create: `understand-anything-plugin/skills/understand/languages/protobuf.md`
-- Create: `understand-anything-plugin/skills/understand/languages/shell.md`
-- Create: `understand-anything-plugin/skills/understand/languages/html.md`
-- Create: `understand-anything-plugin/skills/understand/languages/css.md`
+**Arquivos:**
+- Criar: `understand-anything-plugin/skills/understand/languages/markdown.md`
+- Criar: `understand-anything-plugin/skills/understand/languages/yaml.md`
+- Criar: `understand-anything-plugin/skills/understand/languages/json.md`
+- Criar: `understand-anything-plugin/skills/understand/languages/sql.md`
+- Criar: `understand-anything-plugin/skills/understand/languages/dockerfile.md`
+- Criar: `understand-anything-plugin/skills/understand/languages/terraform.md`
+- Criar: `understand-anything-plugin/skills/understand/languages/graphql.md`
+- Criar: `understand-anything-plugin/skills/understand/languages/protobuf.md`
+- Criar: `understand-anything-plugin/skills/understand/languages/shell.md`
+- Criar: `understand-anything-plugin/skills/understand/languages/html.md`
+- Criar: `understand-anything-plugin/skills/understand/languages/css.md`
 
 Each snippet follows the pattern of existing `typescript.md` / `python.md`:
 
@@ -1084,7 +1084,7 @@ Each snippet follows the pattern of existing `typescript.md` / `python.md`:
 > "Comprehensive guide document with N sections covering [topics]"
 ```
 
-**Step 1: Create all 11 language snippets**
+**Step 1: Criar todos os 11 snippets de linguagem**
 
 **Step 2: Commit**
 
@@ -1095,12 +1095,12 @@ git commit -m "feat(agents): add language context snippets for 11 non-code file 
 
 ---
 
-## Task 14: Update SKILL.md — Main Pipeline
+## Tarefa 14: Atualizar SKILL.md — Pipeline Principal
 
-**Files:**
-- Modify: `understand-anything-plugin/skills/understand/SKILL.md`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/skills/understand/SKILL.md`
 
-**Step 1: Update the pipeline to handle non-code files**
+**Step 1: Atualizar o pipeline para lidar com arquivos não-código**
 
 Key changes:
 1. **Phase 1 (SCAN)**: Update file batching to include non-code files. Add `fileCategory` to batch metadata.
@@ -1119,12 +1119,12 @@ git commit -m "feat(pipeline): update main skill pipeline for non-code file anal
 
 ---
 
-## Task 15: Dashboard — Add Node Type Colors to Theme Presets
+## Tarefa 15: Dashboard — Adicionar Cores de Node Type aos Theme Presets
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/dashboard/src/themes/presets.ts:1-143`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/dashboard/src/themes/presets.ts:1-143`
 
-**Step 1: Add 8 new node type colors to all 5 presets**
+**Step 1: Adicionar 8 novas cores de node type a todos os 5 presets**
 
 Add these color entries to each preset's `colors` object:
 
@@ -1161,12 +1161,12 @@ git commit -m "feat(dashboard): add 8 new node type colors to all theme presets"
 
 ---
 
-## Task 16: Dashboard — Update CustomNode Component
+## Tarefa 16: Dashboard — Atualizar Componente CustomNode
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/CustomNode.tsx:1-137`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/CustomNode.tsx:1-137`
 
-**Step 1: Add new entries to typeColors and typeTextColors maps**
+**Step 1: Adicionar novas entradas aos maps typeColors e typeTextColors**
 
 ```typescript
 const typeColors: Record<string, string> = {
@@ -1211,12 +1211,12 @@ git commit -m "feat(dashboard): add new node type colors to CustomNode"
 
 ---
 
-## Task 17: Dashboard — Update NodeInfo Sidebar
+## Tarefa 17: Dashboard — Atualizar Sidebar NodeInfo
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/NodeInfo.tsx:1-312`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/NodeInfo.tsx:1-312`
 
-**Step 1: Add badge colors for new node types**
+**Step 1: Adicionar cores de badge para os novos node types**
 
 Add to `typeBadgeColors`:
 ```typescript
@@ -1230,7 +1230,7 @@ schema: "text-node-schema border border-node-schema/30 bg-node-schema/10",
 resource: "text-node-resource border border-node-resource/30 bg-node-resource/10",
 ```
 
-**Step 2: Add directional labels for new edge types**
+**Step 2: Adicionar labels direcionais para os novos edge types**
 
 Add to `getDirectionalLabel()`:
 ```typescript
@@ -1261,12 +1261,12 @@ git commit -m "feat(dashboard): add new node/edge type support to NodeInfo sideb
 
 ---
 
-## Task 18: Dashboard — Update ProjectOverview with File Type Breakdown
+## Tarefa 18: Dashboard — Atualizar ProjectOverview com Distribuição por File Type
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/ProjectOverview.tsx`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/ProjectOverview.tsx`
 
-**Step 1: Add file type distribution**
+**Step 1: Adicionar distribuição de file types**
 
 Add a "File Types" section after the stats grid that shows count per node type category:
 - Code: file + function + class
@@ -1286,14 +1286,14 @@ git commit -m "feat(dashboard): add file type breakdown to ProjectOverview"
 
 ---
 
-## Task 19: Dashboard — Add Filter Controls
+## Tarefa 19: Dashboard — Adicionar Controles de Filtro
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/dashboard/src/store.ts`
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/GraphView.tsx`
-- Modify: `understand-anything-plugin/packages/dashboard/src/App.tsx`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/dashboard/src/store.ts`
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/GraphView.tsx`
+- Modificar: `understand-anything-plugin/packages/dashboard/src/App.tsx`
 
-**Step 1: Add filter state to store**
+**Step 1: Adicionar state de filtro à store**
 
 Add to the Zustand store:
 ```typescript
@@ -1303,11 +1303,11 @@ toggleNodeTypeFilter: (category: string) => void;
 
 Default all categories to `true` (visible).
 
-**Step 2: Apply filters in GraphView topology computation**
+**Step 2: Aplicar filtros na computação de topology do GraphView**
 
 In `useLayerDetailTopology`, filter nodes based on `nodeTypeFilters` before layout.
 
-**Step 3: Add filter checkboxes to App.tsx header**
+**Step 3: Adicionar checkboxes de filtro ao header do App.tsx**
 
 Add small checkbox toggles next to the layer legend for each category.
 
@@ -1320,29 +1320,29 @@ git commit -m "feat(dashboard): add node type category filter controls"
 
 ---
 
-## Task 20: Dashboard Build Verification
+## Tarefa 20: Verificação de Build do Dashboard
 
-**Step 1: Build the dashboard**
+**Step 1: Buildar o dashboard**
 
-Run: `pnpm --filter @understand-anything/dashboard build`
-Expected: Success, no TypeScript errors
+Execute: `pnpm --filter @understand-anything/dashboard build`
+Esperado: Success, no TypeScript errors
 
-**Step 2: Build the core package**
+**Step 2: Buildar o pacote core**
 
-Run: `pnpm --filter @understand-anything/core build`
-Expected: Success
+Execute: `pnpm --filter @understand-anything/core build`
+Esperado: Success
 
-**Step 3: Run all core tests**
+**Step 3: Executar todos os testes do core**
 
-Run: `pnpm --filter @understand-anything/core test`
-Expected: All tests pass
+Execute: `pnpm --filter @understand-anything/core test`
+Esperado: All tests pass
 
-**Step 4: Run lint**
+**Step 4: Executar lint**
 
-Run: `pnpm lint`
-Expected: No errors
+Execute: `pnpm lint`
+Esperado: No errors
 
-**Step 5: Commit any lint fixes**
+**Step 5: Commit de quaisquer correções de lint**
 
 ```bash
 git add -A
@@ -1351,17 +1351,17 @@ git commit -m "fix: lint and build fixes for universal file type support"
 
 ---
 
-## Task 21: Integration Test — End-to-End Verification
+## Tarefa 21: Teste de Integração — Verificação End-to-End
 
-**Step 1: Dev server smoke test**
+**Step 1: Smoke test do dev server**
 
-Run: `pnpm dev:dashboard`
+Execute: `pnpm dev:dashboard`
 - Load a knowledge graph that includes non-code nodes
 - Verify new node types render with correct colors
 - Verify NodeInfo sidebar shows new edge labels
 - Verify filter controls work
 
-**Step 2: Generate test graph with non-code nodes**
+**Step 2: Gerar graph de teste com nós não-código**
 
 Update `scripts/generate-large-graph.mjs` to include non-code node types in the random generation, then generate a test graph and load it in the dashboard.
 
@@ -1374,17 +1374,17 @@ git commit -m "feat(scripts): include non-code node types in test graph generato
 
 ---
 
-## Task 22: Version Bump & Final Commit
+## Tarefa 22: Bump de Versão & Commit Final
 
-**Files:**
-- Modify: `understand-anything-plugin/package.json` → bump version
-- Modify: `.claude-plugin/marketplace.json` → bump version
-- Modify: `.claude-plugin/plugin.json` → bump version
-- Modify: `.cursor-plugin/plugin.json` → bump version
+**Arquivos:**
+- Modificar: `understand-anything-plugin/package.json` → bump version
+- Modificar: `.claude-plugin/marketplace.json` → bump version
+- Modificar: `.claude-plugin/plugin.json` → bump version
+- Modificar: `.cursor-plugin/plugin.json` → bump version
 
-**Step 1: Bump version in all 4 files** (e.g., 1.3.0 → 1.4.0)
+**Step 1: Bumpar versão em todos os 4 arquivos** (ex: 1.3.0 → 1.4.0)
 
-**Step 2: Final commit**
+**Step 2: Commit final**
 
 ```bash
 git add understand-anything-plugin/package.json .claude-plugin/marketplace.json .claude-plugin/plugin.json .cursor-plugin/plugin.json

@@ -1,98 +1,98 @@
 # Understand Anything
 
-## Project Overview
-An open-source tool combining LLM intelligence + static analysis to produce interactive dashboards for understanding codebases.
+## Visão Geral do Projeto
+Uma ferramenta open-source que combina inteligência de LLM com análise estática para gerar dashboards interativos voltados a entender codebases.
 
-## Prerequisites
-- Node.js >= 22 (developed on v24)
-- pnpm >= 10 (pinned via `packageManager` field in root `package.json`)
+## Pré-requisitos
+- Node.js >= 22 (desenvolvido na v24)
+- pnpm >= 10 (fixado pelo campo `packageManager` no `package.json` da raiz)
 
-## Architecture
-- **Monorepo** with pnpm workspaces
-- **understand-anything-plugin/** — Claude Code plugin containing all source code:
-  - **packages/core** — Shared analysis engine (types, persistence, tree-sitter, search, schema, tours, plugins)
-  - **packages/dashboard** — React + TypeScript web dashboard (React Flow, Zustand, TailwindCSS v4)
-  - **src/** — Skill TypeScript source for `/understand-chat`, `/understand-diff`, `/understand-explain`, `/understand-onboard`
-  - **skills/** — Skill definitions (`/understand`, `/understand-dashboard`, etc.)
-  - **agents/** — Agent definitions (project-scanner, file-analyzer, architecture-analyzer, tour-builder, graph-reviewer)
+## Arquitetura
+- **Monorepo** com pnpm workspaces
+- **understand-anything-plugin/** — plugin do Claude Code com todo o código-fonte:
+  - **packages/core** — engine de análise compartilhada (types, persistence, tree-sitter, search, schema, tours, plugins)
+  - **packages/dashboard** — dashboard web em React + TypeScript (React Flow, Zustand, TailwindCSS v4)
+  - **src/** — fonte TypeScript das skills `/understand-chat`, `/understand-diff`, `/understand-explain`, `/understand-onboard`
+  - **skills/** — definições de skill (`/understand`, `/understand-dashboard`, etc.)
+  - **agents/** — definições de agentes (project-scanner, file-analyzer, architecture-analyzer, tour-builder, graph-reviewer)
 
 ## Dashboard
-- Dark luxury theme: deep blacks (#0a0a0a), gold/amber accents (#d4a574), DM Serif Display typography
-- Graph-first layout: 75% graph + 360px right sidebar
-- No ChatPanel or Monaco Editor
-- Sidebar tabs: `Info` (ProjectOverview default → NodeInfo when node selected → LearnPanel in Learn persona, composing) and `Files` (FileExplorer tree built from the structural graph)
-- Code viewer: prism-react-renderer source viewer that slides up from the bottom on file node click; an expand button promotes it into a full-screen modal. Source content is fetched from the dev server's `/file-content.json` endpoint, gated by access token + a graph-derived path allowlist
-- Schema validation on graph load with error banner
+- Tema dark luxury: pretos profundos (#0a0a0a), tons de dourado/âmbar (#d4a574), tipografia DM Serif Display
+- Layout focado no grafo: 75% de grafo + sidebar direita de 360px
+- Sem ChatPanel ou Monaco Editor
+- Abas da sidebar: `Info` (ProjectOverview por padrão → NodeInfo quando um node é selecionado → LearnPanel na persona Learn, composing) e `Files` (FileExplorer em árvore montada a partir do grafo estrutural)
+- Visualizador de código: source viewer baseado em prism-react-renderer que sobe a partir do rodapé ao clicar em um node de arquivo; um botão de expandir promove o viewer para um modal em tela cheia. O conteúdo do arquivo vem do endpoint `/file-content.json` do dev server, protegido por access token e por uma allowlist de paths derivada do grafo
+- Validação de schema ao carregar o grafo, com banner de erro
 
-## Agent Pipeline
-- Agents write intermediate results to `.understand-anything/intermediate/` on disk (not returned to context)
-- Agent models: all set to `inherit` for cross-platform compatibility (Claude Code, Cursor, opencode, etc.)
-- `/understand` auto-triggers `/understand-dashboard` after completion
-- Intermediate files cleaned up after graph assembly
+## Pipeline de Agentes
+- Os agentes gravam resultados intermediários em disco no diretório `.understand-anything/intermediate/` (esses resultados não voltam ao contexto)
+- Modelos dos agentes: todos definidos como `inherit` para compatibilidade entre plataformas (Claude Code, Cursor, opencode, etc.)
+- `/understand` dispara automaticamente `/understand-dashboard` ao terminar
+- Os arquivos intermediários são limpos depois que o grafo é montado
 
-## Key Commands
-- `pnpm install` — Install all dependencies
-- `pnpm --filter @understand-anything/core build` — Build the core package
-- `pnpm --filter @understand-anything/core test` — Run core tests
-- `pnpm --filter @understand-anything/skill build` — Build the plugin package
-- `pnpm --filter @understand-anything/skill test` — Run plugin tests
-- `pnpm --filter @understand-anything/dashboard build` — Build the dashboard
-- `pnpm dev:dashboard` — Start dashboard dev server
-- `pnpm lint` — Run ESLint across the project
+## Comandos Principais
+- `pnpm install` — instala todas as dependências
+- `pnpm --filter @understand-anything/core build` — faz o build do pacote core
+- `pnpm --filter @understand-anything/core test` — roda os testes do core
+- `pnpm --filter @understand-anything/skill build` — faz o build do pacote do plugin
+- `pnpm --filter @understand-anything/skill test` — roda os testes do plugin
+- `pnpm --filter @understand-anything/dashboard build` — faz o build do dashboard
+- `pnpm dev:dashboard` — inicia o dev server do dashboard
+- `pnpm lint` — roda o ESLint em todo o projeto
 
-## Conventions
-- TypeScript strict mode everywhere
-- Vitest for testing
-- ESM modules (`"type": "module"`)
-- Knowledge graph JSON lives in `.understand-anything/` directory of analyzed projects
-- Core uses subpath exports (`./search`, `./types`, `./schema`) to avoid pulling Node.js modules into browser
+## Convenções
+- TypeScript em strict mode em todo lugar
+- Vitest para testes
+- Módulos ESM (`"type": "module"`)
+- O JSON do knowledge graph fica no diretório `.understand-anything/` dos projetos analisados
+- O core usa subpath exports (`./search`, `./types`, `./schema`) para evitar puxar módulos do Node.js para o browser
 
-## Gotchas
-- **tree-sitter**: Uses `web-tree-sitter` (WASM) instead of native `tree-sitter` — native bindings fail on darwin/arm64 + Node 24
-- **Dashboard imports**: Dashboard must only import from core's browser-safe subpath exports (`./search`, `./types`, `./schema`), never the main entry point which pulls in Node.js modules
+## Pegadinhas
+- **tree-sitter**: usa `web-tree-sitter` (WASM) em vez do `tree-sitter` nativo — os bindings nativos quebram em darwin/arm64 + Node 24
+- **Imports do Dashboard**: o dashboard só pode importar dos subpath exports browser-safe do core (`./search`, `./types`, `./schema`), nunca pelo entry point principal, que arrasta módulos do Node.js junto
 
 ## Scripts
-- `scripts/generate-large-graph.mjs` — Generates a fake knowledge graph for performance testing (e.g. large-graph layout). Writes to `.understand-anything/knowledge-graph.json`. Usage: `node scripts/generate-large-graph.mjs [nodeCount]` (default: 3000 nodes). Not part of the production pipeline.
+- `scripts/generate-large-graph.mjs` — gera um knowledge graph fictício para testes de performance (ex.: layout de grafos grandes). Escreve em `.understand-anything/knowledge-graph.json`. Uso: `node scripts/generate-large-graph.mjs [nodeCount]` (padrão: 3000 nodes). Não faz parte do pipeline de produção.
 
-## Versioning
-When pushing to remote, bump the version in **all five** of these files (keep them in sync):
-- `understand-anything-plugin/package.json` → `"version"` field
-- `understand-anything-plugin/.claude-plugin/plugin.json` → `"version"` field
-- `.claude-plugin/plugin.json` → `"version"` field
-- `.cursor-plugin/plugin.json` → `"version"` field
-- `.copilot-plugin/plugin.json` → `"version"` field
+## Versionamento
+Ao subir alterações para o remote, atualize a versão em **todos os cinco** arquivos abaixo (eles precisam permanecer em sincronia):
+- `understand-anything-plugin/package.json` → campo `"version"`
+- `understand-anything-plugin/.claude-plugin/plugin.json` → campo `"version"`
+- `.claude-plugin/plugin.json` → campo `"version"`
+- `.cursor-plugin/plugin.json` → campo `"version"`
+- `.copilot-plugin/plugin.json` → campo `"version"`
 
-Note: `.claude-plugin/marketplace.json` does **not** carry a version — the `plugins[]` entry only supports `name` and `source`, and adding other fields causes marketplace schema validation failures.
+Observação: `.claude-plugin/marketplace.json` **não** carrega versão — o entry em `plugins[]` aceita apenas `name` e `source`, e adicionar outros campos quebra a validação de schema do marketplace.
 
-## Testing Local Plugin Changes
+## Testando Alterações Locais do Plugin
 
-Claude Code caches installed plugins at `~/.claude/plugins/cache/understand-anything/understand-anything/<version>/`. Symlinks don't work because Claude's Search/Glob tools can't follow them. To test local changes:
+O Claude Code mantém um cache dos plugins instalados em `~/.claude/plugins/cache/understand-anything/understand-anything/<version>/`. Symlinks não funcionam porque as ferramentas Search/Glob do Claude não conseguem segui-los. Para testar alterações locais:
 
-1. **Build the packages:**
+1. **Faça o build dos pacotes:**
    ```bash
    pnpm --filter @understand-anything/core build
    pnpm --filter @understand-anything/skill build
    ```
 
-2. **Find the installed version** (must match what the marketplace currently serves):
+2. **Descubra qual versão está instalada** (precisa bater com a que o marketplace serve no momento):
    ```bash
    ls ~/.claude/plugins/cache/understand-anything/understand-anything/
    ```
 
-3. **Copy your local plugin into the cache**, replacing `<VERSION>` with the version from step 2:
+3. **Copie o seu plugin local para dentro do cache**, substituindo `<VERSION>` pela versão do passo 2:
    ```bash
    rm -rf ~/.claude/plugins/cache/understand-anything/understand-anything/<VERSION>
    cp -R ./understand-anything-plugin ~/.claude/plugins/cache/understand-anything/understand-anything/<VERSION>
    ```
 
-4. **Start a fresh Claude Code session** (existing sessions cache the old prompts in context).
+4. **Inicie uma sessão nova do Claude Code** (sessões existentes mantêm os prompts antigos no contexto).
 
-5. **Run `/understand --full`** in the target project to verify.
+5. **Rode `/understand --full`** no projeto-alvo para validar.
 
-**Re-sync after further changes:**
+**Re-sincronizar após novas alterações:**
 ```bash
 pnpm --filter @understand-anything/core build && \
 cp -R ./understand-anything-plugin/* ~/.claude/plugins/cache/understand-anything/understand-anything/<VERSION>/
 ```
 
-**To revert to upstream:** Uninstall and reinstall the plugin from the marketplace — it repopulates the cache from the upstream repo.
+**Para voltar ao upstream:** desinstale e reinstale o plugin pelo marketplace — ele repopula o cache a partir do repositório upstream.

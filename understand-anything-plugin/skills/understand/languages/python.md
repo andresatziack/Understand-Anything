@@ -1,48 +1,48 @@
-# Python Language Prompt Snippet
+# Snippet de Prompt da Linguagem Python
 
-## Key Concepts
+## Conceitos-Chave
 
-- **Decorators**: Functions that wrap other functions or classes using `@decorator` syntax
-- **List/Dict Comprehensions**: Concise syntax for creating collections from iterables
-- **Generators and Yield**: Lazy iterators using `yield` for memory-efficient data processing
-- **Context Managers**: `with` statement for resource management via `__enter__`/`__exit__`
-- **Type Hints and Typing Module**: Optional static type annotations for tooling and documentation
-- **Dunder Methods**: Special methods like `__init__`, `__repr__`, `__eq__` defining object behavior
-- **Metaclasses**: Classes that define how other classes are created (type as default metaclass)
-- **Dataclasses**: `@dataclass` decorator auto-generating boilerplate from field annotations
-- **Protocols**: Structural subtyping via `typing.Protocol` for duck-type-safe interfaces
-- **Descriptors**: Objects defining `__get__`, `__set__`, `__delete__` to customize attribute access
-- **Async/Await with Asyncio**: Cooperative concurrency using coroutines and an event loop
+- **Decorators**: funções que envolvem outras funções ou classes usando a sintaxe `@decorator`
+- **List/Dict Comprehensions**: sintaxe concisa para criar coleções a partir de iteráveis
+- **Generators e Yield**: iteradores preguiçosos usando `yield` para processamento de dados eficiente em memória
+- **Context Managers**: statement `with` para gerenciamento de recursos via `__enter__`/`__exit__`
+- **Type Hints e o módulo typing**: anotações de tipo estáticas opcionais para ferramentas e documentação
+- **Dunder Methods**: métodos especiais como `__init__`, `__repr__`, `__eq__` definindo o comportamento de objetos
+- **Metaclasses**: classes que definem como outras classes são criadas (type como metaclasse padrão)
+- **Dataclasses**: decorator `@dataclass` que auto-gera código boilerplate a partir de anotações de campo
+- **Protocols**: subtipagem estrutural via `typing.Protocol` para interfaces seguras com duck typing
+- **Descriptors**: objetos que definem `__get__`, `__set__`, `__delete__` para customizar acesso a atributos
+- **Async/Await com Asyncio**: concorrência cooperativa usando coroutines e um event loop
 
-## Import Patterns
+## Padrões de Importação
 
-- `from module import name` — import specific name from module
-- `import module` — import entire module, access via `module.name`
-- `from package.module import name` — absolute import from nested package
-- `from . import relative` — relative import within a package
+- `from module import name` — importa um nome específico de um módulo
+- `import module` — importa o módulo inteiro, acessível via `module.name`
+- `from package.module import name` — import absoluto de um package aninhado
+- `from . import relative` — import relativo dentro de um package
 
-## File Patterns
+## Padrões de Arquivos
 
-- `__init__.py` — package initializer (barrel equivalent), can re-export public API
-- `__main__.py` — package entry point when run with `python -m package`
-- `conftest.py` — pytest shared fixtures and hooks (auto-discovered)
-- `setup.py` / `pyproject.toml` — project configuration and build metadata
-- `requirements.txt` — pinned dependency list
+- `__init__.py` — inicializador do package (equivalente ao barrel), pode reexportar a API pública
+- `__main__.py` — ponto de entrada do package quando executado com `python -m package`
+- `conftest.py` — fixtures e hooks compartilhados do pytest (descobertos automaticamente)
+- `setup.py` / `pyproject.toml` — configuração do projeto e metadados de build
+- `requirements.txt` — lista de dependências fixadas
 
-## Common Frameworks
+## Frameworks Comuns
 
-- **Django** — Full-stack web framework with ORM, admin, and batteries included
-- **FastAPI** — Modern async API framework with automatic OpenAPI docs
-- **Flask** — Lightweight WSGI micro-framework for web applications
-- **SQLAlchemy** — SQL toolkit and ORM with unit-of-work pattern
-- **Celery** — Distributed task queue for background job processing
-- **Pydantic** — Data validation and settings management using type annotations
+- **Django** — framework web full-stack com ORM, admin e baterias inclusas
+- **FastAPI** — framework de API async moderno com documentação OpenAPI automática
+- **Flask** — micro-framework WSGI leve para aplicações web
+- **SQLAlchemy** — toolkit SQL e ORM com padrão unit-of-work
+- **Celery** — fila de tasks distribuída para processamento de jobs em background
+- **Pydantic** — validação de dados e gerenciamento de configurações usando anotações de tipo
 
-## Example Language Notes
+## Exemplo de Notas da Linguagem
 
-> Uses `@dataclass` decorator to auto-generate `__init__`, `__repr__`, and `__eq__` from
-> field annotations. This eliminates boilerplate while keeping the class definition
-> readable and the generated methods consistent.
+> Usa o decorator `@dataclass` para auto-gerar `__init__`, `__repr__` e `__eq__` a
+> partir das anotações de campo. Isso elimina boilerplate enquanto mantém a definição
+> da classe legível e os métodos gerados consistentes.
 >
-> When `__init__.py` re-exports symbols, it acts as the package's public API surface —
-> consumers import from the package rather than reaching into internal modules.
+> Quando `__init__.py` reexporta símbolos, atua como a superfície de API pública do
+> package — consumidores importam do package em vez de alcançar módulos internos.

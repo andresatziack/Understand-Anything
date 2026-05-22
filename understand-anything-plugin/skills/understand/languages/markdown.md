@@ -1,34 +1,34 @@
-# Markdown Language Prompt Snippet
+# Snippet de Prompt da Linguagem Markdown
 
-## Key Concepts
+## Conceitos-Chave
 
-- **Heading Hierarchy**: `#` through `######` for document structure, with h1 as the title
-- **Front Matter**: YAML metadata between `---` delimiters at the top of the file
-- **Fenced Code Blocks**: Triple backticks with optional language identifier for syntax highlighting
-- **Reference-Style Links**: `[text][ref]` with `[ref]: url` definitions, useful for repeated URLs
-- **Tables**: Pipe-delimited columns with alignment markers (`:---`, `:---:`, `---:`)
-- **Admonitions**: Blockquote-based callouts (`> **Note:**`, `> **Warning:**`) for emphasis
-- **Task Lists**: `- [ ]` and `- [x]` for checklists in issue trackers and READMEs
-- **HTML Embedding**: Raw HTML allowed inline for features Markdown does not support natively
+- **Hierarquia de Headings**: `#` até `######` para estrutura do documento, com h1 como o título
+- **Front Matter**: metadados YAML entre delimitadores `---` no topo do arquivo
+- **Fenced Code Blocks**: três backticks com identificador de linguagem opcional para syntax highlighting
+- **Links em Estilo de Referência**: `[text][ref]` com definições `[ref]: url`, úteis para URLs repetidas
+- **Tabelas**: colunas delimitadas por pipe com marcadores de alinhamento (`:---`, `:---:`, `---:`)
+- **Admonitions**: callouts baseados em blockquote (`> **Nota:**`, `> **Aviso:**`) para ênfase
+- **Listas de Tarefas**: `- [ ]` e `- [x]` para checklists em rastreadores de issues e READMEs
+- **HTML Embutido**: HTML cru permitido inline para recursos que o Markdown não suporta nativamente
 
-## Notable File Patterns
+## Padrões de Arquivo Notáveis
 
-- `README.md` — Project overview and entry point for new contributors (high-value)
-- `CONTRIBUTING.md` — Contribution guidelines, code style, PR process
-- `CHANGELOG.md` — Version history following Keep a Changelog or similar format
-- `docs/**/*.md` — Documentation directory with guides, API references, tutorials
-- `*.md` in source directories — Co-located documentation for modules or packages
-- `ADR-*.md` or `adr/*.md` — Architecture Decision Records
+- `README.md` — visão geral do projeto e ponto de entrada para novos contribuidores (alto valor)
+- `CONTRIBUTING.md` — guidelines de contribuição, estilo de código, processo de PR
+- `CHANGELOG.md` — histórico de versões seguindo Keep a Changelog ou formato similar
+- `docs/**/*.md` — diretório de documentação com guias, referências de API, tutoriais
+- `*.md` em diretórios de fonte — documentação co-localizada para módulos ou packages
+- `ADR-*.md` ou `adr/*.md` — Architecture Decision Records
 
-## Edge Patterns
+## Padrões de Aresta
 
-- Markdown files `documents` the code components they describe or reference
-- Links to other `.md` files create `related` edges between documentation nodes
-- Code block references mentioning file paths may imply `documents` edges to those files
-- README files in subdirectories typically `documents` the module at that path
+- Arquivos Markdown `documents` os componentes de código que descrevem ou referenciam
+- Links para outros arquivos `.md` criam arestas `related` entre nós de documentação
+- Referências em blocos de código mencionando caminhos de arquivo podem implicar arestas `documents` para esses arquivos
+- Arquivos README em subdiretórios geralmente `documents` o módulo daquele caminho
 
-## Summary Style
+## Estilo de Resumo
 
-> "Project overview documentation with N sections covering installation, usage, and API reference."
-> "Architecture Decision Record documenting the choice of [technology] for [purpose]."
-> "Contributing guide with code style rules, testing requirements, and pull request process."
+> "Documentação de visão geral do projeto com N seções cobrindo instalação, uso e referência da API."
+> "Architecture Decision Record documentando a escolha de [tecnologia] para [propósito]."
+> "Guia de contribuição com regras de estilo de código, requisitos de teste e processo de pull request."

@@ -1,52 +1,52 @@
-# Business Domain Knowledge Extraction — Design Spec
+# Extração de Business Domain Knowledge — Spec de Design
 
 **Issue:** [#61](https://github.com/Lum1104/Understand-Anything/issues/61)
-**Date:** 2026-04-01
+**Data:** 2026-04-01
 
-## Problem
+## Problema
 
-The current knowledge graph shows file-level dependency relationships, but this has limited value — you can already see imports in an IDE. When files are many, listing dependency edges doesn't reduce cognitive load; you still mentally reconstruct what the code *does*. What's needed is business domain knowledge: the logic and domain concepts embedded within the code, not the structural wiring.
+O knowledge graph atual mostra relacionamentos de dependência em nível de arquivo, mas isso tem valor limitado — você já consegue ver imports em uma IDE. Quando os arquivos são muitos, listar arestas de dependência não reduz a carga cognitiva; você ainda mentalmente reconstrói o que o código *faz*. O que é necessário é business domain knowledge: a lógica e os conceitos de domínio embutidos no código, não o cabeamento estrutural.
 
-## Solution Overview
+## Visão Geral da Solução
 
-A new `/understand-domain` skill that extracts business domain knowledge and renders it as a horizontal flow graph in the dashboard. Two viewing modes: a high-level **Domain view** (default when available) and the existing **Structural view**, with a toggle to switch between them.
+Uma nova skill `/understand-domain` que extrai business domain knowledge e a renderiza como um grafo de fluxo horizontal no dashboard. Dois modos de visualização: uma **Domain view** de alto nível (default quando disponível) e a **Structural view** existente, com um toggle para alternar entre elas.
 
-## Architecture: Separate File, Shared Schema (Approach C)
+## Arquitetura: Arquivo Separado, Schema Compartilhado (Abordagem C)
 
-Domain data lives in a **separate file** (`domain-graph.json`) using the **same `KnowledgeGraph` type system** — extended with new node/edge types. The dashboard detects both files and offers a view toggle. Domain nodes can reference structural nodes by ID for drill-down.
+Os dados de domínio vivem em um **arquivo separado** (`domain-graph.json`) usando o **mesmo sistema de tipos `KnowledgeGraph`** — estendido com novos tipos de nó/aresta. O dashboard detecta ambos os arquivos e oferece um toggle de view. Nós de domínio podem referenciar nós estruturais por ID para drill-down.
 
-**Why separate files:**
-- `/understand-domain` works standalone (lightweight) or alongside full graph
-- Shared schema means search, validation, and filtering work for both
-- No risk of polluting the structural graph
-- Each file is independently valid
+**Por que arquivos separados:**
+- `/understand-domain` funciona standalone (leve) ou junto ao grafo completo
+- Schema compartilhado significa que busca, validação e filtragem funcionam para ambos
+- Sem risco de poluir o grafo estrutural
+- Cada arquivo é independentemente válido
 
-## Section 1: Domain Graph Schema
+## Seção 1: Schema do Domain Graph
 
-### Three-Level Hierarchy
+### Hierarquia de Três Níveis
 
-1. **Business Domain** (top) — e.g., "Purchasing", "Logistics", "Warehouse Management"
-2. **Business Flow** (mid) — e.g., "Create Order", "Process Refund"
-3. **Business Step** (leaf) — e.g., "Validate input", "Check inventory", "Persist order"
+1. **Business Domain** (topo) — ex: "Purchasing", "Logistics", "Warehouse Management"
+2. **Business Flow** (meio) — ex: "Create Order", "Process Refund"
+3. **Business Step** (folha) — ex: "Validate input", "Check inventory", "Persist order"
 
-### New Node Types (3)
+### Novos Tipos de Nó (3)
 
-| Type | Purpose | Example |
+| Tipo | Propósito | Exemplo |
 |------|---------|---------|
-| `domain` | Business domain cluster | "Order Management", "Logistics" |
-| `flow` | A business process within a domain | "Create Order", "Process Refund" |
-| `step` | A single step in a flow | "Validate order input" |
+| `domain` | Cluster de domínio de negócio | "Order Management", "Logistics" |
+| `flow` | Um processo de negócio dentro de um domínio | "Create Order", "Process Refund" |
+| `step` | Um único step em um flow | "Validate order input" |
 
-### New Edge Types (4)
+### Novos Tipos de Aresta (4)
 
-| Type | Purpose |
+| Tipo | Propósito |
 |------|---------|
 | `contains_flow` | domain → flow |
-| `flow_step` | flow → step (ordered via `weight` field, e.g., 0.1, 0.2, ...) |
-| `cross_domain` | domain → domain (interaction between domains) |
-| `implements` | step → file/function node ID (reference into structural graph) |
+| `flow_step` | flow → step (ordenado via campo `weight`, ex: 0.1, 0.2, ...) |
+| `cross_domain` | domain → domain (interação entre domínios) |
+| `implements` | step → ID de nó file/function (referência ao grafo estrutural) |
 
-### Domain Node Structure
+### Estrutura do Nó Domain
 
 ```typescript
 // domain node
@@ -65,7 +65,7 @@ Domain data lives in a **separate file** (`domain-graph.json`) using the **same 
 }
 ```
 
-### Flow Node Structure
+### Estrutura do Nó Flow
 
 ```typescript
 {
@@ -82,7 +82,7 @@ Domain data lives in a **separate file** (`domain-graph.json`) using the **same 
 }
 ```
 
-### Step Node Structure
+### Estrutura do Nó Step
 
 ```typescript
 {
@@ -97,15 +97,15 @@ Domain data lives in a **separate file** (`domain-graph.json`) using the **same 
 }
 ```
 
-### File Output
+### Saída em Arquivo
 
-Saved to `.understand-anything/domain-graph.json` — same `KnowledgeGraph` shape, valid on its own.
+Salvo em `.understand-anything/domain-graph.json` — mesmo formato `KnowledgeGraph`, válido por si só.
 
-## Section 2: Analysis Pipeline
+## Seção 2: Pipeline de Análise
 
-### Two Paths, Same Output
+### Dois Caminhos, Mesma Saída
 
-**Path 1: Lightweight scan (no existing graph)**
+**Caminho 1: Scan leve (sem grafo existente)**
 
 ```
 File tree scan
@@ -116,9 +116,9 @@ File tree scan
     → Build domain-graph.json
 ```
 
-Token cost: ~10-20% of a full `/understand` scan.
+Custo de tokens: ~10-20% de um scan completo do `/understand`.
 
-**Path 2: Derive from existing graph**
+**Caminho 2: Derivar do grafo existente**
 
 ```
 Load knowledge-graph.json
@@ -128,19 +128,19 @@ Load knowledge-graph.json
     → Build domain-graph.json
 ```
 
-Very cheap — no file reading needed, LLM reasons over existing summaries and call edges.
+Muito barato — sem leitura de arquivos necessária, o LLM raciocina sobre os resumos existentes e arestas de call.
 
-**Path Selection:** `/understand-domain` checks if `.understand-anything/knowledge-graph.json` exists. If yes → Path 2. If no → Path 1.
+**Seleção do Caminho:** O `/understand-domain` verifica se `.understand-anything/knowledge-graph.json` existe. Se sim → Caminho 2. Se não → Caminho 1.
 
-### Agent Structure
+### Estrutura do Agente
 
-One new agent: **`domain-analyzer`** (opus model). Handles both paths. For large codebases, can batch by detected entry point groups.
+Um novo agente: **`domain-analyzer`** (modelo opus). Lida com ambos os caminhos. Para codebases grandes, pode fazer batches por grupos de entry points detectados.
 
-## Section 3: Preprocessing Script & Skill Integration
+## Seção 3: Script de Pré-processamento e Integração com a Skill
 
 ### Script: `understand-anything-plugin/skills/understand-domain/extract-domain-context.py`
 
-Bundled with the skill (not in `scripts/` which is for development tooling). Runs before the LLM agent. Outputs `.understand-anything/intermediate/domain-context.json`:
+Empacotado com a skill (não em `scripts/`, que é para tooling de desenvolvimento). Roda antes do agente LLM. Saída em `.understand-anything/intermediate/domain-context.json`:
 
 ```json
 {
@@ -166,42 +166,42 @@ Bundled with the skill (not in `scripts/` which is for development tooling). Run
 }
 ```
 
-Python script (no heavy dependencies — uses `ast` for Python, regex for other languages). Uses:
-- Walk the file tree (respecting `.gitignore`)
-- Detect entry points by pattern: route decorators, `app.get/post`, `export default handler`, `main()`, event listeners
-- Extract function signatures and import/export lists per file
-- Keep code snippets short (signature + first few lines, not full bodies)
+Script Python (sem dependências pesadas — usa `ast` para Python, regex para outras linguagens). Funções:
+- Percorrer a árvore de arquivos (respeitando `.gitignore`)
+- Detectar entry points por padrão: route decorators, `app.get/post`, `export default handler`, `main()`, event listeners
+- Extrair signatures de função e listas de import/export por arquivo
+- Manter snippets de código curtos (signature + primeiras linhas, não corpos completos)
 
-### Skill Integration
+### Integração com a Skill
 
-The `/understand-domain` skill markdown:
+O markdown da skill `/understand-domain`:
 
-1. Runs `understand-anything-plugin/skills/understand-domain/extract-domain-context.py`
-2. Checks for existing `knowledge-graph.json`
-3. If exists → passes both `domain-context.json` + graph data to domain-analyzer agent
-4. If not → passes only `domain-context.json`
-5. Agent outputs `domain-graph.json`
-6. Cleans up intermediate files
-7. Auto-triggers `/understand-dashboard`
+1. Roda `understand-anything-plugin/skills/understand-domain/extract-domain-context.py`
+2. Verifica a existência de `knowledge-graph.json`
+3. Se existe → passa tanto `domain-context.json` quanto os dados do grafo para o agente domain-analyzer
+4. Se não → passa apenas `domain-context.json`
+5. O agente gera `domain-graph.json`
+6. Limpa arquivos intermediários
+7. Auto-dispara `/understand-dashboard`
 
-## Section 4: Dashboard — Domain View
+## Seção 4: Dashboard — Domain View
 
-### View Toggle
+### Toggle de View
 
-- Top-left corner: pill toggle — **"Domain" / "Structural"**
-- Domain view is default when `domain-graph.json` exists
-- If only one graph file exists, no toggle shown
-- Switching views preserves sidebar state
+- Canto superior esquerdo: pill toggle — **"Domain" / "Structural"**
+- A Domain view é default quando `domain-graph.json` existe
+- Se apenas um arquivo de grafo existe, sem toggle exibido
+- Trocar de view preserva o estado da sidebar
 
-### Horizontal Flow Layout
+### Layout de Fluxo Horizontal
 
-- **Layout engine:** Dagre with `rankdir: "LR"` (left-to-right)
-- **Zoom levels:**
-  - **Zoomed out:** Domain clusters as large rounded rectangles, `cross_domain` edges between them
-  - **Click domain:** Expands to show flows as horizontal lanes
-  - **Click flow:** Shows step-by-step trace left-to-right
+- **Engine de layout:** Dagre com `rankdir: "LR"` (left-to-right)
+- **Níveis de zoom:**
+  - **Zoom out:** Domain clusters como retângulos arredondados grandes, arestas `cross_domain` entre eles
+  - **Clique no domain:** Expande para mostrar flows como faixas horizontais
+  - **Clique no flow:** Mostra trace step-by-step da esquerda para a direita
 
-### Domain Cluster Rendering
+### Renderização do Domain Cluster
 
 ```
 ┌─────────────────────────────────────┐
@@ -215,11 +215,11 @@ The `/understand-domain` skill markdown:
           ──cross_domain──→  [Logistics]
 ```
 
-- Gold/amber border for domain clusters (matches existing theme)
-- Shows summary, entity list, flow count on the cluster face
-- Cross-domain edges: thick dashed lines with labels
+- Borda dourada/âmbar para domain clusters (combina com o tema existente)
+- Mostra resumo, lista de entidades, contagem de flows na face do cluster
+- Arestas cross-domain: linhas tracejadas grossas com rótulos
 
-### Flow Trace Rendering
+### Renderização do Flow Trace
 
 ```
 POST /api/orders
@@ -229,33 +229,33 @@ POST /api/orders
   └──────────┘    └──────────────┘    └───────────┘    └──────────┘    └────────────┘
 ```
 
-- Steps connected left-to-right by `flow_step` edges (ordered by `weight`)
-- Entry point label at the left as flow trigger
-- Clicking a step → sidebar shows detail + link to structural view
+- Steps conectados da esquerda para a direita por arestas `flow_step` (ordenadas por `weight`)
+- Rótulo do entry point à esquerda como gatilho do flow
+- Clicar em um step → sidebar mostra detalhe + link para a structural view
 
-### Sidebar Adaptations
+### Adaptações da Sidebar
 
-**Domain node selected:** Summary, business rules, entities, cross-domain interactions, list of flows (clickable)
+**Nó domain selecionado:** Resumo, business rules, entidades, interações cross-domain, lista de flows (clicáveis)
 
-**Flow node selected:** Entry point info, step list in order, complexity
+**Nó flow selecionado:** Info do entry point, lista de steps em ordem, complexidade
 
-**Step node selected:** Description, "View in code" link (switches to structural view + navigates to file/function), previous/next step links
+**Nó step selecionado:** Descrição, link "View in code" (troca para a structural view + navega ao file/function), links de step anterior/próximo
 
 ### Drill-Down: Domain → Structural
 
-When a step has an `implements` edge referencing a structural node ID:
-- "View implementation" button in sidebar
-- Switches to structural view and navigates to that node
+Quando um step tem uma aresta `implements` referenciando um ID de nó estrutural:
+- Botão "View implementation" na sidebar
+- Troca para a structural view e navega para aquele nó
 - Breadcrumb: `Domain: Order Management > Flow: Create Order > Step: Validate Input → [structural view]`
 
-## Section 5: Skill Definition
+## Seção 5: Definição da Skill
 
-### `/understand-domain` Skill
+### Skill `/understand-domain`
 
-- **File:** `skills/understand-domain.md`
-- **Arguments:** Optional `--full` flag to force Path 1 (rescan even if graph exists)
+- **Arquivo:** `skills/understand-domain.md`
+- **Argumentos:** Flag opcional `--full` para forçar o Caminho 1 (rescanear mesmo se o grafo já existe)
 
-### Execution Flow
+### Fluxo de Execução
 
 ```
 1. Run scripts/extract-domain-context.mjs
@@ -269,55 +269,55 @@ When a step has an `implements` edge referencing a structural node ID:
 7. Auto-trigger /understand-dashboard
 ```
 
-### Domain Analyzer Agent
+### Agente Domain Analyzer
 
-- **File:** `agents/domain-analyzer.md`
-- **Model:** opus
-- **Input:** Either (file tree + entry points) or (existing knowledge graph)
-- **Output:** Complete domain graph JSON
+- **Arquivo:** `agents/domain-analyzer.md`
+- **Modelo:** opus
+- **Input:** Ou (file tree + entry points) ou (knowledge graph existente)
+- **Output:** JSON completo do domain graph
 
-### Change Map
+### Mapa de Mudanças
 
-| Area | Changes |
+| Área | Mudanças |
 |------|---------|
-| `packages/core/src/types.ts` | Add 3 node types, 4 edge types, `domainMeta` optional field |
-| `packages/core/src/schema.ts` | Extend Zod schemas + aliases for new types |
-| `packages/core/src/persistence/` | Add `loadDomainGraph()` / `saveDomainGraph()` |
-| `understand-anything-plugin/skills/understand-domain/extract-domain-context.py` | New preprocessing script (bundled with skill) |
-| `agents/domain-analyzer.md` | New agent definition |
-| `skills/understand-domain.md` | New skill definition |
-| `packages/dashboard/src/store.ts` | Add `domainGraph`, `viewMode` state |
-| `packages/dashboard/src/components/` | New: `DomainGraphView.tsx`, `DomainClusterNode.tsx`, `FlowTraceNode.tsx`, `StepNode.tsx` |
-| `packages/dashboard/src/components/` | Modify: `App.tsx` (view toggle), `NodeInfo.tsx` (domain sidebar), `FilterPanel.tsx` (domain filters) |
-| `packages/dashboard/src/utils/` | New: `domain-layout.ts` (horizontal Dagre config) |
+| `packages/core/src/types.ts` | Adicionar 3 tipos de nó, 4 tipos de aresta, campo opcional `domainMeta` |
+| `packages/core/src/schema.ts` | Estender schemas Zod + aliases para os novos tipos |
+| `packages/core/src/persistence/` | Adicionar `loadDomainGraph()` / `saveDomainGraph()` |
+| `understand-anything-plugin/skills/understand-domain/extract-domain-context.py` | Novo script de pré-processamento (empacotado com a skill) |
+| `agents/domain-analyzer.md` | Nova definição de agente |
+| `skills/understand-domain.md` | Nova definição de skill |
+| `packages/dashboard/src/store.ts` | Adicionar estado `domainGraph`, `viewMode` |
+| `packages/dashboard/src/components/` | Novos: `DomainGraphView.tsx`, `DomainClusterNode.tsx`, `FlowTraceNode.tsx`, `StepNode.tsx` |
+| `packages/dashboard/src/components/` | Modificar: `App.tsx` (toggle de view), `NodeInfo.tsx` (sidebar de domain), `FilterPanel.tsx` (filtros de domain) |
+| `packages/dashboard/src/utils/` | Novo: `domain-layout.ts` (config Dagre horizontal) |
 
-## Section 6: Error Tolerance
+## Seção 6: Tolerância a Erros
 
-### Pipeline-Level Tolerance
+### Tolerância no Nível do Pipeline
 
-| Stage | Error Handling |
+| Estágio | Tratamento de Erro |
 |-------|---------------|
-| Preprocessing script | If tree-sitter fails on a file, skip and continue. Log skipped files. Entry point detection is best-effort. |
-| LLM output parsing | Same strategy as existing `parseTourGenerationResponse()` — extract JSON from markdown, handle partial responses. |
-| Schema validation | Existing auto-fix pipeline: sanitize → normalize (aliases) → apply defaults → validate. Drop broken nodes/edges, don't fail the whole graph. |
-| Cross-graph references | `implements` edges pointing to non-existent structural node IDs → keep edge but mark as `unresolved`. Dashboard shows step without drill-down link. |
+| Script de pré-processamento | Se o tree-sitter falhar em um arquivo, pular e continuar. Logar arquivos pulados. A detecção de entry point é best-effort. |
+| Parsing da saída do LLM | Mesma estratégia do `parseTourGenerationResponse()` existente — extrair JSON de markdown, lidar com respostas parciais. |
+| Validação de schema | Pipeline existente de auto-fix: sanitizar → normalizar (aliases) → aplicar defaults → validar. Descartar nós/arestas quebrados, não falhar o grafo inteiro. |
+| Referências cross-graph | Arestas `implements` apontando para IDs de nó estrutural inexistentes → manter a aresta mas marcar como `unresolved`. O dashboard mostra o step sem link de drill-down. |
 
-### Domain-Specific Validation Rules
+### Regras de Validação Específicas de Domain
 
-- **Domain with no flows:** Warn, keep (summary/entities still useful)
-- **Flow with no steps:** Warn, keep (entry point info still valuable)
-- **Steps with broken ordering:** Re-number sequentially by array position if `weight` values missing/duplicate
-- **Orphan steps:** Steps not connected to any flow → attach to synthetic "Uncategorized" flow
-- **Duplicate domains:** Merge by name similarity (fuzzy match), combine flows
-- **Empty domain graph:** Error banner in dashboard: "Domain extraction failed — try running `/understand` first for richer context, then `/understand-domain`"
+- **Domain sem flows:** Warn, manter (summary/entidades ainda úteis)
+- **Flow sem steps:** Warn, manter (info do entry point ainda é valiosa)
+- **Steps com ordenação quebrada:** Re-numerar sequencialmente pela posição no array se valores `weight` faltarem/duplicarem
+- **Steps órfãos:** Steps não conectados a nenhum flow → anexar a um flow sintético "Uncategorized"
+- **Domains duplicados:** Mesclar por similaridade de nome (fuzzy match), combinar flows
+- **Domain graph vazio:** Banner de erro no dashboard: "Domain extraction failed — try running `/understand` first for richer context, then `/understand-domain`"
 
-### Dashboard Resilience
+### Resiliência do Dashboard
 
-- If `domainMeta` missing on a domain node, sidebar shows only summary/tags
-- If `domain-graph.json` fails validation entirely, fall back to structural view with warning banner
-- Partial graphs render what's valid
+- Se `domainMeta` faltar em um nó domain, a sidebar mostra apenas resumo/tags
+- Se `domain-graph.json` falhar a validação por completo, fallback para structural view com warning banner
+- Grafos parciais renderizam o que é válido
 
-### Normalization Aliases for Domain Types
+### Aliases de Normalização para Domain Types
 
 ```typescript
 // Node type aliases

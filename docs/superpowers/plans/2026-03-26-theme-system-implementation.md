@@ -1,46 +1,46 @@
-# Theme System Implementation Plan
+# Plano de Implementação do Sistema de Temas
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **Para o Claude:** SUB-SKILL OBRIGATÓRIA: Use superpowers:executing-plans para implementar este plano tarefa por tarefa.
 
-**Goal:** Add curated theme presets with accent customization to the dashboard.
+**Objetivo:** Adicionar presets de tema curados com customização de accent ao dashboard.
 
-**Architecture:** CSS variable injection at runtime via a pure theme engine, React context for state, localStorage + meta.json for persistence. Five presets (4 dark + 1 light) with 8 accent swatches each.
+**Arquitetura:** Injeção de variáveis CSS em runtime via uma engine de tema pura, contexto React para state, localStorage + meta.json para persistência. Cinco presets (4 dark + 1 light) com 8 swatches de accent cada.
 
-**Tech Stack:** React, TypeScript, TailwindCSS v4, Zustand (untouched), CSS custom properties.
+**Stack Tecnológica:** React, TypeScript, TailwindCSS v4, Zustand (intocado), CSS custom properties.
 
-**Design Doc:** `docs/plans/2026-03-26-theme-system-design.md`
+**Spec de Design:** `docs/plans/2026-03-26-theme-system-design.md`
 
 ---
 
-### Task 1: Rename `gold` to `accent` in CSS variables and Tailwind classes
+### Tarefa 1: Renomear `gold` para `accent` em variáveis CSS e classes Tailwind
 
-This is a mechanical find-and-replace with no behavioral change. Must be done first so all subsequent tasks use the new naming.
+Este é um find-and-replace mecânico sem mudança comportamental. Tem que ser feito primeiro para que todas as tarefas seguintes usem a nova nomeação.
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/dashboard/src/index.css`
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/CustomNode.tsx`
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/NodeInfo.tsx`
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/LearnPanel.tsx`
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/ProjectOverview.tsx`
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/SearchBar.tsx`
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/LayerLegend.tsx`
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/PersonaSelector.tsx`
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/CodeViewer.tsx`
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/GraphView.tsx`
-- Modify: `understand-anything-plugin/packages/dashboard/src/App.tsx`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/dashboard/src/index.css`
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/CustomNode.tsx`
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/NodeInfo.tsx`
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/LearnPanel.tsx`
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/ProjectOverview.tsx`
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/SearchBar.tsx`
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/LayerLegend.tsx`
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/PersonaSelector.tsx`
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/CodeViewer.tsx`
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/GraphView.tsx`
+- Modificar: `understand-anything-plugin/packages/dashboard/src/App.tsx`
 
-**Step 1: Rename CSS variables in index.css**
+**Step 1: Renomear variáveis CSS no index.css**
 
-In the `@theme` block, rename:
+No bloco `@theme`, renomeie:
 - `--color-gold` -> `--color-accent`
 - `--color-gold-dim` -> `--color-accent-dim`
 - `--color-gold-bright` -> `--color-accent-bright`
 
-Also rename the `@keyframes goldPulse` to `accentPulse` and `.animate-gold-pulse` to `.animate-accent-pulse`.
+Renomeie também o `@keyframes goldPulse` para `accentPulse` e `.animate-gold-pulse` para `.animate-accent-pulse`.
 
-**Step 2: Rename all Tailwind class references across components**
+**Step 2: Renomear todas as referências a classes Tailwind nos componentes**
 
-Find and replace in all component files:
+Faça find-and-replace em todos os arquivos de componente:
 - `text-gold-bright` -> `text-accent-bright`
 - `text-gold-dim` -> `text-accent-dim`
 - `text-gold` -> `text-accent`
@@ -51,19 +51,19 @@ Find and replace in all component files:
 - `ring-gold` -> `ring-accent`
 - `animate-gold-pulse` -> `animate-accent-pulse`
 
-Order matters — replace the longer `-bright` and `-dim` variants first to avoid partial matches.
+A ordem importa — substitua primeiro as variantes `-bright` e `-dim` mais longas para evitar matches parciais.
 
-Also replace any `var(--color-gold` with `var(--color-accent` in inline styles.
+Substitua também qualquer `var(--color-gold` por `var(--color-accent` em estilos inline.
 
-**Step 3: Verify the build compiles**
+**Step 3: Verificar que o build compila**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/dashboard build`
-Expected: Build succeeds with no errors.
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/dashboard build`
+Esperado: Build é bem-sucedido sem erros.
 
-**Step 4: Visually verify (optional)**
+**Step 4: Verificar visualmente (opcional)**
 
-Run: `cd understand-anything-plugin && pnpm dev:dashboard`
-Expected: Dashboard looks identical — same gold accent, no visual changes.
+Execute: `cd understand-anything-plugin && pnpm dev:dashboard`
+Esperado: Dashboard tem aparência idêntica — mesmo accent gold, sem mudanças visuais.
 
 **Step 5: Commit**
 
@@ -74,19 +74,19 @@ git commit -m "refactor(dashboard): rename gold CSS variables to accent"
 
 ---
 
-### Task 2: Consolidate hardcoded RGBA values into CSS variables
+### Tarefa 2: Consolidar valores RGBA hardcoded em variáveis CSS
 
-Replace scattered hardcoded color values in components with CSS variables so they respond to theme changes.
+Substitua valores de cor hardcoded espalhados pelos componentes por variáveis CSS para que respondam a mudanças de tema.
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/dashboard/src/index.css`
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/GraphView.tsx`
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/CustomNode.tsx`
-- Modify: `understand-anything-plugin/packages/dashboard/src/components/CodeViewer.tsx`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/dashboard/src/index.css`
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/GraphView.tsx`
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/CustomNode.tsx`
+- Modificar: `understand-anything-plugin/packages/dashboard/src/components/CodeViewer.tsx`
 
-**Step 1: Add new CSS variables to index.css @theme block**
+**Step 1: Adicionar novas variáveis CSS ao bloco @theme do index.css**
 
-Add these new variables after the existing border variables:
+Adicione estas novas variáveis após as variáveis de border existentes:
 
 ```css
 /* Glass */
@@ -117,9 +117,9 @@ Add these new variables after the existing border variables:
 --kbd-bg: rgba(212, 165, 116, 0.1);
 ```
 
-**Step 2: Update .glass, .glass-heavy classes in index.css**
+**Step 2: Atualizar classes .glass, .glass-heavy no index.css**
 
-Replace hardcoded values with the new variables:
+Substitua valores hardcoded pelas novas variáveis:
 
 ```css
 .glass {
@@ -137,7 +137,7 @@ Replace hardcoded values with the new variables:
 }
 ```
 
-**Step 3: Update scrollbar styles in index.css**
+**Step 3: Atualizar estilos de scrollbar no index.css**
 
 ```css
 ::-webkit-scrollbar-thumb {
@@ -150,7 +150,7 @@ Replace hardcoded values with the new variables:
 }
 ```
 
-**Step 4: Update glow classes in index.css**
+**Step 4: Atualizar classes de glow no index.css**
 
 ```css
 .node-glow {
@@ -158,7 +158,7 @@ Replace hardcoded values with the new variables:
 }
 ```
 
-Update `@keyframes accentPulse` (renamed in Task 1):
+Atualize `@keyframes accentPulse` (renomeado na Tarefa 1):
 ```css
 @keyframes accentPulse {
   0%, 100% {
@@ -170,7 +170,7 @@ Update `@keyframes accentPulse` (renamed in Task 1):
 }
 ```
 
-**Step 5: Update .kbd class in index.css**
+**Step 5: Atualizar classe .kbd no index.css**
 
 ```css
 .kbd {
@@ -180,11 +180,11 @@ Update `@keyframes accentPulse` (renamed in Task 1):
 }
 ```
 
-**Step 6: Update GraphView.tsx hardcoded colors**
+**Step 6: Atualizar cores hardcoded em GraphView.tsx**
 
-Replace these inline style values:
+Substitua estes valores de estilo inline:
 
-| Location | Old Value | New Value |
+| Local | Valor antigo | Valor novo |
 |----------|-----------|-----------|
 | Edge default style stroke | `"rgba(212,165,116,0.3)"` | `"var(--color-edge)"` |
 | Edge diff-faded stroke | `"rgba(212,165,116,0.08)"` | `"var(--color-edge-dim)"` |
@@ -196,23 +196,23 @@ Replace these inline style values:
 | Group node label color | `"#d4a574"` | `"var(--color-accent)"` |
 | Edge label fill (normal) | `"#a39787"` | `"var(--color-text-secondary)"` |
 | Edge label fill (diff faded) | `"rgba(163,151,135,0.3)"` | `"var(--color-text-muted)"` |
-| Spinner border class | `border-gold` already renamed to `border-accent` | Already done in Task 1 |
+| Classe de border do spinner | `border-gold` já renomeado para `border-accent` | Já feito na Tarefa 1 |
 
-**Step 7: Update CodeViewer.tsx hardcoded colors**
+**Step 7: Atualizar cores hardcoded em CodeViewer.tsx**
 
-Replace inline styles for the file type badge:
-- `color: "var(--color-node-file)"` — already uses CSS var, keep
+Substitua estilos inline para o badge do tipo de arquivo:
+- `color: "var(--color-node-file)"` — já usa variável CSS, manter
 - `borderColor: "rgba(74,124,155,0.3)"` -> `"color-mix(in srgb, var(--color-node-file) 30%, transparent)"`
 - `backgroundColor: "rgba(74,124,155,0.1)"` -> `"color-mix(in srgb, var(--color-node-file) 10%, transparent)"`
 
-**Step 8: Update CustomNode.tsx hardcoded shadow**
+**Step 8: Atualizar shadow hardcoded em CustomNode.tsx**
 
-Replace `shadow-[0_2px_8px_rgba(0,0,0,0.3)]` — this black shadow is fine for dark themes but keep it. Leave as-is since it works on both dark and light.
+Substitua `shadow-[0_2px_8px_rgba(0,0,0,0.3)]` — esta shadow preta funciona bem para temas dark mas mantenha. Deixe como está, já que funciona tanto em dark quanto em light.
 
-**Step 9: Verify build**
+**Step 9: Verificar build**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/dashboard build`
-Expected: Build succeeds.
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/dashboard build`
+Esperado: Build é bem-sucedido.
 
 **Step 10: Commit**
 
@@ -223,12 +223,12 @@ git commit -m "refactor(dashboard): consolidate hardcoded colors into CSS variab
 
 ---
 
-### Task 3: Create theme type definitions
+### Tarefa 3: Criar definições de tipos do tema
 
-**Files:**
-- Create: `understand-anything-plugin/packages/dashboard/src/themes/types.ts`
+**Arquivos:**
+- Criar: `understand-anything-plugin/packages/dashboard/src/themes/types.ts`
 
-**Step 1: Write the types file**
+**Step 1: Escrever o arquivo de tipos**
 
 ```typescript
 export type PresetId =
@@ -275,12 +275,12 @@ git commit -m "feat(dashboard): add theme type definitions"
 
 ---
 
-### Task 4: Create theme presets
+### Tarefa 4: Criar presets de tema
 
-**Files:**
-- Create: `understand-anything-plugin/packages/dashboard/src/themes/presets.ts`
+**Arquivos:**
+- Criar: `understand-anything-plugin/packages/dashboard/src/themes/presets.ts`
 
-**Step 1: Write the presets file**
+**Step 1: Escrever o arquivo de presets**
 
 ```typescript
 import type { AccentSwatch, ThemePreset } from "./types.ts";
@@ -437,14 +437,14 @@ git commit -m "feat(dashboard): add theme preset definitions"
 
 ---
 
-### Task 5: Create theme engine
+### Tarefa 5: Criar a engine de tema
 
-Pure functions with no React dependency. Handles CSS variable injection and accent derivation.
+Funções puras sem dependência do React. Lida com injeção de variáveis CSS e derivação de accent.
 
-**Files:**
-- Create: `understand-anything-plugin/packages/dashboard/src/themes/theme-engine.ts`
+**Arquivos:**
+- Criar: `understand-anything-plugin/packages/dashboard/src/themes/theme-engine.ts`
 
-**Step 1: Write the theme engine**
+**Step 1: Escrever a engine de tema**
 
 ```typescript
 import type { ThemeConfig } from "./types.ts";
@@ -514,14 +514,14 @@ git commit -m "feat(dashboard): add theme engine with CSS variable injection"
 
 ---
 
-### Task 6: Create ThemeContext
+### Tarefa 6: Criar ThemeContext
 
-React context + provider that manages theme state, persistence, and resolution.
+Context React + provider que gerencia estado do tema, persistência e resolução.
 
-**Files:**
-- Create: `understand-anything-plugin/packages/dashboard/src/themes/ThemeContext.tsx`
+**Arquivos:**
+- Criar: `understand-anything-plugin/packages/dashboard/src/themes/ThemeContext.tsx`
 
-**Step 1: Write the context**
+**Step 1: Escrever o context**
 
 ```typescript
 import {
@@ -627,9 +627,9 @@ export function useTheme(): ThemeContextValue {
 }
 ```
 
-**Step 2: Create barrel export**
+**Step 2: Criar barrel export**
 
-Create: `understand-anything-plugin/packages/dashboard/src/themes/index.ts`
+Crie: `understand-anything-plugin/packages/dashboard/src/themes/index.ts`
 
 ```typescript
 export { ThemeProvider, useTheme } from "./ThemeContext.tsx";
@@ -648,14 +648,14 @@ git commit -m "feat(dashboard): add ThemeContext with localStorage persistence"
 
 ---
 
-### Task 7: Extend AnalysisMeta with theme field
+### Tarefa 7: Estender AnalysisMeta com campo de tema
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/core/src/types.ts`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/core/src/types.ts`
 
-**Step 1: Add ThemeConfig type and extend AnalysisMeta**
+**Step 1: Adicionar tipo ThemeConfig e estender AnalysisMeta**
 
-Add near the top of the file (after existing imports/types):
+Adicione perto do topo do arquivo (após imports/types existentes):
 
 ```typescript
 export interface ThemeConfig {
@@ -664,7 +664,7 @@ export interface ThemeConfig {
 }
 ```
 
-Add `theme` field to `AnalysisMeta`:
+Adicione o campo `theme` em `AnalysisMeta`:
 
 ```typescript
 export interface AnalysisMeta {
@@ -676,15 +676,15 @@ export interface AnalysisMeta {
 }
 ```
 
-**Step 2: Verify core builds**
+**Step 2: Verificar build do core**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/core build`
-Expected: Build succeeds.
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/core build`
+Esperado: Build é bem-sucedido.
 
-**Step 3: Verify core tests pass**
+**Step 3: Verificar que os testes do core passam**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test`
-Expected: All tests pass.
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test`
+Esperado: Todos os testes passam.
 
 **Step 4: Commit**
 
@@ -695,14 +695,14 @@ git commit -m "feat(core): add optional theme field to AnalysisMeta"
 
 ---
 
-### Task 8: Create ThemePicker component
+### Tarefa 8: Criar componente ThemePicker
 
-The popover UI with preset selection and accent swatch row.
+A UI de popover com seleção de preset e linha de swatches de accent.
 
-**Files:**
-- Create: `understand-anything-plugin/packages/dashboard/src/components/ThemePicker.tsx`
+**Arquivos:**
+- Criar: `understand-anything-plugin/packages/dashboard/src/components/ThemePicker.tsx`
 
-**Step 1: Write the component**
+**Step 1: Escrever o componente**
 
 ```tsx
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -859,16 +859,16 @@ git commit -m "feat(dashboard): add ThemePicker popover component"
 
 ---
 
-### Task 9: Integrate ThemeProvider and ThemePicker into App
+### Tarefa 9: Integrar ThemeProvider e ThemePicker no App
 
-Wire everything together in the root component.
+Conecte tudo no componente raiz.
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/dashboard/src/App.tsx`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/dashboard/src/App.tsx`
 
-**Step 1: Add imports**
+**Step 1: Adicionar imports**
 
-Add to imports at top of App.tsx:
+Adicione aos imports no topo do App.tsx:
 
 ```typescript
 import { ThemeProvider } from "./themes/index.ts";
@@ -876,9 +876,9 @@ import { ThemePicker } from "./components/ThemePicker.tsx";
 import type { ThemeConfig } from "./themes/index.ts";
 ```
 
-**Step 2: Add meta.json theme loading**
+**Step 2: Adicionar carregamento de tema do meta.json**
 
-Inside the App component, add state and effect for meta.json theme:
+Dentro do componente App, adicione state e effect para tema do meta.json:
 
 ```typescript
 const [metaTheme, setMetaTheme] = useState<ThemeConfig | null>(null);
@@ -893,18 +893,18 @@ useEffect(() => {
 }, []);
 ```
 
-**Step 3: Wrap return JSX with ThemeProvider**
+**Step 3: Envolver o JSX de retorno com ThemeProvider**
 
-Wrap the entire return value of App with `<ThemeProvider metaTheme={metaTheme}>...</ThemeProvider>`.
+Envolva todo o valor de retorno do App com `<ThemeProvider metaTheme={metaTheme}>...</ThemeProvider>`.
 
-**Step 4: Add ThemePicker to header**
+**Step 4: Adicionar ThemePicker ao header**
 
-In the header bar (the `<header>` or top flex row), add `<ThemePicker />` after the existing controls (PersonaSelector, DiffToggle, LayerLegend) and before the help button.
+Na barra do header (o `<header>` ou linha flex superior), adicione `<ThemePicker />` após os controles existentes (PersonaSelector, DiffToggle, LayerLegend) e antes do botão de help.
 
-**Step 5: Verify build**
+**Step 5: Verificar build**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/dashboard build`
-Expected: Build succeeds.
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/dashboard build`
+Esperado: Build é bem-sucedido.
 
 **Step 6: Commit**
 
@@ -915,16 +915,16 @@ git commit -m "feat(dashboard): integrate ThemeProvider and ThemePicker into App
 
 ---
 
-### Task 10: Light theme CSS adjustments
+### Tarefa 10: Ajustes do CSS para tema light
 
-Handle edge cases where CSS variables alone aren't sufficient for the light theme.
+Lida com edge cases onde apenas variáveis CSS não são suficientes para o tema light.
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/dashboard/src/index.css`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/dashboard/src/index.css`
 
-**Step 1: Add data-theme selectors for light theme overrides**
+**Step 1: Adicionar seletores data-theme para overrides do tema light**
 
-Add at the end of index.css:
+Adicione no final do index.css:
 
 ```css
 /* Light theme overrides */
@@ -945,9 +945,9 @@ Add at the end of index.css:
 }
 ```
 
-**Step 2: Add transition for smooth theme switching**
+**Step 2: Adicionar transition para troca suave de tema**
 
-Add to the `html` base styles:
+Adicione aos estilos base do `html`:
 
 ```css
 html {
@@ -955,11 +955,11 @@ html {
 }
 ```
 
-**Step 3: Update the WarningBanner consideration**
+**Step 3: Atualizar a consideração do WarningBanner**
 
-WarningBanner uses Tailwind amber/orange colors directly (e.g., `bg-amber-900/20`). These are semantic warning colors and should NOT change with theme. However, for the light theme, the amber colors on a light background need adjustment.
+WarningBanner usa cores amber/orange do Tailwind diretamente (ex.: `bg-amber-900/20`). Estas são cores semânticas de warning e NÃO devem mudar com o tema. Porém, para o tema light, as cores amber sobre fundo claro precisam de ajuste.
 
-Add to light theme overrides if needed:
+Adicione aos overrides do tema light se necessário:
 
 ```css
 [data-theme="light"] .warning-banner {
@@ -969,12 +969,12 @@ Add to light theme overrides if needed:
 }
 ```
 
-Note: Only add this if the WarningBanner looks broken on the light theme during visual testing. It may work fine as-is with Tailwind's amber colors.
+Nota: Adicione isto apenas se o WarningBanner ficar quebrado no tema light durante o teste visual. Pode funcionar bem como está com as cores amber do Tailwind.
 
-**Step 4: Verify build**
+**Step 4: Verificar build**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/dashboard build`
-Expected: Build succeeds.
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/dashboard build`
+Esperado: Build é bem-sucedido.
 
 **Step 5: Commit**
 
@@ -985,16 +985,16 @@ git commit -m "feat(dashboard): add light theme CSS overrides"
 
 ---
 
-### Task 11: Remove @theme defaults from index.css
+### Tarefa 11: Remover defaults @theme do index.css
 
-Now that the theme engine sets all CSS variables at runtime, the `@theme` block in index.css serves as the initial/fallback values before React mounts. Keep it but update it to use the accent naming.
+Agora que a engine de tema define todas as variáveis CSS em runtime, o bloco `@theme` no index.css serve como valores iniciais/fallback antes do React montar. Mantenha mas atualize para usar o naming accent.
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/dashboard/src/index.css`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/dashboard/src/index.css`
 
-**Step 1: Update @theme block**
+**Step 1: Atualizar bloco @theme**
 
-The `@theme` block should already have `--color-accent` (from Task 1 rename). Ensure the new variables added in Task 2 are also present in the `@theme` block as defaults:
+O bloco `@theme` já deve ter `--color-accent` (do rename da Tarefa 1). Garanta que as novas variáveis adicionadas na Tarefa 2 também estejam presentes no bloco `@theme` como defaults:
 
 ```css
 @theme {
@@ -1065,15 +1065,15 @@ The `@theme` block should already have `--color-accent` (from Task 1 rename). En
 }
 ```
 
-This ensures:
-- Tailwind v4 generates all the correct utility classes from the `@theme` block
-- Before React mounts, the page shows the Dark Gold default (no flash of unstyled content)
-- The theme engine overrides these values at runtime
+Isto garante:
+- O Tailwind v4 gera todas as classes utilitárias corretas a partir do bloco `@theme`
+- Antes do React montar, a página mostra o default Dark Gold (sem flash de conteúdo sem estilo)
+- A engine de tema sobrescreve esses valores em runtime
 
-**Step 2: Verify build**
+**Step 2: Verificar build**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/dashboard build`
-Expected: Build succeeds.
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/dashboard build`
+Esperado: Build é bem-sucedido.
 
 **Step 3: Commit**
 
@@ -1084,48 +1084,48 @@ git commit -m "refactor(dashboard): align @theme defaults with theme engine vari
 
 ---
 
-### Task 12: Full build + visual verification
+### Tarefa 12: Build completo + verificação visual
 
-**Files:** None (verification only)
+**Arquivos:** Nenhum (somente verificação)
 
-**Step 1: Build core**
+**Step 1: Build do core**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/core build`
-Expected: Build succeeds.
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/core build`
+Esperado: Build é bem-sucedido.
 
-**Step 2: Build dashboard**
+**Step 2: Build do dashboard**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/dashboard build`
-Expected: Build succeeds.
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/dashboard build`
+Esperado: Build é bem-sucedido.
 
-**Step 3: Run core tests**
+**Step 3: Executar testes do core**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test`
-Expected: All tests pass.
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test`
+Esperado: Todos os testes passam.
 
-**Step 4: Run lint**
+**Step 4: Executar lint**
 
-Run: `cd understand-anything-plugin && pnpm lint`
-Expected: No lint errors.
+Execute: `cd understand-anything-plugin && pnpm lint`
+Esperado: Sem erros de lint.
 
-**Step 5: Start dev server and visually verify**
+**Step 5: Iniciar dev server e verificar visualmente**
 
-Run: `cd understand-anything-plugin && pnpm dev:dashboard`
+Execute: `cd understand-anything-plugin && pnpm dev:dashboard`
 
-Verify:
-1. Dashboard loads with Dark Gold theme (default) — looks identical to current
-2. Theme picker button visible in header
-3. Click theme picker — popover opens with 5 presets and 8 accent swatches
-4. Select Dark Ocean — backgrounds turn navy-blue, accent turns cyan
-5. Select Dark Forest — backgrounds turn dark green, accent turns emerald
-6. Select Dark Rose — backgrounds turn dark warm, accent turns rose
-7. Select Light Minimal — backgrounds turn light, text turns dark, accent turns indigo
-8. Select different accent swatches within each preset — accent color, borders, glass, glow all update
-9. Refresh page — theme persists from localStorage
-10. Click outside popover — it closes
-11. Press Escape — popover closes
+Verifique:
+1. Dashboard carrega com tema Dark Gold (default) — aparência idêntica ao atual
+2. Botão do theme picker visível no header
+3. Clique no theme picker — popover abre com 5 presets e 8 swatches de accent
+4. Selecione Dark Ocean — backgrounds ficam navy-blue, accent vira cyan
+5. Selecione Dark Forest — backgrounds ficam dark green, accent vira emerald
+6. Selecione Dark Rose — backgrounds ficam dark warm, accent vira rose
+7. Selecione Light Minimal — backgrounds ficam light, texto fica dark, accent vira indigo
+8. Selecione swatches de accent diferentes em cada preset — accent color, borders, glass, glow atualizam
+9. Recarregue a página — tema persiste no localStorage
+10. Clique fora do popover — ele fecha
+11. Pressione Escape — popover fecha
 
-**Step 6: Commit (if any fixes needed)**
+**Step 6: Commit (se forem necessárias correções)**
 
 ```bash
 git add -A
@@ -1134,7 +1134,7 @@ git commit -m "fix(dashboard): theme system visual adjustments"
 
 ---
 
-## Dependency Graph
+## Grafo de Dependências
 
 ```
 Task 1 (rename gold→accent) ─┐
@@ -1155,12 +1155,12 @@ Task 2 (consolidate colors) ──┤                     │
                                                                            Task 12 (verify) ───┘
 ```
 
-**Parallelizable groups:**
-- Tasks 1 + 2 can be done sequentially (both touch index.css)
-- Tasks 3, 4, 5 can be done in parallel (independent new files)
-- Task 6 depends on 3, 4, 5
-- Task 7 is independent (core package)
-- Task 8 depends on 6
-- Task 9 depends on 1, 2, 7, 8
-- Tasks 10, 11 can be done after 9
-- Task 12 is final verification
+**Grupos paralelizáveis:**
+- Tarefas 1 + 2 podem ser feitas sequencialmente (ambas tocam index.css)
+- Tarefas 3, 4, 5 podem ser feitas em paralelo (arquivos novos independentes)
+- Tarefa 6 depende de 3, 4, 5
+- Tarefa 7 é independente (pacote core)
+- Tarefa 8 depende de 6
+- Tarefa 9 depende de 1, 2, 7, 8
+- Tarefas 10, 11 podem ser feitas após 9
+- Tarefa 12 é a verificação final

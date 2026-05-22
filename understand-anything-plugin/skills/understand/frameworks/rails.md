@@ -1,65 +1,65 @@
-# Ruby on Rails Framework Addendum
+# Adendo do Framework Ruby on Rails
 
-> Injected into file-analyzer and architecture-analyzer prompts when Rails is detected.
-> Do NOT use as a standalone prompt — always appended to the base prompt template.
+> Injetado nos prompts do file-analyzer e do architecture-analyzer quando Rails é detectado.
+> NÃO use como prompt independente — sempre anexado ao template de prompt base.
 
-## Rails Project Structure
+## Estrutura de Projeto Rails
 
-When analyzing a Ruby on Rails project, apply these additional conventions on top of the base analysis rules.
+Ao analisar um projeto Ruby on Rails, aplique estas convenções adicionais sobre as regras base de análise.
 
-### Canonical File Roles
+### Funções Canônicas de Arquivos
 
-| File / Pattern | Role | Tags |
+| Arquivo / Padrão | Função | Tags |
 |---|---|---|
-| `config.ru` | Rack entry point — boots the Rails application for the web server | `entry-point` |
-| `config/application.rb` | Application configuration — sets up Rails, loads gems, configures middleware | `entry-point`, `config` |
-| `app/controllers/*_controller.rb` | Controllers — handle HTTP requests, orchestrate models, render responses | `api-handler` |
-| `app/controllers/concerns/*.rb` | Controller concerns — shared controller behavior via mixins | `middleware`, `utility` |
-| `app/models/*.rb` | ActiveRecord models — map to database tables, contain validations and associations | `data-model` |
-| `app/models/concerns/*.rb` | Model concerns — shared model behavior via mixins | `utility` |
-| `app/views/**/*.erb`, `app/views/**/*.haml` | View templates — HTML rendering with embedded Ruby | `ui` |
-| `app/helpers/*_helper.rb` | View helpers — utility methods available in templates | `utility` |
-| `app/mailers/*_mailer.rb` | Action Mailer classes — send email notifications | `service` |
-| `app/jobs/*_job.rb` | Active Job classes — background job processing | `service` |
-| `app/channels/*_channel.rb` | Action Cable channels — WebSocket communication | `service` |
-| `app/serializers/*_serializer.rb` | API serializers — JSON response formatting (ActiveModelSerializers, Blueprinter) | `api-handler`, `utility` |
-| `app/services/*.rb` | Service objects — encapsulate complex business logic | `service` |
-| `db/migrate/*.rb` | Database migrations — schema changes versioned by timestamp | `config`, `data-model` |
-| `db/schema.rb`, `db/structure.sql` | Generated schema snapshot — current database structure | `data-model`, `config` |
-| `config/routes.rb` | Route definitions — maps URLs to controller actions | `routing`, `config` |
-| `config/initializers/*.rb` | Initializers — run once at boot to configure gems and services | `config` |
-| `lib/**/*.rb` | Library code — custom classes, Rake tasks, extensions | `utility`, `service` |
-| `spec/**/*_spec.rb`, `test/**/*_test.rb` | RSpec or Minitest test files | `test` |
+| `config.ru` | Ponto de entrada Rack — inicializa a aplicação Rails para o web server | `entry-point` |
+| `config/application.rb` | Configuração da aplicação — configura o Rails, carrega gems, configura middleware | `entry-point`, `config` |
+| `app/controllers/*_controller.rb` | Controllers — lidam com requisições HTTP, orquestram models, renderizam respostas | `api-handler` |
+| `app/controllers/concerns/*.rb` | Concerns de controller — comportamento compartilhado de controller via mixins | `middleware`, `utility` |
+| `app/models/*.rb` | Modelos ActiveRecord — mapeiam para tabelas do banco, contêm validações e associations | `data-model` |
+| `app/models/concerns/*.rb` | Concerns de model — comportamento compartilhado de model via mixins | `utility` |
+| `app/views/**/*.erb`, `app/views/**/*.haml` | Templates de view — renderização de HTML com Ruby embutido | `ui` |
+| `app/helpers/*_helper.rb` | View helpers — métodos utilitários disponíveis nos templates | `utility` |
+| `app/mailers/*_mailer.rb` | Classes Action Mailer — enviam notificações por e-mail | `service` |
+| `app/jobs/*_job.rb` | Classes Active Job — processamento de jobs em background | `service` |
+| `app/channels/*_channel.rb` | Channels do Action Cable — comunicação via WebSocket | `service` |
+| `app/serializers/*_serializer.rb` | Serializers de API — formatação de respostas JSON (ActiveModelSerializers, Blueprinter) | `api-handler`, `utility` |
+| `app/services/*.rb` | Service objects — encapsulam lógica de negócio complexa | `service` |
+| `db/migrate/*.rb` | Migrations de banco — mudanças de schema versionadas por timestamp | `config`, `data-model` |
+| `db/schema.rb`, `db/structure.sql` | Snapshot de schema gerado — estrutura atual do banco | `data-model`, `config` |
+| `config/routes.rb` | Definições de rota — mapeia URLs para ações de controller | `routing`, `config` |
+| `config/initializers/*.rb` | Initializers — rodam uma vez no boot para configurar gems e serviços | `config` |
+| `lib/**/*.rb` | Código de biblioteca — classes customizadas, tasks Rake, extensões | `utility`, `service` |
+| `spec/**/*_spec.rb`, `test/**/*_test.rb` | Arquivos de teste do RSpec ou Minitest | `test` |
 
-### Edge Patterns to Look For
+### Padrões de Aresta a Procurar
 
-**Route-to-controller mapping** — When `config/routes.rb` defines `resources :users` or `get '/foo', to: 'bar#baz'`, create `configures` edges from the routes file to the corresponding controller. RESTful resources generate a full set of action mappings.
+**Mapeamento rota-controller** — Quando `config/routes.rb` define `resources :users` ou `get '/foo', to: 'bar#baz'`, crie arestas `configures` do arquivo de rotas para o controller correspondente. Recursos RESTful geram um conjunto completo de mapeamentos de ação.
 
-**ActiveRecord associations** — When models define `has_many`, `belongs_to`, `has_one`, or `has_and_belongs_to_many`, create `depends_on` edges between model files with descriptions indicating the association type and direction.
+**Associations do ActiveRecord** — Quando models definem `has_many`, `belongs_to`, `has_one` ou `has_and_belongs_to_many`, crie arestas `depends_on` entre os arquivos de model com descrições indicando o tipo e a direção da association.
 
-**Controller-to-model** — When a controller calls model methods (`User.find`, `@post.save`), create `depends_on` edges from the controller to the model. Controllers are the primary consumers of model data.
+**Controller-modelo** — Quando um controller chama métodos de model (`User.find`, `@post.save`), crie arestas `depends_on` do controller para o model. Controllers são os principais consumidores dos dados dos models.
 
-**Callbacks** — When models or controllers use `before_action`, `after_save`, `before_validation`, or similar callbacks, note these as middleware-like edges. Callbacks create implicit execution paths that are not visible from the call site.
+**Callbacks** — Quando models ou controllers usam `before_action`, `after_save`, `before_validation` ou callbacks similares, registre-os como arestas semelhantes a middleware. Callbacks criam caminhos de execução implícitos que não são visíveis no ponto de chamada.
 
-### Architectural Layers for Rails
+### Camadas Arquiteturais para Rails
 
-Assign nodes to these layers when detected:
+Atribua nós a estas camadas quando detectadas:
 
-| Layer ID | Layer Name | What Goes Here |
+| ID da Camada | Nome da Camada | O Que Vai Aqui |
 |---|---|---|
-| `layer:api` | API Layer | `app/controllers/`, `app/serializers/`, API-specific controllers |
+| `layer:api` | API Layer | `app/controllers/`, `app/serializers/`, controllers específicos de API |
 | `layer:data` | Data Layer | `app/models/`, `db/migrate/`, `db/schema.rb` |
 | `layer:ui` | UI Layer | `app/views/`, `app/helpers/`, `app/assets/`, `app/javascript/` |
 | `layer:service` | Service Layer | `app/mailers/`, `app/jobs/`, `app/channels/`, `app/services/`, `lib/` |
 | `layer:config` | Config Layer | `config/routes.rb`, `config/initializers/`, `config/application.rb`, `config.ru` |
-| `layer:middleware` | Middleware Layer | `app/middleware/`, controller concerns, Rack middleware |
+| `layer:middleware` | Middleware Layer | `app/middleware/`, concerns de controller, middleware Rack |
 | `layer:test` | Test Layer | `spec/`, `test/`, `*.spec.rb`, `*_test.rb` |
 
-### Notable Patterns to Capture in languageLesson
+### Padrões Notáveis a Capturar em languageLesson
 
-- **Convention over configuration**: Rails derives routing, table names, and file locations from naming conventions — `UsersController` maps to `users_controller.rb`, handles `/users`, and queries the `users` table
-- **ActiveRecord pattern**: Models are database wrappers — each model class maps to a table, instances map to rows, and attributes map to columns with automatic type coercion
-- **Concerns for shared behavior**: `ActiveSupport::Concern` modules are mixins included in models or controllers to share validations, scopes, callbacks, and methods across classes
-- **Strong parameters for mass-assignment protection**: `params.require(:user).permit(:name, :email)` whitelists attributes — controllers must explicitly declare which fields can be set from user input
-- **RESTful resource routing**: `resources :posts` generates seven standard CRUD routes — Rails strongly encourages RESTful design where each controller maps to a resource
-- **Callbacks and observers**: `before_save`, `after_create`, and similar callbacks inject logic into the object lifecycle — they create invisible execution paths that can be difficult to trace
+- **Convenção sobre configuração**: o Rails deriva roteamento, nomes de tabela e localizações de arquivos a partir de convenções de nomenclatura — `UsersController` mapeia para `users_controller.rb`, lida com `/users` e consulta a tabela `users`
+- **Padrão ActiveRecord**: models são wrappers de banco — cada classe de model mapeia para uma tabela, instâncias mapeiam para linhas e atributos mapeiam para colunas com coerção automática de tipos
+- **Concerns para comportamento compartilhado**: módulos `ActiveSupport::Concern` são mixins incluídos em models ou controllers para compartilhar validações, scopes, callbacks e métodos entre classes
+- **Strong parameters para proteção contra mass-assignment**: `params.require(:user).permit(:name, :email)` faz whitelist dos atributos — controllers precisam declarar explicitamente quais campos podem ser definidos a partir da entrada do usuário
+- **Roteamento RESTful de recursos**: `resources :posts` gera sete rotas CRUD padrão — o Rails incentiva fortemente design RESTful, em que cada controller mapeia para um recurso
+- **Callbacks e observers**: `before_save`, `after_create` e callbacks similares injetam lógica no ciclo de vida do objeto — eles criam caminhos de execução invisíveis que podem ser difíceis de rastrear

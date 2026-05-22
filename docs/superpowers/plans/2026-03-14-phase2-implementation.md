@@ -1,32 +1,32 @@
-# Understand Anything — Phase 2 (Intelligence) Implementation Plan
+# Understand Anything — Plano de Implementação da Fase 2 (Inteligência)
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **Para o Claude:** SUB-SKILL OBRIGATÓRIA: Use superpowers:executing-plans para implementar este plano tarefa por tarefa.
 
-**Goal:** Add the "Intelligence" layer — enhanced search, staleness detection, layer auto-detection, `/understand-chat` skill command, and a dashboard chat panel with context-aware Q&A.
+**Objetivo:** Adicionar a camada "Inteligência" — busca aprimorada, detecção de staleness, auto-detecção de layers, comando de skill `/understand-chat`, e um painel de chat no dashboard com Q&A consciente de contexto.
 
-**Architecture:** Extends the existing monorepo (packages/core, packages/dashboard) with a new packages/skill package. Core gets search engine, staleness detection, and layer detection. Dashboard gets auto-layout, enhanced search UX, and chat panel. Skill package provides the `/understand-chat` Claude Code command.
+**Arquitetura:** Estende o monorepo existente (packages/core, packages/dashboard) com um novo pacote packages/skill. O core ganha search engine, detecção de staleness e detecção de layers. O dashboard ganha auto-layout, UX de busca aprimorada e painel de chat. O pacote skill fornece o comando `/understand-chat` do Claude Code.
 
-**Tech Stack:** Existing stack + fuse.js (fuzzy search), zod (schema validation), @dagrejs/dagre (graph layout)
+**Stack Tecnológica:** Stack existente + fuse.js (busca fuzzy), zod (validação de schema), @dagrejs/dagre (layout de graph)
 
 ---
 
-## Task 1: Zod Schema Validation for Graph Loading
+## Tarefa 1: Validação de Schema com Zod no Carregamento do Graph
 
-**Files:**
-- Create: `packages/core/src/schema.ts`
-- Modify: `packages/core/src/persistence/index.ts`
-- Modify: `packages/core/package.json`
-- Create: `packages/core/src/__tests__/schema.test.ts`
+**Arquivos:**
+- Criar: `packages/core/src/schema.ts`
+- Modificar: `packages/core/src/persistence/index.ts`
+- Modificar: `packages/core/package.json`
+- Criar: `packages/core/src/__tests__/schema.test.ts`
 
-**Context:** Currently `loadGraph` does `JSON.parse()` with no validation. Corrupted or incompatible graph files silently produce broken data. Add zod schemas matching every type in `types.ts`, and validate on load. This is foundational — all Phase 2 features rely on correct graph data.
+**Contexto:** Currently `loadGraph` does `JSON.parse()` with no validation. Corrupted or incompatible graph files silently produce broken data. Add zod schemas matching every type in `types.ts`, and validate on load. This is foundational — all Phase 2 features rely on correct graph data.
 
-**Step 1: Install zod**
+**Step 1: Instalar zod**
 
 ```bash
 cd packages/core && pnpm add zod
 ```
 
-**Step 2: Write failing tests**
+**Step 2: Escrever testes que vão falhar**
 
 ```typescript
 // packages/core/src/__tests__/schema.test.ts
@@ -132,14 +132,14 @@ describe('schema validation', () => {
 });
 ```
 
-**Step 3: Run tests to verify they fail**
+**Step 3: Executar os testes para verificar que falham**
 
 ```bash
 pnpm --filter @understand-anything/core test
 ```
-Expected: FAIL — `schema.ts` does not exist yet.
+Esperado: FAIL — `schema.ts` ainda não existe.
 
-**Step 4: Implement schema.ts**
+**Step 4: Implementar schema.ts**
 
 ```typescript
 // packages/core/src/schema.ts
@@ -227,11 +227,11 @@ export function validateGraph(data: unknown): ValidationResult {
 }
 ```
 
-**Step 5: Wire validation into persistence loadGraph**
+**Step 5: Conectar a validação ao loadGraph da persistência**
 
-Modify `packages/core/src/persistence/index.ts`:
+Modifique `packages/core/src/persistence/index.ts`:
 
-Add an optional `validate` parameter (default `true`) to `loadGraph`. When true, run `validateGraph` on the parsed JSON. If validation fails, throw an error with details. Keep backward compat by defaulting to validated.
+Adicione um parâmetro opcional `validate` (default `true`) ao `loadGraph`. Quando true, execute `validateGraph` no JSON parseado. Se a validação falhar, lance um erro com detalhes. Mantenha compatibilidade retroativa por meio do default validado.
 
 ```typescript
 import { validateGraph } from '../schema.js';
@@ -256,19 +256,19 @@ export function loadGraph(
 }
 ```
 
-**Step 6: Update barrel export**
+**Step 6: Atualizar barrel export**
 
-Add to `packages/core/src/index.ts`:
+Adicione em `packages/core/src/index.ts`:
 ```typescript
 export { KnowledgeGraphSchema, validateGraph, type ValidationResult } from './schema.js';
 ```
 
-**Step 7: Run tests to verify they pass**
+**Step 7: Executar os testes para verificar que passam**
 
 ```bash
 pnpm --filter @understand-anything/core test
 ```
-Expected: ALL PASS
+Esperado: TODOS PASSAM
 
 **Step 8: Commit**
 
@@ -279,23 +279,23 @@ git commit -m "feat(core): add zod schema validation for knowledge graph loading
 
 ---
 
-## Task 2: Enhanced Search Engine with Fuzzy Matching
+## Tarefa 2: Search Engine Aprimorado com Matching Fuzzy
 
-**Files:**
-- Create: `packages/core/src/search.ts`
-- Create: `packages/core/src/__tests__/search.test.ts`
-- Modify: `packages/core/src/index.ts`
-- Modify: `packages/core/package.json`
+**Arquivos:**
+- Criar: `packages/core/src/search.ts`
+- Criar: `packages/core/src/__tests__/search.test.ts`
+- Modificar: `packages/core/src/index.ts`
+- Modificar: `packages/core/package.json`
 
-**Context:** The current dashboard store has basic case-insensitive substring search across name/summary/tags. Phase 2 needs fuzzy matching and relevance scoring. We build a reusable `SearchEngine` in core (used by both dashboard and skill), powered by Fuse.js. The dashboard store will switch to using this engine in a later task.
+**Contexto:** The current dashboard store has basic case-insensitive substring search across name/summary/tags. Phase 2 needs fuzzy matching and relevance scoring. We build a reusable `SearchEngine` in core (used by both dashboard and skill), powered by Fuse.js. The dashboard store will switch to using this engine in a later task.
 
-**Step 1: Install fuse.js**
+**Step 1: Instalar fuse.js**
 
 ```bash
 cd packages/core && pnpm add fuse.js
 ```
 
-**Step 2: Write failing tests**
+**Step 2: Escrever testes que vão falhar**
 
 ```typescript
 // packages/core/src/__tests__/search.test.ts
@@ -399,14 +399,14 @@ describe('SearchEngine', () => {
 });
 ```
 
-**Step 3: Run tests to verify they fail**
+**Step 3: Executar os testes para verificar que falham**
 
 ```bash
 pnpm --filter @understand-anything/core test
 ```
-Expected: FAIL — `search.ts` does not exist.
+Esperado: FAIL — `search.ts` não existe.
 
-**Step 4: Implement SearchEngine**
+**Step 4: Implementar SearchEngine**
 
 ```typescript
 // packages/core/src/search.ts
@@ -470,19 +470,19 @@ export class SearchEngine {
 }
 ```
 
-**Step 5: Update barrel export**
+**Step 5: Atualizar barrel export**
 
-Add to `packages/core/src/index.ts`:
+Adicione em `packages/core/src/index.ts`:
 ```typescript
 export { SearchEngine, type SearchResult, type SearchOptions } from './search.js';
 ```
 
-**Step 6: Run tests to verify they pass**
+**Step 6: Executar os testes para verificar que passam**
 
 ```bash
 pnpm --filter @understand-anything/core test
 ```
-Expected: ALL PASS
+Esperado: TODOS PASSAM
 
 **Step 7: Commit**
 
@@ -493,22 +493,22 @@ git commit -m "feat(core): add fuzzy search engine with Fuse.js"
 
 ---
 
-## Task 3: Dagre Auto-Layout for Graph View
+## Tarefa 3: Auto-Layout com Dagre na Graph View
 
-**Files:**
-- Create: `packages/dashboard/src/utils/layout.ts`
-- Modify: `packages/dashboard/src/components/GraphView.tsx`
-- Modify: `packages/dashboard/package.json`
+**Arquivos:**
+- Criar: `packages/dashboard/src/utils/layout.ts`
+- Modificar: `packages/dashboard/src/components/GraphView.tsx`
+- Modificar: `packages/dashboard/package.json`
 
-**Context:** Currently GraphView positions nodes in a simple `(index % 3) * 300` grid. This produces chaotic graphs for real projects. Add dagre (hierarchical graph layout) to compute positions respecting edge direction. Nodes flow top-to-bottom, with edges determining hierarchy.
+**Contexto:** Currently GraphView positions nodes in a simple `(index % 3) * 300` grid. This produces chaotic graphs for real projects. Add dagre (hierarchical graph layout) to compute positions respecting edge direction. Nodes flow top-to-bottom, with edges determining hierarchy.
 
-**Step 1: Install dagre**
+**Step 1: Instalar dagre**
 
 ```bash
 cd packages/dashboard && pnpm add @dagrejs/dagre
 ```
 
-**Step 2: Create layout utility**
+**Step 2: Criar utilitário de layout**
 
 ```typescript
 // packages/dashboard/src/utils/layout.ts
@@ -558,23 +558,23 @@ export function applyDagreLayout(
 }
 ```
 
-**Step 3: Update GraphView to use dagre layout**
+**Step 3: Atualizar GraphView para usar layout dagre**
 
-Replace the `(index % 3) * 300` grid positioning in `GraphView.tsx` with a call to `applyDagreLayout`. The key changes:
+Substitua o posicionamento em grade `(index % 3) * 300` em `GraphView.tsx` por uma chamada a `applyDagreLayout`. As principais mudanças:
 
-1. Import `applyDagreLayout` from `../utils/layout.js`
-2. Build flow nodes/edges from graph data (without position)
-3. Pass through `applyDagreLayout` to get positioned nodes
-4. Use `useMemo` to recompute layout only when graph/search changes
+1. Importe `applyDagreLayout` de `../utils/layout.js`
+2. Construa flow nodes/edges a partir dos dados do graph (sem position)
+3. Passe pelo `applyDagreLayout` para obter nós posicionados
+4. Use `useMemo` para recomputar o layout apenas quando graph/search mudam
 
-The component should keep all existing functionality (custom nodes, search highlighting, selection, controls, minimap).
+O componente deve manter toda a funcionalidade existente (custom nodes, destaque de busca, seleção, controls, minimap).
 
-**Step 4: Verify manually**
+**Step 4: Verificar manualmente**
 
 ```bash
 pnpm dev:dashboard
 ```
-Open http://localhost:5173 — graph should display nodes in a hierarchical layout following edge direction, not in a flat grid.
+Abra http://localhost:5173 — o graph deve exibir nós em um layout hierárquico seguindo a direção das arestas, não em um grid plano.
 
 **Step 5: Commit**
 
@@ -585,16 +585,16 @@ git commit -m "feat(dashboard): add dagre auto-layout for hierarchical graph vis
 
 ---
 
-## Task 4: Staleness Detection + Incremental Updates
+## Tarefa 4: Detecção de Staleness + Updates Incrementais
 
-**Files:**
-- Create: `packages/core/src/staleness.ts`
-- Create: `packages/core/src/__tests__/staleness.test.ts`
-- Modify: `packages/core/src/index.ts`
+**Arquivos:**
+- Criar: `packages/core/src/staleness.ts`
+- Criar: `packages/core/src/__tests__/staleness.test.ts`
+- Modificar: `packages/core/src/index.ts`
 
-**Context:** The design doc specifies an auto-sync flow: read `meta.json` → git diff against last hash → re-analyze only changed files → merge into existing graph. This task builds the staleness detection and graph merging logic. It does NOT invoke LLM or tree-sitter (that's orchestration, done by the skill). It provides the building blocks: detect changed files, merge updated nodes/edges into an existing graph.
+**Contexto:** The design doc specifies an auto-sync flow: read `meta.json` → git diff against last hash → re-analyze only changed files → merge into existing graph. This task builds the staleness detection and graph merging logic. It does NOT invoke LLM or tree-sitter (that's orchestration, done by the skill). It provides the building blocks: detect changed files, merge updated nodes/edges into an existing graph.
 
-**Step 1: Write failing tests**
+**Step 1: Escrever testes que vão falhar**
 
 ```typescript
 // packages/core/src/__tests__/staleness.test.ts
@@ -730,14 +730,14 @@ describe('staleness detection', () => {
 });
 ```
 
-**Step 3: Run tests to verify they fail**
+**Step 3: Executar os testes para verificar que falham**
 
 ```bash
 pnpm --filter @understand-anything/core test
 ```
-Expected: FAIL — `staleness.ts` does not exist.
+Esperado: FAIL — `staleness.ts` não existe.
 
-**Step 4: Implement staleness.ts**
+**Step 4: Implementar staleness.ts**
 
 ```typescript
 // packages/core/src/staleness.ts
@@ -806,9 +806,9 @@ export function mergeGraphUpdate(
 }
 ```
 
-**Step 5: Update barrel export**
+**Step 5: Atualizar barrel export**
 
-Add to `packages/core/src/index.ts`:
+Adicione em `packages/core/src/index.ts`:
 ```typescript
 export {
   getChangedFiles,
@@ -818,12 +818,12 @@ export {
 } from './staleness.js';
 ```
 
-**Step 6: Run tests to verify they pass**
+**Step 6: Executar os testes para verificar que passam**
 
 ```bash
 pnpm --filter @understand-anything/core test
 ```
-Expected: ALL PASS
+Esperado: TODOS PASSAM
 
 **Step 7: Commit**
 
@@ -834,16 +834,16 @@ git commit -m "feat(core): add staleness detection and incremental graph merging
 
 ---
 
-## Task 5: Layer Auto-Detection
+## Tarefa 5: Auto-Detecção de Layers
 
-**Files:**
-- Create: `packages/core/src/analyzer/layer-detector.ts`
-- Create: `packages/core/src/__tests__/layer-detector.test.ts`
-- Modify: `packages/core/src/index.ts`
+**Arquivos:**
+- Criar: `packages/core/src/analyzer/layer-detector.ts`
+- Criar: `packages/core/src/__tests__/layer-detector.test.ts`
+- Modificar: `packages/core/src/index.ts`
 
-**Context:** Layer detection groups nodes into logical layers (e.g., "API Layer", "Data Layer", "UI Layer") based on file paths, naming patterns, and edge structure. This uses a heuristic approach: analyze file paths for common patterns (routes/, controllers/, models/, services/, etc.) and node connectivity. An LLM prompt builder is provided for enhanced detection when LLM is available, but the heuristic works standalone. Layers populate the `layers[]` field in the KnowledgeGraph.
+**Contexto:** Layer detection groups nodes into logical layers (e.g., "API Layer", "Data Layer", "UI Layer") based on file paths, naming patterns, and edge structure. This uses a heuristic approach: analyze file paths for common patterns (routes/, controllers/, models/, services/, etc.) and node connectivity. An LLM prompt builder is provided for enhanced detection when LLM is available, but the heuristic works standalone. Layers populate the `layers[]` field in the KnowledgeGraph.
 
-**Step 1: Write failing tests**
+**Step 1: Escrever testes que vão falhar**
 
 ```typescript
 // packages/core/src/__tests__/layer-detector.test.ts
@@ -956,14 +956,14 @@ describe('LLM layer detection prompt', () => {
 });
 ```
 
-**Step 3: Run tests to verify they fail**
+**Step 3: Executar os testes para verificar que falham**
 
 ```bash
 pnpm --filter @understand-anything/core test
 ```
-Expected: FAIL — `layer-detector.ts` does not exist.
+Esperado: FAIL — `layer-detector.ts` não existe.
 
-**Step 4: Implement layer-detector.ts**
+**Step 4: Implementar layer-detector.ts**
 
 ```typescript
 // packages/core/src/analyzer/layer-detector.ts
@@ -1151,9 +1151,9 @@ export function applyLLMLayers(
 }
 ```
 
-**Step 5: Update barrel export**
+**Step 5: Atualizar barrel export**
 
-Add to `packages/core/src/index.ts`:
+Adicione em `packages/core/src/index.ts`:
 ```typescript
 export {
   detectLayers,
@@ -1163,12 +1163,12 @@ export {
 } from './analyzer/layer-detector.js';
 ```
 
-**Step 6: Run tests to verify they pass**
+**Step 6: Executar os testes para verificar que passam**
 
 ```bash
 pnpm --filter @understand-anything/core test
 ```
-Expected: ALL PASS
+Esperado: TODOS PASSAM
 
 **Step 7: Commit**
 
@@ -1179,19 +1179,19 @@ git commit -m "feat(core): add heuristic and LLM-based layer auto-detection"
 
 ---
 
-## Task 6: Skill Package Scaffolding + `/understand-chat` Command
+## Tarefa 6: Scaffolding do Pacote Skill + Comando `/understand-chat`
 
-**Files:**
-- Create: `packages/skill/package.json`
-- Create: `packages/skill/tsconfig.json`
-- Create: `packages/skill/src/understand-chat.ts`
-- Create: `packages/skill/src/context-builder.ts`
-- Create: `packages/skill/src/__tests__/context-builder.test.ts`
-- Create: `packages/skill/.claude/skills/understand-chat.md` (the skill definition file)
+**Arquivos:**
+- Criar: `packages/skill/package.json`
+- Criar: `packages/skill/tsconfig.json`
+- Criar: `packages/skill/src/understand-chat.ts`
+- Criar: `packages/skill/src/context-builder.ts`
+- Criar: `packages/skill/src/__tests__/context-builder.test.ts`
+- Criar: `packages/skill/.claude/skills/understand-chat.md` (the skill definition file)
 
-**Context:** This is the first Claude Code skill command. `/understand-chat` provides in-terminal Q&A using the knowledge graph. As a Claude Code skill, it needs: (1) a skill markdown file that Claude loads, (2) a context-builder that extracts relevant graph context for a user query, (3) the prompt template that combines context + query. The skill reads the persisted `.understand-anything/knowledge-graph.json` and uses the active Claude session for LLM — no separate API call needed.
+**Contexto:** This is the first Claude Code skill command. `/understand-chat` provides in-terminal Q&A using the knowledge graph. As a Claude Code skill, it needs: (1) a skill markdown file that Claude loads, (2) a context-builder that extracts relevant graph context for a user query, (3) the prompt template that combines context + query. The skill reads the persisted `.understand-anything/knowledge-graph.json` and uses the active Claude session for LLM — no separate API call needed.
 
-**Step 1: Create skill package.json**
+**Step 1: Criar skill package.json**
 
 ```json
 {
@@ -1215,7 +1215,7 @@ git commit -m "feat(core): add heuristic and LLM-based layer auto-detection"
 }
 ```
 
-**Step 2: Create skill tsconfig.json**
+**Step 2: Criar skill tsconfig.json**
 
 ```json
 {
@@ -1228,7 +1228,7 @@ git commit -m "feat(core): add heuristic and LLM-based layer auto-detection"
 }
 ```
 
-**Step 3: Write failing tests for context-builder**
+**Step 3: Escrever testes que vão falhar para o context-builder**
 
 ```typescript
 // packages/skill/src/__tests__/context-builder.test.ts
@@ -1304,14 +1304,14 @@ describe('formatContextForPrompt', () => {
 });
 ```
 
-**Step 4: Run tests to verify they fail**
+**Step 4: Executar os testes para verificar que falham**
 
 ```bash
 pnpm install && pnpm --filter @understand-anything/skill test
 ```
-Expected: FAIL — files don't exist yet.
+Esperado: FAIL — arquivos ainda não existem.
 
-**Step 5: Implement context-builder.ts**
+**Step 5: Implementar context-builder.ts**
 
 ```typescript
 // packages/skill/src/context-builder.ts
@@ -1412,7 +1412,7 @@ export function formatContextForPrompt(context: ChatContext): string {
 }
 ```
 
-**Step 6: Implement understand-chat.ts (prompt template)**
+**Step 6: Implementar understand-chat.ts (template do prompt)**
 
 ```typescript
 // packages/skill/src/understand-chat.ts
@@ -1437,7 +1437,7 @@ ${query}`;
 }
 ```
 
-**Step 7: Create the Claude Code skill definition file**
+**Step 7: Criar o arquivo de definição da skill do Claude Code**
 
 ```markdown
 <!-- packages/skill/.claude/skills/understand-chat.md -->
@@ -1461,7 +1461,7 @@ Answer questions about this codebase using the knowledge graph at `.understand-a
 6. Be concise but thorough — link concepts to actual code locations
 ```
 
-**Step 8: Create barrel export**
+**Step 8: Criar barrel export**
 
 ```typescript
 // packages/skill/src/index.ts
@@ -1469,12 +1469,12 @@ export { buildChatContext, formatContextForPrompt, type ChatContext } from './co
 export { buildChatPrompt } from './understand-chat.js';
 ```
 
-**Step 9: Run tests to verify they pass**
+**Step 9: Executar os testes para verificar que passam**
 
 ```bash
 pnpm install && pnpm --filter @understand-anything/skill test
 ```
-Expected: ALL PASS
+Esperado: TODOS PASSAM
 
 **Step 10: Commit**
 
@@ -1485,18 +1485,18 @@ git commit -m "feat(skill): scaffold skill package with /understand-chat command
 
 ---
 
-## Task 7: Dashboard Search Enhancement + Store Integration
+## Tarefa 7: Aprimoramento da Busca no Dashboard + Integração com a Store
 
-**Files:**
-- Modify: `packages/dashboard/src/store.ts`
-- Modify: `packages/dashboard/src/components/SearchBar.tsx`
-- Modify: `packages/dashboard/src/components/GraphView.tsx`
+**Arquivos:**
+- Modificar: `packages/dashboard/src/store.ts`
+- Modificar: `packages/dashboard/src/components/SearchBar.tsx`
+- Modificar: `packages/dashboard/src/components/GraphView.tsx`
 
-**Context:** Wire the core `SearchEngine` into the dashboard. Replace the simple substring filter in the Zustand store with `SearchEngine` from core. Enhance the SearchBar to show scored results with node type icons. Enhance the GraphView to highlight search results with varying intensity based on relevance score.
+**Contexto:** Wire the core `SearchEngine` into the dashboard. Replace the simple substring filter in the Zustand store with `SearchEngine` from core. Enhance the SearchBar to show scored results with node type icons. Enhance the GraphView to highlight search results with varying intensity based on relevance score.
 
-**Step 1: Update the Zustand store**
+**Step 1: Atualizar a store Zustand**
 
-Replace the search logic in `packages/dashboard/src/store.ts`:
+Substitua a lógica de busca em `packages/dashboard/src/store.ts`:
 
 ```typescript
 import { SearchEngine } from '@understand-anything/core';
@@ -1540,27 +1540,27 @@ export const useDashboardStore = create<DashboardStore>()((set, get) => ({
 }));
 ```
 
-**Step 2: Update SearchBar component**
+**Step 2: Atualizar o componente SearchBar**
 
-Update `SearchBar.tsx` to display result scores and show a dropdown of top matches:
+Atualize `SearchBar.tsx` para exibir scores dos resultados e mostrar um dropdown com os top matches:
 
 - Show result count with "fuzzy" label
 - Display top 5 results as clickable items below the search input (name + type + score)
 - Clicking a result selects that node and scrolls graph to it
 
-**Step 3: Update GraphView to use scored highlighting**
+**Step 3: Atualizar GraphView para usar destaque por score**
 
-Update `GraphView.tsx`:
+Atualize `GraphView.tsx`:
 - Search highlighting intensity varies by score (lower score = better match = brighter highlight)
 - Best matches: bright yellow ring; weaker matches: dimmer yellow
 - Pass the search score as data to CustomNode so it can adjust its appearance
 
-**Step 4: Verify manually**
+**Step 4: Verificar manualmente**
 
 ```bash
 pnpm dev:dashboard
 ```
-Test: type "auth" in search → verify fuzzy results, scored highlighting, clickable results.
+Teste: digite "auth" na busca → verifique resultados fuzzy, destaque por score, resultados clicáveis.
 
 **Step 5: Commit**
 
@@ -1571,24 +1571,24 @@ git commit -m "feat(dashboard): wire core SearchEngine with fuzzy matching and s
 
 ---
 
-## Task 8: Dashboard Chat Panel
+## Tarefa 8: Painel de Chat no Dashboard
 
-**Files:**
-- Create: `packages/dashboard/src/components/ChatPanel.tsx`
-- Modify: `packages/dashboard/src/store.ts`
-- Modify: `packages/dashboard/src/App.tsx`
+**Arquivos:**
+- Criar: `packages/dashboard/src/components/ChatPanel.tsx`
+- Modificar: `packages/dashboard/src/store.ts`
+- Modificar: `packages/dashboard/src/App.tsx`
 
-**Context:** Replace the "Chat — coming soon" placeholder with a working chat panel. For the standalone dashboard (no Claude Code session), the user provides a Claude API key. The chat is context-aware: it automatically includes the selected node's context and nearby graph relationships. Uses the `@anthropic-ai/sdk` package with streaming for real-time responses. The chat panel shows a message list and input, with messages from both user and assistant.
+**Contexto:** Replace the "Chat — coming soon" placeholder with a working chat panel. For the standalone dashboard (no Claude Code session), the user provides a Claude API key. The chat is context-aware: it automatically includes the selected node's context and nearby graph relationships. Uses the `@anthropic-ai/sdk` package with streaming for real-time responses. The chat panel shows a message list and input, with messages from both user and assistant.
 
-**Step 1: Install Anthropic SDK**
+**Step 1: Instalar Anthropic SDK**
 
 ```bash
 cd packages/dashboard && pnpm add @anthropic-ai/sdk
 ```
 
-**Step 2: Add chat state to the Zustand store**
+**Step 2: Adicionar state de chat à store Zustand**
 
-Add to `packages/dashboard/src/store.ts`:
+Adicione em `packages/dashboard/src/store.ts`:
 
 ```typescript
 interface ChatMessage {
@@ -1605,15 +1605,15 @@ sendChatMessage: (message: string) => Promise<void>;
 clearChat: () => void;
 ```
 
-The `sendChatMessage` implementation:
-1. Gets the current `graph`, `selectedNodeId`, and `apiKey` from store
-2. Uses `buildChatContext` + `formatContextForPrompt` from `@understand-anything/core` (or inline the same logic since the skill package uses core)
-3. Builds a system prompt with the graph context
-4. Calls Claude API with the `@anthropic-ai/sdk`
-5. Streams the response, updating `chatMessages` as chunks arrive
-6. Sets `chatLoading` during the call
+A implementação de `sendChatMessage`:
+1. Pega o `graph`, `selectedNodeId` e `apiKey` atuais da store
+2. Usa `buildChatContext` + `formatContextForPrompt` de `@understand-anything/core` (ou inlinha a mesma lógica, já que o pacote skill usa o core)
+3. Constrói um system prompt com o contexto do graph
+4. Chama a API do Claude com o `@anthropic-ai/sdk`
+5. Faz streaming da resposta, atualizando `chatMessages` conforme chegam chunks
+6. Define `chatLoading` durante a chamada
 
-**Step 3: Create ChatPanel component**
+**Step 3: Criar componente ChatPanel**
 
 ```typescript
 // packages/dashboard/src/components/ChatPanel.tsx
@@ -1627,7 +1627,7 @@ The `sendChatMessage` implementation:
 // 7. Markdown rendering for assistant messages (basic: bold, code blocks, lists)
 ```
 
-The component layout:
+O layout do componente:
 ```
 ┌─ Chat Panel ────────────────────┐
 │ [🔑 Enter API key...]          │ ← Only shown if no key
@@ -1648,9 +1648,9 @@ The component layout:
 └─────────────────────────────────┘
 ```
 
-**Step 4: Wire ChatPanel into App.tsx**
+**Step 4: Conectar ChatPanel ao App.tsx**
 
-Replace the placeholder `div` in the bottom-left grid cell:
+Substitua o `div` placeholder na célula inferior esquerda do grid:
 ```typescript
 // In App.tsx, replace:
 <div className="bg-gray-800 ...">Chat — coming soon</div>
@@ -1663,11 +1663,11 @@ Replace the placeholder `div` in the bottom-left grid cell:
 ```bash
 pnpm dev:dashboard
 ```
-Test:
-1. Enter a Claude API key
-2. Select a node in the graph
-3. Ask "what does this do?" → verify contextual answer
-4. Ask a follow-up → verify conversation history is maintained
+Teste:
+1. Insira uma chave de API do Claude
+2. Selecione um nó no graph
+3. Pergunte "what does this do?" → verifique resposta contextual
+4. Faça uma pergunta de follow-up → verifique que o histórico de conversa é mantido
 
 **Step 6: Commit**
 
@@ -1678,37 +1678,37 @@ git commit -m "feat(dashboard): add context-aware chat panel with Claude API int
 
 ---
 
-## Task 9: Dashboard Layer Visualization
+## Tarefa 9: Visualização de Layers no Dashboard
 
-**Files:**
-- Modify: `packages/dashboard/src/store.ts`
-- Modify: `packages/dashboard/src/components/GraphView.tsx`
-- Create: `packages/dashboard/src/components/LayerLegend.tsx`
-- Modify: `packages/dashboard/src/App.tsx`
+**Arquivos:**
+- Modificar: `packages/dashboard/src/store.ts`
+- Modificar: `packages/dashboard/src/components/GraphView.tsx`
+- Criar: `packages/dashboard/src/components/LayerLegend.tsx`
+- Modificar: `packages/dashboard/src/App.tsx`
 
-**Context:** When the knowledge graph has layers defined, the dashboard should visually group nodes by layer. Use React Flow's built-in group node feature — create parent nodes for each layer with a colored background, and assign layer member nodes as children. Add a toggleable layer legend showing layer colors and descriptions.
+**Contexto:** When the knowledge graph has layers defined, the dashboard should visually group nodes by layer. Use React Flow's built-in group node feature — create parent nodes for each layer with a colored background, and assign layer member nodes as children. Add a toggleable layer legend showing layer colors and descriptions.
 
-**Step 1: Add layer state to the store**
+**Step 1: Adicionar state de layer à store**
 
-Add to `packages/dashboard/src/store.ts`:
+Adicione em `packages/dashboard/src/store.ts`:
 ```typescript
 // Add to DashboardStore interface:
 showLayers: boolean;
 toggleLayers: () => void;
 ```
 
-**Step 2: Update GraphView for layer grouping**
+**Step 2: Atualizar GraphView para agrupamento por layer**
 
-When `showLayers` is true and graph has layers:
-1. Create a "group" type React Flow node for each layer (large background rectangle)
-2. Set layer nodes as `parentId` of their member nodes
-3. Apply distinct background colors per layer (semi-transparent)
-4. Use dagre layout with subgraph support, or position layer groups in columns
-5. Show layer name as label on the group node
+Quando `showLayers` for true e o graph tiver layers:
+1. Crie um nó React Flow do tipo "group" para cada layer (retângulo grande de fundo)
+2. Defina os nós de layer como `parentId` dos seus nós membros
+3. Aplique cores de fundo distintas por layer (semi-transparentes)
+4. Use o layout dagre com suporte a subgraphs, ou posicione os grupos de layer em colunas
+5. Mostre o nome da layer como label no nó group
 
-When `showLayers` is false, render normally without groups.
+Quando `showLayers` for false, renderize normalmente sem grupos.
 
-**Step 3: Create LayerLegend component**
+**Step 3: Criar componente LayerLegend**
 
 ```typescript
 // packages/dashboard/src/components/LayerLegend.tsx
@@ -1718,16 +1718,16 @@ When `showLayers` is false, render normally without groups.
 // - Click layer name to filter graph to that layer
 ```
 
-**Step 4: Wire into App.tsx**
+**Step 4: Conectar ao App.tsx**
 
-Add `LayerLegend` to the header area, next to SearchBar.
+Adicione `LayerLegend` na área do header, ao lado da SearchBar.
 
 **Step 5: Verify manually**
 
 ```bash
 pnpm dev:dashboard
 ```
-Update the sample `knowledge-graph.json` in `packages/dashboard/public/` to include layers, then verify layer grouping renders correctly.
+Atualize o `knowledge-graph.json` de exemplo em `packages/dashboard/public/` para incluir layers, depois verifique se o agrupamento por layer renderiza corretamente.
 
 **Step 6: Commit**
 
@@ -1738,28 +1738,28 @@ git commit -m "feat(dashboard): add layer visualization with grouping and legend
 
 ---
 
-## Task 10: Integration Polish — Sample Data, Build Verification, README Update
+## Tarefa 10: Polimento de Integração — Sample Data, Verificação de Build, Update do README
 
-**Files:**
-- Modify: `packages/dashboard/public/knowledge-graph.json`
-- Modify: `CLAUDE.md`
-- Modify: `README.md`
-- Modify: `packages/core/src/index.ts` (ensure all exports clean)
+**Arquivos:**
+- Modificar: `packages/dashboard/public/knowledge-graph.json`
+- Modificar: `CLAUDE.md`
+- Modificar: `README.md`
+- Modificar: `packages/core/src/index.ts` (ensure all exports clean)
 
-**Context:** Final task: create a richer sample knowledge graph that exercises all Phase 2 features (layers, many nodes, varied types). Verify the full build succeeds. Update documentation.
+**Contexto:** Final task: create a richer sample knowledge graph that exercises all Phase 2 features (layers, many nodes, varied types). Verify the full build succeeds. Update documentation.
 
-**Step 1: Create rich sample knowledge graph**
+**Step 1: Criar knowledge graph de exemplo rico**
 
-Update `packages/dashboard/public/knowledge-graph.json` with a realistic sample:
+Atualize `packages/dashboard/public/knowledge-graph.json` com um exemplo realista:
 - 15-20 nodes across all 5 types (file, function, class, module, concept)
 - 20+ edges across multiple EdgeTypes
 - 4-5 layers (API, Service, Data, UI, Utility)
 - Varied complexity levels
 - Realistic summaries and tags
 
-This serves as both demo data and manual test fixture.
+Isso serve como dados de demo e fixture de teste manual.
 
-**Step 2: Verify full build**
+**Step 2: Verificar build completo**
 
 ```bash
 pnpm install
@@ -1770,11 +1770,11 @@ pnpm --filter @understand-anything/skill test
 pnpm dev:dashboard
 ```
 
-All should pass/run without errors.
+Todos devem passar/rodar sem erros.
 
-**Step 3: Update CLAUDE.md**
+**Step 3: Atualizar CLAUDE.md**
 
-Add Phase 2 context:
+Adicione o contexto da Fase 2:
 ```markdown
 ## Key Commands (updated)
 - `pnpm --filter @understand-anything/skill build` — Build skill package
@@ -1791,9 +1791,9 @@ Add Phase 2 context:
 - Layer visualization with grouping and legend
 ```
 
-**Step 4: Update README.md**
+**Step 4: Atualizar README.md**
 
-Add Phase 2 feature descriptions, updated screenshots section placeholder, new commands.
+Adicione descrições das features da Fase 2, placeholder para a seção de screenshots atualizados, novos comandos.
 
 **Step 5: Commit**
 
@@ -1804,20 +1804,20 @@ git commit -m "docs: update sample data, CLAUDE.md, and README for Phase 2"
 
 ---
 
-## Verification Checklist
+## Checklist de Verificação
 
-After all tasks complete:
+Depois de todas as tarefas estarem completas:
 
-1. **Schema validation**: Load a corrupted JSON → verify it throws with clear error message
-2. **Fuzzy search**: Type "auth contrl" in search → verify it finds "AuthController" or similar
-3. **Auto-layout**: Open dashboard → verify nodes arranged hierarchically, not in grid
-4. **Staleness**: Call `isStale('/project', 'oldHash')` → verify it detects changes
-5. **Layer detection**: Call `detectLayers(graph)` on a project with routes/models/services → verify layers populated
-6. **`/understand-chat`**: Verify skill file exists at `packages/skill/.claude/skills/understand-chat.md`
-7. **Chat panel**: Enter API key, select node, ask question → verify contextual response
-8. **Layer visualization**: Toggle layers on → verify colored group nodes appear
-9. **All tests pass**: `pnpm --filter @understand-anything/core test && pnpm --filter @understand-anything/skill test`
-10. **Full build**: `pnpm -r build` succeeds
+1. **Validação de schema**: Carregue um JSON corrompido → verifique que lança erro com mensagem clara
+2. **Busca fuzzy**: Digite "auth contrl" na busca → verifique que encontra "AuthController" ou similar
+3. **Auto-layout**: Abra o dashboard → verifique que os nós aparecem hierarquicamente, não em grid
+4. **Staleness**: Chame `isStale('/project', 'oldHash')` → verifique que detecta mudanças
+5. **Detecção de layers**: Chame `detectLayers(graph)` em um projeto com routes/models/services → verifique layers populadas
+6. **`/understand-chat`**: Verifique que o arquivo da skill existe em `packages/skill/.claude/skills/understand-chat.md`
+7. **Painel de chat**: Insira a chave de API, selecione um nó, faça uma pergunta → verifique resposta contextual
+8. **Visualização de layers**: Ative as layers → verifique que aparecem nós-grupo coloridos
+9. **Todos os testes passam**: `pnpm --filter @understand-anything/core test && pnpm --filter @understand-anything/skill test`
+10. **Build completo**: `pnpm -r build` é bem-sucedido
 
 ---
 

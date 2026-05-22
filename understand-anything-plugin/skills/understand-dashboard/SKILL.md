@@ -6,31 +6,31 @@ argument-hint: [project-path]
 
 # /understand-dashboard
 
-Start the Understand Anything dashboard to visualize the knowledge graph for the current project.
+Inicie o dashboard do Understand Anything para visualizar o knowledge graph do projeto atual.
 
-## Instructions
+## Instruções
 
-1. Determine the project directory:
-   - If `$ARGUMENTS` contains a path, use that as the project directory
-   - Otherwise, use the current working directory
+1. Determine o diretório do projeto:
+   - Se `$ARGUMENTS` contém um caminho, use-o como diretório do projeto
+   - Caso contrário, use o diretório de trabalho atual
 
-2. Check that `.understand-anything/knowledge-graph.json` exists in the project directory. If not, tell the user:
+2. Verifique se `.understand-anything/knowledge-graph.json` existe no diretório do projeto. Se não existir, diga ao usuário:
    ```
    No knowledge graph found. Run /understand first to analyze this project.
    ```
 
-3. Find the dashboard code. The dashboard is at `packages/dashboard/` relative to this plugin's root directory. Check these paths in order and use the first that exists:
-   - `${CLAUDE_PLUGIN_ROOT}/packages/dashboard/` (Claude Code runtime root, highest priority)
-   - `~/.understand-anything-plugin/packages/dashboard/` (universal symlink, all installs)
-   - Two levels up from `~/.agents/skills/understand-dashboard` real path (self-relative fallback)
-   - Two levels up from `~/.copilot/skills/understand-dashboard` real path (Copilot personal skills fallback)
-   - Common clone-based install roots:
+3. Localize o código do dashboard. O dashboard fica em `packages/dashboard/` relativo à raiz deste plugin. Verifique estes caminhos em ordem e use o primeiro que existir:
+   - `${CLAUDE_PLUGIN_ROOT}/packages/dashboard/` (raiz de runtime do Claude Code, prioridade máxima)
+   - `~/.understand-anything-plugin/packages/dashboard/` (symlink universal, todas as instalações)
+   - Dois níveis acima do caminho real de `~/.agents/skills/understand-dashboard` (fallback auto-relativo)
+   - Dois níveis acima do caminho real de `~/.copilot/skills/understand-dashboard` (fallback de skills pessoais do Copilot)
+   - Raízes comuns de instalação por clone:
      - `~/.codex/understand-anything/understand-anything-plugin/packages/dashboard/`
      - `~/.opencode/understand-anything/understand-anything-plugin/packages/dashboard/`
      - `~/.pi/understand-anything/understand-anything-plugin/packages/dashboard/`
      - `~/understand-anything/understand-anything-plugin/packages/dashboard/`
 
-   Use the Bash tool to resolve:
+   Use a ferramenta Bash para resolver:
    ```bash
    SKILL_REAL=$(realpath ~/.agents/skills/understand-dashboard 2>/dev/null || readlink -f ~/.agents/skills/understand-dashboard 2>/dev/null || echo "")
    SELF_RELATIVE=$([ -n "$SKILL_REAL" ] && cd "$SKILL_REAL/../.." 2>/dev/null && pwd || echo "")
@@ -68,38 +68,38 @@ Start the Understand Anything dashboard to visualize the knowledge graph for the
    fi
    ```
 
-4. Install dependencies and build if needed:
+4. Instale dependências e faça o build se necessário:
    ```bash
    cd <dashboard-dir> && pnpm install --frozen-lockfile 2>/dev/null || pnpm install
    ```
-   Then ensure the core package is built (the dashboard depends on it):
+   Em seguida, garanta que o pacote core esteja construído (o dashboard depende dele):
    ```bash
    cd <plugin-root> && pnpm --filter @understand-anything/core build
    ```
 
-5. Start the Vite dev server pointing at the project's knowledge graph:
+5. Inicie o servidor de dev do Vite apontando para o knowledge graph do projeto:
    ```bash
    cd <dashboard-dir> && GRAPH_DIR=<project-dir> npx vite --host 127.0.0.1
    ```
-   Run this in the background so the user can continue working.
+   Execute em background para que o usuário possa continuar trabalhando.
 
-6. **Capture the access token URL from the server output.** The Vite server prints a line like:
+6. **Capture a URL com token de acesso da saída do servidor.** O servidor Vite imprime uma linha como:
    ```
    🔑  Dashboard URL: http://127.0.0.1:<PORT>?token=<TOKEN>
    ```
-   Extract the full URL including the `?token=` parameter. The token is required to access the knowledge graph data — without it the dashboard will show an "Access Token Required" gate.
+   Extraia a URL completa, incluindo o parâmetro `?token=`. O token é obrigatório para acessar os dados do knowledge graph — sem ele, o dashboard mostrará um portal "Access Token Required".
 
-7. Report to the user, including the full tokenized URL:
+7. Reporte ao usuário, incluindo a URL completa com token:
    ```
    Dashboard started at http://127.0.0.1:<PORT>?token=<TOKEN>
    Viewing: <project-dir>/.understand-anything/knowledge-graph.json
 
    The dashboard is running in the background. Press Ctrl+C in the terminal to stop it.
    ```
-   **Important:** Always include the `?token=` parameter in the URL you share. If you omit it, the user will be blocked by the token gate and have to manually find the token in the terminal output.
+   **Importante:** Sempre inclua o parâmetro `?token=` na URL que você compartilha. Se você omitir, o usuário será bloqueado pelo gate do token e terá que encontrar manualmente o token na saída do terminal.
 
-## Notes
+## Notas
 
-- The dashboard auto-opens in the default browser via `--open`
-- If port 5173 is already in use, Vite will pick the next available port
-- The `GRAPH_DIR` environment variable tells the dashboard where to find the knowledge graph
+- O dashboard abre automaticamente no navegador padrão via `--open`
+- Se a porta 5173 já estiver em uso, o Vite escolhe a próxima porta disponível
+- A variável de ambiente `GRAPH_DIR` indica ao dashboard onde encontrar o knowledge graph

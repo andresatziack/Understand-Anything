@@ -1,46 +1,48 @@
-# TypeScript Language Prompt Snippet
+# Snippet de Prompt da Linguagem TypeScript
 
-## Key Concepts
+## Conceitos-Chave
 
-- **Generics**: Parameterized types (`<T>`) enabling reusable, type-safe abstractions
-- **Type Guards**: Runtime checks that narrow types within conditional blocks (`is`, `in`, `typeof`, `instanceof`)
-- **Discriminated Unions**: Union types with a shared literal field used for exhaustive narrowing
-- **Utility Types**: Built-in mapped types like `Partial<T>`, `Pick<T, K>`, `Omit<T, K>`, `Record<K, V>`
-- **Interfaces vs Types**: Interfaces support declaration merging; type aliases support unions and mapped types
-- **Enums**: Numeric and string enums for named constant sets; prefer `as const` objects when possible
-- **Mapped Types**: Transform existing types property-by-property using `[K in keyof T]` syntax
-- **Conditional Types**: `T extends U ? X : Y` for type-level branching logic
-- **Template Literal Types**: String manipulation at the type level using backtick syntax
-- **Declaration Merging**: Interfaces with the same name merge their members automatically
-- **Module Augmentation**: Extending third-party module types via `declare module` blocks
+- **Generics**: tipos parametrizados (`<T>`) que habilitam abstrações reutilizáveis e type-safe
+- **Type Guards**: checagens em runtime que estreitam tipos dentro de blocos condicionais (`is`, `in`, `typeof`, `instanceof`)
+- **Discriminated Unions**: tipos union com um campo literal compartilhado usado para narrowing exaustivo
+- **Utility Types**: mapped types embutidos como `Partial<T>`, `Pick<T, K>`, `Omit<T, K>`, `Record<K, V>`
+- **Interfaces vs Types**: interfaces suportam declaration merging; type aliases suportam unions e mapped types
+- **Enums**: enums numéricos e de string para conjuntos de constantes nomeadas; prefira objetos `as const` quando possível
+- **Mapped Types**: transformam tipos existentes propriedade por propriedade usando a sintaxe `[K in keyof T]`
+- **Conditional Types**: `T extends U ? X : Y` para lógica de branching no nível de tipo
+- **Template Literal Types**: manipulação de strings no nível de tipo usando sintaxe de backticks
+- **Declaration Merging**: interfaces com o mesmo nome mesclam seus membros automaticamente
+- **Module Augmentation**: estende tipos de módulos de terceiros via blocos `declare module`
 
-## Import Patterns
+## Padrões de Importação
 
-- `import { X } from 'module'` — named import (most common)
-- `import type { X } from 'module'` — type-only import (erased at runtime)
-- `import * as X from 'module'` — namespace import
+- `import { X } from 'module'` — named import (mais comum)
+- `import type { X } from 'module'` — import apenas de tipo (apagado em runtime)
+- `import * as X from 'module'` — import de namespace
 - `import X from 'module'` — default import
 
-## File Patterns
+## Padrões de Arquivos
 
-- `index.ts` — barrel file re-exporting public API from a directory
-- `*.d.ts` — type declaration files (ambient declarations, no runtime code)
-- `tsconfig.json` — TypeScript compiler configuration and project references
-- `*.tsx` — TypeScript files containing JSX (React components)
+- `index.ts` — barrel file reexportando a API pública de um diretório
+- `*.d.ts` — arquivos de declaração de tipo (declarações ambient, sem código de runtime)
+- `tsconfig.json` — configuração do compilador TypeScript e project references
+- `*.tsx` — arquivos TypeScript contendo JSX (componentes React)
 
-## Common Frameworks
+## Frameworks Comuns
 
-- **React** — UI component library with hooks and JSX
-- **Angular** — Full-featured framework with decorators and dependency injection
-- **Next.js** — React meta-framework with SSR, SSG, and API routes
-- **NestJS** — Server-side framework inspired by Angular (decorators, modules, DI)
-- **Express (with TS)** — Minimal HTTP framework with typed request/response handlers
+- **React** — biblioteca de componentes de UI com hooks e JSX
+- **Angular** — framework completo com decorators e injeção de dependências
+- **Next.js** — meta-framework React com SSR, SSG e rotas de API
+- **NestJS** — framework server-side inspirado no Angular (decorators, módulos, DI)
+- **Express (com TS)** — framework HTTP mínimo com handlers de request/response tipados
 
-## Example Language Notes
+## Exemplo de Notas da Linguagem
 
-> Uses generic type parameter `T extends BaseEntity` to ensure type safety across
-> repository methods. The constraint guarantees all entities share a common `id` field
-> while allowing specific entity types to flow through the data layer without casting.
+> Usa o parâmetro de tipo genérico `T extends BaseEntity` para garantir segurança de
+> tipos entre os métodos do repository. A constraint garante que todas as entidades
+> compartilhem um campo `id` comum, permitindo que tipos de entidade específicos
+> fluam pela camada de dados sem casting.
 >
-> Barrel files (`index.ts`) re-export symbols so consumers import from the directory
-> rather than reaching into internal module paths — maintaining encapsulation.
+> Barrel files (`index.ts`) reexportam símbolos para que consumidores importem do
+> diretório em vez de alcançar caminhos internos de módulos — mantendo o
+> encapsulamento.

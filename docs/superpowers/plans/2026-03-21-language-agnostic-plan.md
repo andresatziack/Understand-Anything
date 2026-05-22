@@ -1,21 +1,21 @@
-# Language-Agnostic Support Implementation Plan
+# Plano de Implementação de Suporte Language-Agnostic
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **Para o Claude:** SUB-SKILL OBRIGATÓRIA: Use superpowers:executing-plans para implementar este plano tarefa por tarefa.
 
-**Goal:** Make Understand-Anything language-agnostic by introducing a config-driven language framework, replacing the TS-only tree-sitter plugin, and creating language-aware prompts for 12 languages.
+**Objetivo:** Tornar o Understand-Anything language-agnostic introduzindo um framework de linguagem dirigido por config, substituindo o plugin tree-sitter TS-only e criando prompts language-aware para 12 linguagens.
 
-**Architecture:** Config-first hybrid approach — each language defined by a `LanguageConfig` object (tree-sitter node mappings, concepts, extensions) plus a prompt snippet markdown file. A single `GenericTreeSitterPlugin` replaces the hardcoded TS-only plugin, driven by whichever config matches the file extension.
+**Arquitetura:** Abordagem híbrida config-first — cada linguagem definida por um objeto `LanguageConfig` (mapeamentos de nós tree-sitter, conceitos, extensões) mais um arquivo markdown com snippet de prompt. Um único `GenericTreeSitterPlugin` substitui o plugin TS-only hardcoded, dirigido pela config que casa com a extensão do arquivo.
 
-**Tech Stack:** TypeScript, web-tree-sitter (WASM), Zod v4, Vitest
+**Stack Tecnológica:** TypeScript, web-tree-sitter (WASM), Zod v4, Vitest
 
 ---
 
-### Task 1: Create LanguageConfig types and Zod schema
+### Tarefa 1: Criar tipos LanguageConfig e schema Zod
 
-**Files:**
-- Create: `understand-anything-plugin/packages/core/src/languages/types.ts`
+**Arquivos:**
+- Criar: `understand-anything-plugin/packages/core/src/languages/types.ts`
 
-**Step 1: Write the failing test**
+**Step 1: Escrever o teste que vai falhar**
 
 Create: `understand-anything-plugin/packages/core/src/languages/__tests__/types.test.ts`
 
@@ -76,12 +76,12 @@ describe("LanguageConfigSchema", () => {
 });
 ```
 
-**Step 2: Run test to verify it fails**
+**Step 2: Executar o teste para verificar que falha**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test -- --run src/languages/__tests__/types.test.ts`
-Expected: FAIL — module `../types.js` not found
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test -- --run src/languages/__tests__/types.test.ts`
+Esperado: FAIL — module `../types.js` not found
 
-**Step 3: Write minimal implementation**
+**Step 3: Escrever a implementação mínima**
 
 Create: `understand-anything-plugin/packages/core/src/languages/types.ts`
 
@@ -113,10 +113,10 @@ export type LanguageConfig = z.infer<typeof LanguageConfigSchema>;
 export type TreeSitterConfig = z.infer<typeof TreeSitterConfigSchema>;
 ```
 
-**Step 4: Run test to verify it passes**
+**Step 4: Executar o teste para verificar que passa**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test -- --run src/languages/__tests__/types.test.ts`
-Expected: PASS
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test -- --run src/languages/__tests__/types.test.ts`
+Esperado: PASS
 
 **Step 5: Commit**
 
@@ -127,12 +127,12 @@ git commit -m "feat: add LanguageConfig types and Zod schema"
 
 ---
 
-### Task 2: Create LanguageRegistry
+### Tarefa 2: Criar LanguageRegistry
 
-**Files:**
-- Create: `understand-anything-plugin/packages/core/src/languages/registry.ts`
+**Arquivos:**
+- Criar: `understand-anything-plugin/packages/core/src/languages/registry.ts`
 
-**Step 1: Write the failing test**
+**Step 1: Escrever o teste que vai falhar**
 
 Create: `understand-anything-plugin/packages/core/src/languages/__tests__/registry.test.ts`
 
@@ -219,12 +219,12 @@ describe("LanguageRegistry", () => {
 });
 ```
 
-**Step 2: Run test to verify it fails**
+**Step 2: Executar o teste para verificar que falha**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test -- --run src/languages/__tests__/registry.test.ts`
-Expected: FAIL — module `../registry.js` not found
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test -- --run src/languages/__tests__/registry.test.ts`
+Esperado: FAIL — module `../registry.js` not found
 
-**Step 3: Write minimal implementation**
+**Step 3: Escrever a implementação mínima**
 
 ```typescript
 // understand-anything-plugin/packages/core/src/languages/registry.ts
@@ -262,10 +262,10 @@ export class LanguageRegistry {
 }
 ```
 
-**Step 4: Run test to verify it passes**
+**Step 4: Executar o teste para verificar que passa**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test -- --run src/languages/__tests__/registry.test.ts`
-Expected: PASS
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test -- --run src/languages/__tests__/registry.test.ts`
+Esperado: PASS
 
 **Step 5: Commit**
 
@@ -276,24 +276,24 @@ git commit -m "feat: add LanguageRegistry with Zod validation"
 
 ---
 
-### Task 3: Create all 12 language configs
+### Tarefa 3: Criar todas as 12 language configs
 
-**Files:**
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/typescript.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/javascript.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/python.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/go.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/java.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/rust.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/cpp.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/csharp.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/ruby.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/php.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/swift.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/kotlin.ts`
-- Create: `understand-anything-plugin/packages/core/src/languages/configs/index.ts`
+**Arquivos:**
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/typescript.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/javascript.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/python.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/go.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/java.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/rust.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/cpp.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/csharp.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/ruby.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/php.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/swift.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/kotlin.ts`
+- Criar: `understand-anything-plugin/packages/core/src/languages/configs/index.ts`
 
-**Step 1: Write the failing test**
+**Step 1: Escrever o teste que vai falhar**
 
 Create: `understand-anything-plugin/packages/core/src/languages/__tests__/configs.test.ts`
 
@@ -342,12 +342,12 @@ describe("builtin language configs", () => {
 });
 ```
 
-**Step 2: Run test to verify it fails**
+**Step 2: Executar o teste para verificar que falha**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test -- --run src/languages/__tests__/configs.test.ts`
-Expected: FAIL — module not found
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test -- --run src/languages/__tests__/configs.test.ts`
+Esperado: FAIL — module not found
 
-**Step 3: Write all config files**
+**Step 3: Escrever todos os arquivos de config**
 
 Each config file exports a `LanguageConfig`. Here are the key ones (the rest follow the same pattern):
 
@@ -719,10 +719,10 @@ export const builtinConfigs: LanguageConfig[] = [
 ];
 ```
 
-**Step 4: Run test to verify it passes**
+**Step 4: Executar o teste para verificar que passa**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test -- --run src/languages/__tests__/configs.test.ts`
-Expected: PASS
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test -- --run src/languages/__tests__/configs.test.ts`
+Esperado: PASS
 
 **Step 5: Commit**
 
@@ -733,13 +733,13 @@ git commit -m "feat: add 12 builtin language configs"
 
 ---
 
-### Task 4: Create languages/index.ts barrel and export from core
+### Tarefa 4: Criar barrel languages/index.ts e exportar do core
 
-**Files:**
-- Create: `understand-anything-plugin/packages/core/src/languages/index.ts`
-- Modify: `understand-anything-plugin/packages/core/src/index.ts`
+**Arquivos:**
+- Criar: `understand-anything-plugin/packages/core/src/languages/index.ts`
+- Modificar: `understand-anything-plugin/packages/core/src/index.ts`
 
-**Step 1: Create barrel export**
+**Step 1: Criar barrel export**
 
 ```typescript
 // understand-anything-plugin/packages/core/src/languages/index.ts
@@ -749,7 +749,7 @@ export type { LanguageConfig, TreeSitterConfig } from "./types.js";
 export { builtinConfigs } from "./configs/index.js";
 ```
 
-**Step 2: Add export to core index.ts**
+**Step 2: Adicionar export ao core index.ts**
 
 Add to `understand-anything-plugin/packages/core/src/index.ts`:
 
@@ -759,10 +759,10 @@ export { LanguageRegistry, builtinConfigs, LanguageConfigSchema } from "./langua
 export type { LanguageConfig, TreeSitterConfig } from "./languages/index.js";
 ```
 
-**Step 3: Build and verify**
+**Step 3: Buildar e verificar**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/core build`
-Expected: Build succeeds with no errors
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/core build`
+Esperado: Build succeeds with no errors
 
 **Step 4: Commit**
 
@@ -773,12 +773,12 @@ git commit -m "feat: export language types and registry from core"
 
 ---
 
-### Task 5: Install tree-sitter WASM grammar packages
+### Tarefa 5: Instalar pacotes tree-sitter WASM grammar
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/core/package.json`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/core/package.json`
 
-**Step 1: Install new grammar packages**
+**Step 1: Instalar novos pacotes de grammar**
 
 Run:
 ```bash
@@ -806,10 +806,10 @@ done
 
 For packages without pre-built WASM, use `tree-sitter build --wasm` to compile them, or find alternative npm packages that ship WASM builds. Document which packages needed manual WASM generation.
 
-**Step 2: Verify build still passes**
+**Step 2: Verificar que o build ainda passa**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/core build`
-Expected: PASS
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/core build`
+Esperado: PASS
 
 **Step 3: Commit**
 
@@ -820,12 +820,12 @@ git commit -m "feat: add tree-sitter grammar packages for 10 new languages"
 
 ---
 
-### Task 6: Build GenericTreeSitterPlugin
+### Tarefa 6: Construir GenericTreeSitterPlugin
 
-**Files:**
-- Create: `understand-anything-plugin/packages/core/src/plugins/generic-tree-sitter-plugin.ts`
+**Arquivos:**
+- Criar: `understand-anything-plugin/packages/core/src/plugins/generic-tree-sitter-plugin.ts`
 
-**Step 1: Write the failing test**
+**Step 1: Escrever o teste que vai falhar**
 
 Create: `understand-anything-plugin/packages/core/src/plugins/generic-tree-sitter-plugin.test.ts`
 
@@ -942,12 +942,12 @@ from typing import Optional
 });
 ```
 
-**Step 2: Run test to verify it fails**
+**Step 2: Executar o teste para verificar que falha**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test -- --run src/plugins/generic-tree-sitter-plugin.test.ts`
-Expected: FAIL — module not found
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test -- --run src/plugins/generic-tree-sitter-plugin.test.ts`
+Esperado: FAIL — module not found
 
-**Step 3: Write implementation**
+**Step 3: Escrever a implementação**
 
 Create `understand-anything-plugin/packages/core/src/plugins/generic-tree-sitter-plugin.ts`:
 
@@ -965,12 +965,12 @@ Key implementation notes:
 - For export extraction, same pattern matching against export node types
 - Grammar loading: try `require.resolve()` first; if WASM not found, log warning and skip that language
 
-**Step 4: Run test to verify it passes**
+**Step 4: Executar o teste para verificar que passa**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test -- --run src/plugins/generic-tree-sitter-plugin.test.ts`
-Expected: PASS
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test -- --run src/plugins/generic-tree-sitter-plugin.test.ts`
+Esperado: PASS
 
-**Step 5: Run old TreeSitterPlugin tests with new plugin to verify migration parity**
+**Step 5: Executar testes do TreeSitterPlugin antigo com o novo plugin para verificar paridade da migração**
 
 Ensure the existing `tree-sitter-plugin.test.ts` test cases also pass with `GenericTreeSitterPlugin` + TS/JS configs.
 
@@ -984,12 +984,12 @@ git commit -m "feat: add GenericTreeSitterPlugin driven by LanguageConfig"
 
 ---
 
-### Task 7: Add per-language test fixtures for remaining languages
+### Tarefa 7: Adicionar test fixtures por linguagem para as linguagens restantes
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/core/src/plugins/generic-tree-sitter-plugin.test.ts`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/core/src/plugins/generic-tree-sitter-plugin.test.ts`
 
-**Step 1: Add test cases for Go, Java, Rust, C++, C#, Ruby, PHP, Swift, Kotlin**
+**Step 1: Adicionar test cases para Go, Java, Rust, C++, C#, Ruby, PHP, Swift, Kotlin**
 
 For each language, add a `describe` block with a small fixture testing function/class/import extraction. Example for Go:
 
@@ -1039,10 +1039,10 @@ Follow same pattern for each language with appropriate syntax. Each test uses ~1
 
 Note: Some WASM grammars may not be available. For languages where the grammar fails to load, register them in the `beforeAll` with a try/catch and use `it.skipIf()` to conditionally skip tests. This prevents CI failures while still testing what's available.
 
-**Step 2: Run all tests**
+**Step 2: Executar todos os testes**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test -- --run src/plugins/generic-tree-sitter-plugin.test.ts`
-Expected: PASS for all languages with available grammars
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test -- --run src/plugins/generic-tree-sitter-plugin.test.ts`
+Esperado: PASS for all languages with available grammars
 
 **Step 3: Commit**
 
@@ -1053,47 +1053,47 @@ git commit -m "test: add per-language fixtures for GenericTreeSitterPlugin"
 
 ---
 
-### Task 8: Replace TreeSitterPlugin with GenericTreeSitterPlugin
+### Tarefa 8: Substituir TreeSitterPlugin por GenericTreeSitterPlugin
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/core/src/index.ts`
-- Modify: `understand-anything-plugin/packages/core/src/plugins/registry.ts`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/core/src/index.ts`
+- Modificar: `understand-anything-plugin/packages/core/src/plugins/registry.ts`
 - Delete: `understand-anything-plugin/packages/core/src/plugins/tree-sitter-plugin.ts` (after confirming no other imports)
 
-**Step 1: Update core exports**
+**Step 1: Atualizar exports do core**
 
 In `understand-anything-plugin/packages/core/src/index.ts`:
 - Replace `export { TreeSitterPlugin }` with `export { GenericTreeSitterPlugin }`
 - Also export `GenericTreeSitterPlugin` as `TreeSitterPlugin` for backward compat if needed (check consumers)
 
-**Step 2: Update PluginRegistry extension map**
+**Step 2: Atualizar map de extensão do PluginRegistry**
 
 In `understand-anything-plugin/packages/core/src/plugins/registry.ts`:
 - The `EXTENSION_TO_LANGUAGE` map is already comprehensive (has py, go, rs, etc.)
 - No changes needed here — the registry just dispatches to whatever plugin is registered
 
-**Step 3: Update all imports in skill source**
+**Step 3: Atualizar todos os imports no source da skill**
 
 Search for all imports of `TreeSitterPlugin` across the codebase:
 
-Run: `grep -r "TreeSitterPlugin" understand-anything-plugin/`
+Execute: `grep -r "TreeSitterPlugin" understand-anything-plugin/`
 
 Update each import to use `GenericTreeSitterPlugin`. The main consumers are:
 - `understand-anything-plugin/packages/core/src/index.ts`
 - Any skill source files that instantiate the plugin
 
-**Step 4: Delete old TreeSitterPlugin**
+**Step 4: Deletar TreeSitterPlugin antigo**
 
 Once all imports are updated and tests pass:
 
-Run: `rm understand-anything-plugin/packages/core/src/plugins/tree-sitter-plugin.ts`
+Execute: `rm understand-anything-plugin/packages/core/src/plugins/tree-sitter-plugin.ts`
 
 Keep the old test file temporarily — rename it to verify parity.
 
-**Step 5: Run full test suite**
+**Step 5: Executar suíte completa de testes**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test`
-Expected: ALL PASS
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test`
+Esperado: ALL PASS
 
 **Step 6: Commit**
 
@@ -1104,13 +1104,13 @@ git commit -m "refactor: replace TreeSitterPlugin with GenericTreeSitterPlugin"
 
 ---
 
-### Task 9: Update language-lesson.ts to use LanguageRegistry
+### Tarefa 9: Atualizar language-lesson.ts para usar LanguageRegistry
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/core/src/analyzer/language-lesson.ts`
-- Modify: `understand-anything-plugin/packages/core/src/__tests__/language-lesson.test.ts`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/core/src/analyzer/language-lesson.ts`
+- Modificar: `understand-anything-plugin/packages/core/src/__tests__/language-lesson.test.ts`
 
-**Step 1: Update the test**
+**Step 1: Atualizar o teste**
 
 Update `language-lesson.test.ts` to verify concepts come from the registry:
 
@@ -1127,11 +1127,11 @@ it("detects concepts from language config", () => {
 });
 ```
 
-**Step 2: Run test to verify it fails (or passes with old behavior)**
+**Step 2: Executar o teste para verificar que falha (ou passa com o comportamento antigo)**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test -- --run src/__tests__/language-lesson.test.ts`
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test -- --run src/__tests__/language-lesson.test.ts`
 
-**Step 3: Update implementation**
+**Step 3: Atualizar a implementação**
 
 In `language-lesson.ts`:
 - Import `LanguageRegistry` and `builtinConfigs`
@@ -1140,15 +1140,15 @@ In `language-lesson.ts`:
 - Replace hardcoded `CONCEPT_PATTERNS` with `registry.getById(lang)?.concepts` merged with generic patterns (async/await, error handling, etc. that apply to all languages)
 - Keep the detection logic (search tags/summary for concept keywords) but source keywords from the config
 
-**Step 4: Run test to verify it passes**
+**Step 4: Executar o teste para verificar que passa**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test -- --run src/__tests__/language-lesson.test.ts`
-Expected: PASS
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test -- --run src/__tests__/language-lesson.test.ts`
+Esperado: PASS
 
-**Step 5: Run full test suite**
+**Step 5: Executar suíte completa de testes**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test`
-Expected: ALL PASS
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test`
+Esperado: ALL PASS
 
 **Step 6: Commit**
 
@@ -1160,23 +1160,23 @@ git commit -m "refactor: source language concepts from LanguageRegistry"
 
 ---
 
-### Task 10: Create language prompt snippet files
+### Tarefa 10: Criar arquivos de snippet de prompt por linguagem
 
-**Files:**
-- Create: `understand-anything-plugin/skills/understand/languages/typescript.md`
-- Create: `understand-anything-plugin/skills/understand/languages/javascript.md`
-- Create: `understand-anything-plugin/skills/understand/languages/python.md`
-- Create: `understand-anything-plugin/skills/understand/languages/go.md`
-- Create: `understand-anything-plugin/skills/understand/languages/java.md`
-- Create: `understand-anything-plugin/skills/understand/languages/rust.md`
-- Create: `understand-anything-plugin/skills/understand/languages/cpp.md`
-- Create: `understand-anything-plugin/skills/understand/languages/csharp.md`
-- Create: `understand-anything-plugin/skills/understand/languages/ruby.md`
-- Create: `understand-anything-plugin/skills/understand/languages/php.md`
-- Create: `understand-anything-plugin/skills/understand/languages/swift.md`
-- Create: `understand-anything-plugin/skills/understand/languages/kotlin.md`
+**Arquivos:**
+- Criar: `understand-anything-plugin/skills/understand/languages/typescript.md`
+- Criar: `understand-anything-plugin/skills/understand/languages/javascript.md`
+- Criar: `understand-anything-plugin/skills/understand/languages/python.md`
+- Criar: `understand-anything-plugin/skills/understand/languages/go.md`
+- Criar: `understand-anything-plugin/skills/understand/languages/java.md`
+- Criar: `understand-anything-plugin/skills/understand/languages/rust.md`
+- Criar: `understand-anything-plugin/skills/understand/languages/cpp.md`
+- Criar: `understand-anything-plugin/skills/understand/languages/csharp.md`
+- Criar: `understand-anything-plugin/skills/understand/languages/ruby.md`
+- Criar: `understand-anything-plugin/skills/understand/languages/php.md`
+- Criar: `understand-anything-plugin/skills/understand/languages/swift.md`
+- Criar: `understand-anything-plugin/skills/understand/languages/kotlin.md`
 
-**Step 1: Create all 12 language markdown files**
+**Step 1: Criar todos os 12 arquivos markdown de linguagem**
 
 Each file follows this structure:
 
@@ -1201,7 +1201,7 @@ Each file follows this structure:
 
 Each file should be 30-50 lines, with content specific to that language's ecosystem and idioms. The content should help the LLM produce better analysis by understanding language-specific patterns.
 
-**Step 2: Verify files are well-formed**
+**Step 2: Verificar que os arquivos estão bem formados**
 
 Manually review each file for accuracy and completeness.
 
@@ -1214,14 +1214,14 @@ git commit -m "feat: add language-specific prompt snippet files for 12 languages
 
 ---
 
-### Task 11: Make base prompts language-neutral with injection points
+### Tarefa 11: Tornar os prompts base language-neutral com pontos de injeção
 
-**Files:**
-- Modify: `understand-anything-plugin/skills/understand/file-analyzer-prompt.md`
-- Modify: `understand-anything-plugin/skills/understand/tour-builder-prompt.md`
-- Modify: `understand-anything-plugin/skills/understand/project-scanner-prompt.md`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/skills/understand/file-analyzer-prompt.md`
+- Modificar: `understand-anything-plugin/skills/understand/tour-builder-prompt.md`
+- Modificar: `understand-anything-plugin/skills/understand/project-scanner-prompt.md`
 
-**Step 1: Update file-analyzer-prompt.md**
+**Step 1: Atualizar file-analyzer-prompt.md**
 
 - Remove all TypeScript-specific examples (e.g., "TypeScript barrel file", type guard references)
 - Replace TS-specific concept lists with generic placeholders
@@ -1235,7 +1235,7 @@ git commit -m "feat: add language-specific prompt snippet files for 12 languages
 
 - Make the Phase 1 script detection language-aware (not just "Node.js recommended")
 
-**Step 2: Update tour-builder-prompt.md**
+**Step 2: Atualizar tour-builder-prompt.md**
 
 - Remove TS-specific language lesson examples ("generics, discriminated unions, utility types")
 - Replace with injection point for detected languages:
@@ -1246,7 +1246,7 @@ git commit -m "feat: add language-specific prompt snippet files for 12 languages
 {{LANGUAGE_CONTEXT}}
 ```
 
-**Step 3: Update project-scanner-prompt.md**
+**Step 3: Atualizar project-scanner-prompt.md**
 
 - Remove `tsconfig.json` hardcoded check
 - Make framework detection generic (inject detected languages' framework lists)
@@ -1258,7 +1258,7 @@ git commit -m "feat: add language-specific prompt snippet files for 12 languages
 {{LANGUAGE_CONTEXT}}
 ```
 
-**Step 4: Verify prompts are well-formed**
+**Step 4: Verificar que os prompts estão bem formados**
 
 Read each modified prompt to ensure it's coherent with injection points and no residual TS bias.
 
@@ -1273,12 +1273,12 @@ git commit -m "refactor: make agent prompts language-neutral with injection poin
 
 ---
 
-### Task 12: Implement prompt injection logic in skill source
+### Tarefa 12: Implementar lógica de injeção de prompt no source da skill
 
-**Files:**
-- Modify: `understand-anything-plugin/skills/understand/SKILL.md` (the `/understand` skill definition)
+**Arquivos:**
+- Modificar: `understand-anything-plugin/skills/understand/SKILL.md` (the `/understand` skill definition)
 
-**Step 1: Update the skill orchestration**
+**Step 1: Atualizar a orquestração da skill**
 
 In the `/understand` skill (SKILL.md), update the agent dispatch logic:
 
@@ -1295,7 +1295,7 @@ The injection logic:
 
 For multi-language projects, concatenate all detected language files.
 
-**Step 2: Verify by reading modified SKILL.md**
+**Step 2: Verificar lendo o SKILL.md modificado**
 
 Ensure the orchestration flow includes language detection and prompt injection steps.
 
@@ -1308,12 +1308,12 @@ git commit -m "feat: add language detection and prompt injection to /understand 
 
 ---
 
-### Task 13: Update old tree-sitter-plugin test to use GenericTreeSitterPlugin
+### Tarefa 13: Atualizar test antigo de tree-sitter-plugin para usar GenericTreeSitterPlugin
 
-**Files:**
+**Arquivos:**
 - Modify or Delete: `understand-anything-plugin/packages/core/src/plugins/tree-sitter-plugin.test.ts`
 
-**Step 1: Migrate or delete**
+**Step 1: Migrar ou deletar**
 
 If the old `tree-sitter-plugin.test.ts` still exists:
 - Either update it to import `GenericTreeSitterPlugin` and instantiate with a `LanguageRegistry` containing TS/JS configs
@@ -1321,10 +1321,10 @@ If the old `tree-sitter-plugin.test.ts` still exists:
 
 Prefer deleting to avoid duplication.
 
-**Step 2: Run full test suite**
+**Step 2: Executar suíte completa de testes**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test`
-Expected: ALL PASS
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test`
+Esperado: ALL PASS
 
 **Step 3: Commit**
 
@@ -1335,34 +1335,34 @@ git commit -m "test: migrate old tree-sitter-plugin tests to generic plugin"
 
 ---
 
-### Task 14: Build and lint verification
+### Tarefa 14: Verificação de build e lint
 
-**Step 1: Build core**
+**Step 1: Buildar core**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/core build`
-Expected: PASS
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/core build`
+Esperado: PASS
 
-**Step 2: Build skill package**
+**Step 2: Buildar pacote skill**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/skill build`
-Expected: PASS
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/skill build`
+Esperado: PASS
 
-**Step 3: Build dashboard**
+**Step 3: Buildar dashboard**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/dashboard build`
-Expected: PASS (dashboard doesn't import language modules directly)
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/dashboard build`
+Esperado: PASS (dashboard doesn't import language modules directly)
 
-**Step 4: Run lint**
+**Step 4: Executar lint**
 
-Run: `cd understand-anything-plugin && pnpm lint`
-Expected: PASS (or fix any lint issues)
+Execute: `cd understand-anything-plugin && pnpm lint`
+Esperado: PASS (or fix any lint issues)
 
-**Step 5: Run all tests**
+**Step 5: Executar todos os testes**
 
-Run: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test && pnpm --filter @understand-anything/skill test`
-Expected: ALL PASS
+Execute: `cd understand-anything-plugin && pnpm --filter @understand-anything/core test && pnpm --filter @understand-anything/skill test`
+Esperado: ALL PASS
 
-**Step 6: Commit any fixes**
+**Step 6: Commit das correções**
 
 ```bash
 git add -A
@@ -1371,13 +1371,13 @@ git commit -m "fix: resolve build and lint issues from language-agnostic refacto
 
 ---
 
-### Task 15: Update CLAUDE.md and documentation
+### Tarefa 15: Atualizar CLAUDE.md e documentação
 
-**Files:**
-- Modify: `CLAUDE.md`
-- Modify: `README.md` (if it exists and mentions TS-only support)
+**Arquivos:**
+- Modificar: `CLAUDE.md`
+- Modificar: `README.md` (if it exists and mentions TS-only support)
 
-**Step 1: Update CLAUDE.md**
+**Step 1: Atualizar o CLAUDE.md**
 
 Add to the Architecture section:
 - Mention the `languages/` directories (both in core and skills)

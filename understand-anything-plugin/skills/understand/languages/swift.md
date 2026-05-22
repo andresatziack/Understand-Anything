@@ -1,46 +1,48 @@
-# Swift Language Prompt Snippet
+# Snippet de Prompt da Linguagem Swift
 
-## Key Concepts
+## Conceitos-Chave
 
-- **Optionals and Optional Chaining**: `Type?` wraps values that may be nil; `?.` chains safely
-- **Protocols and Protocol Extensions**: Define contracts with default implementations via extensions
-- **Value Types vs Reference Types**: Structs and enums are value types; classes are reference types
-- **Closures**: Self-contained blocks of functionality that capture surrounding context
-- **Property Wrappers**: `@State`, `@Binding`, `@Published` encapsulate property storage logic
-- **Result Builders**: `@ViewBuilder`, `@resultBuilder` enable declarative DSL syntax
-- **Actors and Structured Concurrency**: `actor` types for data isolation; `async let`, `TaskGroup`
-- **Generics**: Type parameters with `where` clauses and associated type constraints
-- **Enums with Associated Values**: Each case can carry distinct typed payloads
-- **Extensions**: Add methods, computed properties, and protocol conformance to existing types
+- **Optionals e Optional Chaining**: `Type?` envolve valores que podem ser nil; `?.` encadeia com segurança
+- **Protocols e Protocol Extensions**: definem contratos com implementações padrão via extensions
+- **Value Types vs Reference Types**: structs e enums são value types; classes são reference types
+- **Closures**: blocos autocontidos de funcionalidade que capturam o contexto ao redor
+- **Property Wrappers**: `@State`, `@Binding`, `@Published` encapsulam a lógica de armazenamento de propriedades
+- **Result Builders**: `@ViewBuilder`, `@resultBuilder` habilitam sintaxe declarativa de DSL
+- **Actors e Concorrência Estruturada**: tipos `actor` para isolamento de dados; `async let`, `TaskGroup`
+- **Generics**: parâmetros de tipo com cláusulas `where` e constraints de associated type
+- **Enums com Associated Values**: cada case pode carregar payloads tipados distintos
+- **Extensions**: adicionam métodos, computed properties e conformance a protocolos a tipos existentes
 
-## Import Patterns
+## Padrões de Importação
 
-- `import Foundation` — core library with data types, collections, networking
-- `import UIKit` — iOS UI framework for traditional view controller architecture
-- `import SwiftUI` — declarative UI framework with reactive state management
-- `@testable import ModuleName` — import with internal access for unit testing
+- `import Foundation` — biblioteca core com tipos de dados, coleções, networking
+- `import UIKit` — framework de UI iOS para arquitetura tradicional de view controllers
+- `import SwiftUI` — framework de UI declarativo com gerenciamento reativo de estado
+- `@testable import ModuleName` — import com acesso interno para testes unitários
 
-## File Patterns
+## Padrões de Arquivos
 
-- `Package.swift` — Swift Package Manager manifest defining targets and dependencies
-- `*.xcodeproj` / `*.xcworkspace` — Xcode project and workspace configuration
-- `AppDelegate.swift` — UIKit application lifecycle entry point
-- `App.swift` — SwiftUI application entry point using `@main`
-- `Tests/` — test target directory following SPM or Xcode conventions
+- `Package.swift` — manifesto do Swift Package Manager definindo targets e dependências
+- `*.xcodeproj` / `*.xcworkspace` — configuração de projeto e workspace do Xcode
+- `AppDelegate.swift` — ponto de entrada do ciclo de vida da aplicação UIKit
+- `App.swift` — ponto de entrada de aplicação SwiftUI usando `@main`
+- `Tests/` — diretório de target de teste seguindo convenções do SPM ou Xcode
 
-## Common Frameworks
+## Frameworks Comuns
 
-- **SwiftUI** — Declarative UI framework with reactive data flow
-- **UIKit** — Imperative UI framework using view controllers and Auto Layout
-- **Vapor** — Server-side Swift web framework with async support
-- **Combine** — Reactive framework for processing values over time
-- **Core Data** — Object graph and persistence framework
+- **SwiftUI** — framework de UI declarativo com fluxo de dados reativo
+- **UIKit** — framework de UI imperativo usando view controllers e Auto Layout
+- **Vapor** — framework web server-side em Swift com suporte async
+- **Combine** — framework reativo para processar valores ao longo do tempo
+- **Core Data** — framework de grafo de objetos e persistência
 
-## Example Language Notes
+## Exemplo de Notas da Linguagem
 
-> Uses `@Published` property wrapper to automatically notify SwiftUI views of state
-> changes. When the wrapped value mutates, the property wrapper triggers `objectWillChange`
-> on the enclosing `ObservableObject`, causing dependent views to re-render.
+> Usa o property wrapper `@Published` para notificar automaticamente as views SwiftUI
+> sobre mudanças de estado. Quando o valor encapsulado é mutado, o property wrapper
+> dispara `objectWillChange` no `ObservableObject` envolvente, fazendo com que as
+> views dependentes sejam re-renderizadas.
 >
-> Protocol extensions provide default implementations, allowing types to conform by
-> simply declaring conformance — no method body needed if defaults suffice.
+> Protocol extensions fornecem implementações padrão, permitindo que tipos se conformem
+> simplesmente declarando conformance — nenhum corpo de método é necessário se os
+> defaults forem suficientes.

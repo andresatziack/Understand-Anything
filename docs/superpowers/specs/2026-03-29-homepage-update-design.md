@@ -1,53 +1,53 @@
-# Homepage Update Design — 2026-03-29
+# Atualização do Design da Homepage — 2026-03-29
 
-## Goal
+## Objetivo
 
-Update the Astro homepage (`homepage/`) to reflect features added across v1.2.0, v1.3.0, and v2.0.0 releases. The README and homepage structure/layout stay unchanged.
+Atualizar a homepage Astro (`homepage/`) para refletir os recursos adicionados nas releases v1.2.0, v1.3.0 e v2.0.0. A estrutura/layout do README e da homepage permanecem inalterados.
 
-## Scope
+## Escopo
 
-Three areas to update:
+Três áreas a atualizar:
 
-### 1. Features Section — Expand from 3 to 6 Cards
+### 1. Seção de Features — Expandir de 3 para 6 Cards
 
-Current (3 cards):
+Atual (3 cards):
 - Interactive Knowledge Graph
 - Plain-English Summaries
 - Guided Tours
 
-Updated (6 cards, 2 rows of 3):
+Atualizado (6 cards, 2 linhas de 3):
 
-| # | Title | Icon | Description |
+| # | Título | Ícone | Descrição |
 |---|-------|------|-------------|
-| 1 | Interactive Knowledge Graph | `◈` | Visualize files, functions, and dependencies as an explorable graph with hierarchical drill-down and smart layout. |
-| 2 | Beyond Code Analysis | `⬡` | Analyze your entire project — Dockerfiles, Terraform, SQL, Markdown, and 26+ file types mapped into one unified graph. |
-| 3 | Smart Filtering & Search | `⊘` | Filter by node type, complexity, layer, or edge category. Fuzzy and semantic search to find anything instantly. |
-| 4 | Export & Share | `⎙` | Export your knowledge graph as high-quality PNG, SVG, or filtered JSON — ready for docs, presentations, or further analysis. |
-| 5 | Dependency Path Finder | `⟿` | Find the shortest path between any two components. Understand how parts of your system connect at a glance. |
-| 6 | Guided Tours & Onboarding | `⟐` | AI-generated walkthroughs that teach the codebase step by step, plus onboarding guides for new team members. |
+| 1 | Interactive Knowledge Graph | `◈` | Visualize arquivos, funções e dependências como um grafo explorável com drill-down hierárquico e layout inteligente. |
+| 2 | Beyond Code Analysis | `⬡` | Analise seu projeto inteiro — Dockerfiles, Terraform, SQL, Markdown e mais de 26 tipos de arquivo mapeados em um único grafo unificado. |
+| 3 | Smart Filtering & Search | `⊘` | Filtre por tipo de nó, complexidade, camada ou categoria de aresta. Busca fuzzy e semântica para encontrar qualquer coisa instantaneamente. |
+| 4 | Export & Share | `⎙` | Exporte seu knowledge graph como PNG, SVG ou JSON filtrado de alta qualidade — pronto para docs, apresentações ou análise adicional. |
+| 5 | Dependency Path Finder | `⟿` | Encontre o caminho mais curto entre quaisquer dois componentes. Entenda como partes do seu sistema se conectam de relance. |
+| 6 | Guided Tours & Onboarding | `⟐` | Walkthroughs gerados por IA que ensinam o codebase passo a passo, além de guias de onboarding para novos membros do time. |
 
-### 2. Install Section
+### 2. Seção de Instalação
 
-Update the note from Claude Code-only to multi-platform:
-- Before: "Works with Claude Code — Anthropic's official CLI for Claude."
-- After: "Works with Claude Code, Codex, OpenCode, Gemini CLI, and more."
+Atualizar a nota de "apenas Claude Code" para multi-plataforma:
+- Antes: "Works with Claude Code — Anthropic's official CLI for Claude."
+- Depois: "Works with Claude Code, Codex, OpenCode, Gemini CLI, and more."
 
 ### 3. Footer
 
-Update tagline:
-- Before: "Built as a Claude Code plugin"
-- After: "Built for AI coding assistants"
+Atualizar tagline:
+- Antes: "Built as a Claude Code plugin"
+- Depois: "Built for AI coding assistants"
 
-## Files to Modify
+## Arquivos a Modificar
 
-- `homepage/src/components/Features.astro` — replace 3 cards with 6
-- `homepage/src/components/Install.astro` — update platform note
-- `homepage/src/components/Footer.astro` — update tagline
+- `homepage/src/components/Features.astro` — substituir 3 cards por 6
+- `homepage/src/components/Install.astro` — atualizar nota de plataforma
+- `homepage/src/components/Footer.astro` — atualizar tagline
 
-## Out of Scope
+## Fora do Escopo
 
-- README.md updates
-- Showcase section / screenshot
-- Nav component
-- Hero section
-- Layout / global CSS structure changes
+- Atualizações no README.md
+- Seção de showcase / screenshot
+- Componente Nav
+- Seção Hero
+- Mudanças de layout / estrutura global de CSS

@@ -1,75 +1,75 @@
-# Design: Dashboard Robustness — Permissive Graph Loading
+# Design: Robustez do Dashboard — Carregamento Permissivo do Graph
 
-## Problem
+## Problema
 
-When the LLM agent produces a knowledge-graph.json that deviates from the strict Zod schema, the dashboard shows a blank screen with cryptic Zod error paths. Users don't know whether it's a system bug or an agent generation issue, and their only recourse is a full re-run of `/understand`.
+Quando o agent LLM produz um knowledge-graph.json que diverge do schema Zod estrito, o dashboard mostra uma tela em branco com paths de erro do Zod crípticos. Os usuários não sabem se é um bug do sistema ou um problema de geração do agent, e a única alternativa é uma re-execução completa do `/understand`.
 
-## Goals
+## Objetivos
 
-1. **Maximize what the user can see** — load valid nodes/edges even if some are broken
-2. **Clearly communicate generation issues** — amber warnings (not red errors) with copy-paste-friendly messages
-3. **Empower targeted fixes** — users can copy the issue report and ask their agent to fix specific problems instead of a full re-run
+1. **Maximizar o que o usuário consegue ver** — carregar nodes/edges válidos mesmo se alguns estiverem quebrados
+2. **Comunicar com clareza problemas de geração** — warnings âmbar (não erros vermelhos) com mensagens copy-paste-friendly
+3. **Empoderar correções pontuais** — usuários podem copiar o relatório de issues e pedir ao agent para corrigir problemas específicos em vez de uma re-execução completa
 
 ## Design
 
-### Three-Layer Robustness Pipeline
+### Pipeline de Robustez em Três Layers
 
 ```
 Raw JSON → Sanitize (Tier 1) → Normalize + Auto-fix (Tier 2) → Validate per-item (Tier 3) → Fatal check (Tier 4) → Dashboard
 ```
 
-### Tier 1: Sanitize Silently
+### Tier 1: Sanitizar Silenciosamente
 
-Common LLM quirks that are pure noise — fix without reporting.
+Esquisitices comuns do LLM que são puro ruído — corrigir sem reportar.
 
-| Issue | Fix |
+| Issue | Correção |
 |-------|-----|
-| `null` on optional fields (`filePath`, `lineRange`, `description`, `languageNotes`) | Convert to `undefined` |
-| Mixed-case enum strings (`"Forward"`, `"SIMPLE"`) | Lowercase before matching |
+| `null` em campos opcionais (`filePath`, `lineRange`, `description`, `languageNotes`) | Converter para `undefined` |
+| Strings de enum com case misturado (`"Forward"`, `"SIMPLE"`) | Lowercase antes de comparar |
 
-### Tier 2: Auto-fix With Info Notice
+### Tier 2: Auto-fix Com Aviso Informativo
 
-Recoverable issues — apply sensible defaults, track as `auto-corrected` issues.
+Problemas recuperáveis — aplicar defaults sensatos, registrar como issues `auto-corrected`.
 
-| Issue | Default | Notes |
+| Issue | Default | Notas |
 |-------|---------|-------|
-| Missing `complexity` | `"moderate"` | Most common LLM omission |
-| Missing `tags` | `[]` | Empty is valid |
-| Missing `weight` | `0.5` | Middle of 0–1 range |
-| `weight` as string | Coerce to number | e.g., `"0.8"` → `0.8` |
-| Missing `direction` | `"forward"` | Safe default |
-| Missing `summary` | Use node `name` | Better than empty |
-| `tour: null` / `layers: null` | `[]` | Null vs empty array |
-| Complexity aliases | `low/easy→simple`, `medium/intermediate→moderate`, `high/hard→complex` | |
-| Direction aliases | `to/outbound→forward`, `from/inbound→backward`, `both→bidirectional` | |
-| Existing node/edge type aliases | Already handled by `normalizeGraph` | No change needed |
-| Missing node `type` | `"file"` | Safe fallback |
-| Missing edge `type` | `"depends_on"` | Generic fallback |
+| `complexity` ausente | `"moderate"` | Omissão mais comum do LLM |
+| `tags` ausentes | `[]` | Vazio é válido |
+| `weight` ausente | `0.5` | Meio do range 0–1 |
+| `weight` como string | Coerce para número | ex.: `"0.8"` → `0.8` |
+| `direction` ausente | `"forward"` | Default seguro |
+| `summary` ausente | Usar `name` do node | Melhor que vazio |
+| `tour: null` / `layers: null` | `[]` | Null vs array vazio |
+| Aliases de complexity | `low/easy→simple`, `medium/intermediate→moderate`, `high/hard→complex` | |
+| Aliases de direction | `to/outbound→forward`, `from/inbound→backward`, `both→bidirectional` | |
+| Aliases existentes de tipo de node/edge | Já tratados por `normalizeGraph` | Sem mudança necessária |
+| `type` de node ausente | `"file"` | Fallback seguro |
+| `type` de edge ausente | `"depends_on"` | Fallback genérico |
 
-### Tier 3: Drop With Warning
+### Tier 3: Descartar Com Warning
 
-Can't safely guess — remove the item, track as `dropped` issue.
+Não dá para adivinhar com segurança — remover o item, registrar como issue `dropped`.
 
-| Issue | Action |
+| Issue | Ação |
 |-------|--------|
-| Edge references non-existent node ID | Drop edge |
-| Node missing `id` | Drop node |
-| Node missing `name` | Drop node |
-| Edge missing `source` or `target` | Drop edge |
-| Unrecognizable `type` value (not in canonical or alias list) | Drop item |
-| `weight` not coercible to number | Drop edge |
+| Edge referencia ID de node inexistente | Descartar edge |
+| Node sem `id` | Descartar node |
+| Node sem `name` | Descartar node |
+| Edge sem `source` ou `target` | Descartar edge |
+| Valor de `type` irreconhecível (não está nem na lista canônica nem na de aliases) | Descartar item |
+| `weight` não coercível para número | Descartar edge |
 
 ### Tier 4: Fatal
 
-Graph is unsalvageable — show red error banner.
+Graph é insalvável — mostrar banner vermelho de erro.
 
-| Condition | Message |
+| Condição | Mensagem |
 |-----------|---------|
-| 0 valid nodes after filtering | "No valid nodes found in knowledge graph" |
-| Missing `project` metadata entirely | "Missing project metadata" |
-| Input is not an object / not valid JSON | "Invalid input format" |
+| 0 nodes válidos após filtragem | "No valid nodes found in knowledge graph" |
+| Falta `project` metadata por completo | "Missing project metadata" |
+| Input não é objeto / não é JSON válido | "Invalid input format" |
 
-### Return Type
+### Tipo de Retorno
 
 ```typescript
 interface GraphIssue {
@@ -87,19 +87,19 @@ interface ValidationResult {
 }
 ```
 
-### Dashboard UI: WarningBanner Component
+### UI do Dashboard: Componente WarningBanner
 
-**New component** in `packages/dashboard/src/components/WarningBanner.tsx`.
+**Novo componente** em `packages/dashboard/src/components/WarningBanner.tsx`.
 
-**Visual design:**
-- **Amber/gold theme** — `bg-amber-900/20`, `border-amber-700`, `text-amber-200`
-- Matches dashboard's gold accent aesthetic; signals "generation quality issue" not "system crash"
-- **Collapsed by default** — summary line: "Knowledge graph loaded with 5 auto-corrections and 2 dropped items"
-- **Expandable** — click to reveal categorized issue list
-- **Copy button** — one-click copies the full issue report as a pre-formatted message
-- **Actionable footer** — tells users to copy issues and ask their agent to fix them
+**Design visual:**
+- **Tema âmbar/dourado** — `bg-amber-900/20`, `border-amber-700`, `text-amber-200`
+- Combina com a estética de accent dourado do dashboard; sinaliza "problema de qualidade de geração", não "crash do sistema"
+- **Collapsed por padrão** — linha de resumo: "Knowledge graph loaded with 5 auto-corrections and 2 dropped items"
+- **Expansível** — clique para revelar lista de issues categorizada
+- **Botão de copiar** — copia em um clique o relatório de issues completo como mensagem pré-formatada
+- **Footer acionável** — diz aos usuários para copiarem as issues e pedirem ao agent para corrigi-las
 
-**Copy-paste output format:**
+**Formato de saída para copy-paste:**
 ```
 The following issues were found in your knowledge-graph.json.
 These are LLM generation errors — not a system bug.
@@ -112,38 +112,38 @@ You can ask your agent to fix these specific issues in the knowledge-graph.json 
 [Dropped] nodes[14]: missing required "id" field — cannot recover
 ```
 
-**Fatal errors** stay red (`bg-red-900/30`) with message: "Knowledge graph is unsalvageable: [reason]. Please re-run `/understand` to generate a new one."
+**Erros fatais** permanecem em vermelho (`bg-red-900/30`) com a mensagem: "Knowledge graph is unsalvageable: [reason]. Please re-run `/understand` to generate a new one."
 
-**Existing red error banner** for network/JSON-parse errors stays as-is (those ARE system/infra issues).
+**O banner vermelho de erro existente** para erros de rede/JSON-parse permanece como está (esses SÃO problemas de sistema/infra).
 
-### App.tsx Changes
+### Mudanças no App.tsx
 
-- On `result.success === true` with `result.issues.length > 0`: show `WarningBanner` with issues, load graph normally
-- On `result.fatal`: show existing red banner with fatal message
-- `console.warn` for auto-corrected items, `console.error` for dropped items
+- Em `result.success === true` com `result.issues.length > 0`: mostrar `WarningBanner` com as issues, carregar o graph normalmente
+- Em `result.fatal`: mostrar o banner vermelho existente com a mensagem fatal
+- `console.warn` para itens auto-corrected, `console.error` para itens dropped
 
-### Test Coverage
+### Cobertura de Testes
 
-All in `packages/core/src/__tests__/schema.test.ts`:
+Tudo em `packages/core/src/__tests__/schema.test.ts`:
 
-- **Tier 1:** `null` optional fields silently become `undefined`
-- **Tier 2:** Missing `complexity`/`tags`/`weight`/`direction`/`summary` get defaults; issues tracked
-- **Tier 2:** String `weight` coerced; complexity/direction aliases mapped
-- **Tier 3:** Dangling edge references dropped; nodes missing `id` dropped; issues recorded
-- **Tier 4:** Empty graph after filtering → fatal; missing `project` → fatal
-- **Integration:** Graph with mixed good/bad nodes → loads with correct node count + correct issues list
+- **Tier 1:** campos opcionais `null` viram silenciosamente `undefined`
+- **Tier 2:** `complexity`/`tags`/`weight`/`direction`/`summary` ausentes recebem defaults; issues registradas
+- **Tier 2:** `weight` em string sofre coerce; aliases de complexity/direction mapeados
+- **Tier 3:** referências de edge penduradas são descartadas; nodes sem `id` descartados; issues registradas
+- **Tier 4:** graph vazio após filtragem → fatal; `project` ausente → fatal
+- **Integração:** graph com nodes mistos (bons/ruins) → carrega com a contagem correta de nodes + lista de issues correta
 
-### Files Changed
+### Arquivos Modificados
 
-| File | Change |
+| Arquivo | Mudança |
 |------|--------|
-| `packages/core/src/schema.ts` | Sanitize, expanded normalize, permissive validate, new types |
-| `packages/dashboard/src/components/WarningBanner.tsx` | New component |
-| `packages/dashboard/src/App.tsx` | Wire issues to WarningBanner |
-| `packages/core/src/__tests__/schema.test.ts` | Tests for all tiers |
+| `packages/core/src/schema.ts` | Sanitize, normalize expandido, validate permissivo, novos tipos |
+| `packages/dashboard/src/components/WarningBanner.tsx` | Novo componente |
+| `packages/dashboard/src/App.tsx` | Conectar issues ao WarningBanner |
+| `packages/core/src/__tests__/schema.test.ts` | Testes para todos os tiers |
 
-### Files NOT Changed
+### Arquivos NÃO Modificados
 
-- Agent prompts (can be tightened later as a separate effort)
-- GraphView / store logic (they already handle valid `KnowledgeGraph` objects)
-- Existing node/edge type alias maps (preserved, extended around)
+- Prompts dos agents (podem ser apertados depois como esforço separado)
+- Lógica do GraphView / store (eles já lidam com objetos `KnowledgeGraph` válidos)
+- Mapas de alias de tipo de node/edge existentes (preservados, estendidos ao redor)

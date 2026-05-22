@@ -1,31 +1,31 @@
-# Token Reduction Implementation Plan
+# Plano de Implementação de Redução de Tokens
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **Para o Claude:** SUB-SKILL OBRIGATÓRIA: Use superpowers:executing-plans para implementar este plano tarefa por tarefa.
 
-**Goal:** Reduce `/understand` token cost by ~85% on large codebases through import pre-resolution, batch consolidation, addendum removal, payload slimming, and gating the LLM reviewer.
+**Objetivo:** Reduzir o custo de tokens do `/understand` em ~85% em codebases grandes via pré-resolução de imports, consolidação de batches, remoção de addendums, slimming de payload e gating do reviewer LLM.
 
-**Architecture:** Five changes (C5 → C4 → C3 → C1+C2) applied in rollout order — lowest risk first. All changes are to prompt/skill markdown files in `understand-anything-plugin/skills/understand/`. No TypeScript source changes required.
+**Arquitetura:** Cinco mudanças (C5 → C4 → C3 → C1+C2) aplicadas em ordem de rollout — menor risco primeiro. Todas as mudanças são em arquivos markdown de prompt/skill em `understand-anything-plugin/skills/understand/`. Nenhuma mudança em código TypeScript necessária.
 
-**Tech Stack:** Markdown skill files, Node.js inline scripts embedded in SKILL.md, knowledge-graph JSON pipeline.
+**Stack Tecnológica:** Arquivos markdown de skill, scripts Node.js inline embutidos em SKILL.md, pipeline JSON de knowledge-graph.
 
 **Design doc:** `docs/plans/2026-03-27-token-reduction-design.md`
 
 ---
 
-## Task 1: C5 — Gate graph-reviewer behind `--review` flag
+## Tarefa 1: C5 — Gating do graph-reviewer atrás da flag `--review`
 
-Replaces the always-on LLM graph-reviewer subagent with a deterministic inline validation script. The LLM reviewer only runs when `--review` is in `$ARGUMENTS`. Saves ~58,500 tokens per default run.
+Substitui o subagent reviewer LLM sempre-ativo por um script de validação inline determinístico. O reviewer LLM só roda quando `--review` está em `$ARGUMENTS`. Economiza ~58.500 tokens por execução default.
 
-**Files:**
-- Modify: `understand-anything-plugin/skills/understand/SKILL.md` (Phase 6, lines 330–362)
+**Arquivos:**
+- Modificar: `understand-anything-plugin/skills/understand/SKILL.md` (Phase 6, lines 330–362)
 
-### Step 1: Open SKILL.md and locate Phase 6
+### Step 1: Abrir SKILL.md e localizar a Fase 6
 
-Read the file and find "## Phase 6 — REVIEW" (line 297). Identify steps 3–6 (lines 330–362) which currently always dispatch the LLM graph-reviewer subagent.
+Leia o arquivo e encontre "## Phase 6 — REVIEW" (linha 297). Identifique os steps 3–6 (linhas 330–362) que atualmente sempre disparam o subagent reviewer LLM.
 
-### Step 2: Replace Phase 6 steps 3–6 with conditional reviewer logic
+### Step 2: Substituir os steps 3–6 da Fase 6 pela lógica condicional do reviewer
 
-Replace lines 330–362 (from "3. Dispatch a subagent using the prompt template" through "6. **If `approved: true`:** Proceed to Phase 7.") with:
+Substitua as linhas 330–362 (de "3. Dispatch a subagent using the prompt template" até "6. **If `approved: true`:** Proceed to Phase 7.") por:
 
 ```markdown
 3. **Check `$ARGUMENTS` for `--review` flag.** Then run the appropriate validation path:
@@ -104,13 +104,13 @@ node $PROJECT_ROOT/.understand-anything/tmp/ua-inline-validate.js \
   "$PROJECT_ROOT/.understand-anything/intermediate/review.json"
 ```
 
-If the script exits non-zero, read stderr, fix the script, and retry once.
+Se o script sair com código não-zero, leia o stderr, corrija o script e tente novamente uma vez.
 
 ---
 
 #### `--review` path: full LLM reviewer
 
-If `--review` IS in `$ARGUMENTS`, dispatch the LLM graph-reviewer subagent as follows:
+Se `--review` ESTIVER em `$ARGUMENTS`, dispare o subagent reviewer LLM da seguinte forma:
 
 Dispatch a subagent using the prompt template at `./graph-reviewer-prompt.md`. Read the template file and pass the full content as the subagent's prompt, appending the following additional context:
 
@@ -126,7 +126,7 @@ Dispatch a subagent using the prompt template at `./graph-reviewer-prompt.md`. R
 >
 > Cross-validate: every file in the scan inventory should have a corresponding `file:` node in the graph. Flag any missing files. Also flag any graph nodes whose `filePath` doesn't appear in the scan inventory.
 
-Pass these parameters in the dispatch prompt:
+Passe estes parâmetros no prompt de dispatch:
 
 > Validate the knowledge graph at `$PROJECT_ROOT/.understand-anything/intermediate/assembled-graph.json`.
 > Project root: `$PROJECT_ROOT`
@@ -149,13 +149,13 @@ Pass these parameters in the dispatch prompt:
 6. **If `issues` array is empty:** Proceed to Phase 7.
 ```
 
-### Step 3: Verify the edit
+### Step 3: Verificar a edição
 
-Re-read SKILL.md lines 297–380 and confirm:
-- Phase 6 step 3 now checks for `--review` flag
-- The inline validation script is present and complete
-- The `--review` path still dispatches the LLM subagent identically to before
-- Steps 4–6 handle the `review.json` output the same way as before
+Releia as linhas 297–380 do SKILL.md e confirme:
+- Phase 6 step 3 agora verifica a flag `--review`
+- O script de validação inline está presente e completo
+- O caminho `--review` ainda dispara o subagent LLM identicamente ao anterior
+- Steps 4–6 lidam com a saída do `review.json` da mesma forma que antes
 
 ### Step 4: Commit
 
@@ -166,16 +166,16 @@ git commit -m "perf(understand): gate LLM graph-reviewer behind --review flag, a
 
 ---
 
-## Task 2: C4a — Slim Phase 4 (architecture) node payload
+## Tarefa 2: C4a — Slim do payload de nós da Fase 4 (architecture)
 
-Removes `name` and `languageNotes` from the file node format injected into the architecture-analyzer subagent. These fields are not needed for architectural layer assignment and add unnecessary tokens.
+Remove `name` e `languageNotes` do formato de nó de arquivo injetado no subagent architecture-analyzer. Estes campos não são necessários para atribuição de camada arquitetural e adicionam tokens desnecessários.
 
-**Files:**
-- Modify: `understand-anything-plugin/skills/understand/SKILL.md` (Phase 4, around line 188–196)
+**Arquivos:**
+- Modificar: `understand-anything-plugin/skills/understand/SKILL.md` (Phase 4, around line 188–196)
 
-### Step 1: Locate the Phase 4 dispatch prompt in SKILL.md
+### Step 1: Localizar o prompt de dispatch da Fase 4 no SKILL.md
 
-Find the block starting "Pass these parameters in the dispatch prompt:" under Phase 4 (around line 181). Look for:
+Encontre o bloco que começa com "Pass these parameters in the dispatch prompt:" sob a Fase 4 (em torno da linha 181). Procure por:
 
 ```
 > File nodes:
@@ -184,21 +184,21 @@ Find the block starting "Pass these parameters in the dispatch prompt:" under Ph
 > ```
 ```
 
-### Step 2: Update the file node format
+### Step 2: Atualizar o formato do nó de arquivo
 
-Change the file nodes line from:
+Mude a linha de file nodes de:
 ```
 > [list of {id, name, filePath, summary, tags} for all file-type nodes]
 ```
 
-To:
+Para:
 ```
 > [list of {id, filePath, summary, tags} for all file-type nodes — omit name, complexity, languageNotes]
 ```
 
-### Step 3: Verify
+### Step 3: Verificar
 
-Re-read Phase 4 and confirm the node format line is updated. Import edges line below it (`[list of edges with type "imports"]`) is unchanged.
+Releia a Fase 4 e confirme que a linha de formato do nó foi atualizada. A linha de import edges abaixo (`[list of edges with type "imports"]`) está inalterada.
 
 ### Step 4: Commit
 
@@ -209,17 +209,17 @@ git commit -m "perf(understand): slim Phase 4 architecture payload — drop redu
 
 ---
 
-## Task 3: C4b — Slim Phase 5 (tour builder) payload
+## Tarefa 3: C4b — Slim do payload da Fase 5 (tour builder)
 
-Phase 5 currently injects all nodes (including function/class), all edge types, and full layer objects (with nodeIds arrays). Only file nodes, import+calls edges, and slim layers are needed for tour design. This is the largest single payload change, saving ~105,000 tokens on a 500-file project.
+A Fase 5 atualmente injeta todos os nós (incluindo function/class), todos os tipos de edge e objetos completos de layer (com arrays nodeIds). Apenas file nodes, edges imports+calls e layers slim são necessários para o design do tour. Esta é a maior mudança individual de payload, economizando ~105.000 tokens em um projeto de 500 arquivos.
 
-**Files:**
-- Modify: `understand-anything-plugin/skills/understand/SKILL.md` (Phase 5, lines 257–270)
-- Modify: `understand-anything-plugin/skills/understand/tour-builder-prompt.md` (input schema)
+**Arquivos:**
+- Modificar: `understand-anything-plugin/skills/understand/SKILL.md` (Phase 5, lines 257–270)
+- Modificar: `understand-anything-plugin/skills/understand/tour-builder-prompt.md` (input schema)
 
-### Step 1: Locate the Phase 5 dispatch prompt in SKILL.md
+### Step 1: Localizar o prompt de dispatch da Fase 5 no SKILL.md
 
-Find the block starting with (around line 257):
+Encontre o bloco que começa com (em torno da linha 257):
 ```
 > Nodes (summarized):
 > ```json
@@ -237,9 +237,9 @@ Find the block starting with (around line 257):
 > ```
 ```
 
-### Step 2: Replace all three payload sections
+### Step 2: Substituir todas as três seções de payload
 
-Replace those lines with:
+Substitua aquelas linhas por:
 
 ```markdown
 > Nodes (file nodes only):
@@ -258,9 +258,9 @@ Replace those lines with:
 > ```
 ```
 
-### Step 3: Update tour-builder-prompt.md input schema
+### Step 3: Atualizar o input schema do tour-builder-prompt.md
 
-Open `tour-builder-prompt.md` and find the "Script Requirements" section (around line 18–35). The input schema currently shows:
+Abra `tour-builder-prompt.md` e encontre a seção "Script Requirements" (em torno das linhas 18–35). O input schema atualmente mostra:
 ```json
 {
   "nodes": [...],
@@ -271,7 +271,7 @@ Open `tour-builder-prompt.md` and find the "Script Requirements" section (around
 }
 ```
 
-Update the layers example to reflect the slim format:
+Atualize o exemplo de layers para refletir o formato slim:
 ```json
 {
   "nodes": [
@@ -286,24 +286,24 @@ Update the layers example to reflect the slim format:
 }
 ```
 
-Also update the "G. Node Summary Index" description (around line 84) to reflect that input nodes are file-type only:
+Atualize também a descrição "G. Node Summary Index" (em torno da linha 84) para refletir que os input nodes são apenas file-type:
 
-Find:
+Encontre:
 ```
 **G. Node Summary Index**
 
 Create a lookup of each node ID to its `summary`, `type`, `tags` (default to empty array `[]` if not present in input), and `name` for easy reference.
 ```
 
-Add a note after it:
+Adicione uma nota em seguida:
 ```
-Note: input nodes are file-type only. The nodeSummaryIndex will contain only file nodes.
+Nota: input nodes são apenas file-type. O nodeSummaryIndex conterá apenas file nodes.
 ```
 
-### Step 4: Verify
+### Step 4: Verificar
 
-- Re-read SKILL.md Phase 5 payload block: confirms file-only nodes, slim layers (no nodeIds), imports+calls edges only
-- Re-read tour-builder-prompt.md input schema: layers no longer have nodeIds
+- Releia o bloco de payload da Fase 5 do SKILL.md: confirma file-only nodes, slim layers (sem nodeIds), edges imports+calls apenas
+- Releia o input schema do tour-builder-prompt.md: layers não têm mais nodeIds
 
 ### Step 5: Commit
 
@@ -315,17 +315,17 @@ git commit -m "perf(understand): slim Phase 5 tour payload — file nodes only, 
 
 ---
 
-## Task 4: C3 — Remove language/framework addendums from file-analyzer batches
+## Tarefa 4: C3 — Remover addendums de linguagem/framework dos batches do file-analyzer
 
-The addendums (`languages/typescript.md`, `frameworks/react.md`, etc.) are currently injected into every file-analyzer batch prompt. They cost ~1,300 tokens × N batches. The model already knows these languages. Replace with a compact inline reference table (~150 tokens, paid once, embedded in the base template).
+Os addendums (`languages/typescript.md`, `frameworks/react.md`, etc.) são atualmente injetados em cada prompt de batch do file-analyzer. Custam ~1.300 tokens × N batches. O modelo já conhece estas linguagens. Substitua por uma tabela de referência inline compacta (~150 tokens, paga uma vez, embutida no template base).
 
-**Files:**
-- Modify: `understand-anything-plugin/skills/understand/SKILL.md` (Phase 2, lines 104–117)
-- Modify: `understand-anything-plugin/skills/understand/file-analyzer-prompt.md` (add quick reference section)
+**Arquivos:**
+- Modificar: `understand-anything-plugin/skills/understand/SKILL.md` (Phase 2, lines 104–117)
+- Modificar: `understand-anything-plugin/skills/understand/file-analyzer-prompt.md` (add quick reference section)
 
-### Step 1: Update the "Build the combined prompt template" block in SKILL.md Phase 2
+### Step 1: Atualizar o bloco "Build the combined prompt template" no SKILL.md Fase 2
 
-Find the block at lines 104–117:
+Encontre o bloco nas linhas 104–117:
 ```
 **Build the combined prompt template:**
 1. Read the base template at `./file-analyzer-prompt.md`.
@@ -343,7 +343,7 @@ Then for each batch pass the combined template content as the subagent's prompt,
 > Use the language context and framework addendums (appended above) to produce more accurate summaries and better classify file roles.
 ```
 
-Replace it with:
+Substitua por:
 ```markdown
 **Build the prompt for each batch:**
 1. Read the base template at `./file-analyzer-prompt.md`. (Language and framework hints are embedded in the template — do NOT append addendum files for Phase 2 batches. Addendums are reserved for Phase 4.)
@@ -356,11 +356,11 @@ Then for each batch pass the template content as the subagent's prompt, appendin
 > Languages: `<languages from Phase 1>`
 ```
 
-This removes steps 2 and 3 (the addendum injection loops) entirely from Phase 2.
+Isto remove os steps 2 e 3 (os loops de injeção de addendum) inteiramente da Fase 2.
 
-### Step 2: Add Language and Framework Quick Reference to file-analyzer-prompt.md
+### Step 2: Adicionar Quick Reference de Linguagem e Framework ao file-analyzer-prompt.md
 
-Open `file-analyzer-prompt.md`. Find the "## Critical Constraints" section near the bottom (around line 299). Insert the following new section **before** "## Critical Constraints":
+Abra `file-analyzer-prompt.md`. Encontre a seção "## Critical Constraints" próxima ao final (em torno da linha 299). Insira a seguinte nova seção **antes** de "## Critical Constraints":
 
 ```markdown
 ## Language and Framework Quick Reference
@@ -394,11 +394,11 @@ Use these hints to improve tag and edge accuracy for common patterns. Your train
 
 ```
 
-### Step 3: Verify
+### Step 3: Verificar
 
-- Re-read SKILL.md Phase 2 "Build the prompt" block: steps 2 and 3 (addendum loops) are gone; "Frameworks detected" line in additional context is gone
-- Re-read file-analyzer-prompt.md: new "Language and Framework Quick Reference" section appears before Critical Constraints; no reference to addendum files
-- Confirm Phase 4 "Build the combined prompt template" (lines 163–167) is **unchanged** — addendums still apply there
+- Releia o bloco "Build the prompt" da Fase 2 no SKILL.md: steps 2 e 3 (loops de addendum) sumiram; linha "Frameworks detected" no contexto adicional sumiu
+- Releia o file-analyzer-prompt.md: nova seção "Language and Framework Quick Reference" aparece antes de Critical Constraints; nenhuma referência a arquivos addendum
+- Confirme que "Build the combined prompt template" da Fase 4 (linhas 163–167) está **inalterado** — addendums ainda se aplicam ali
 
 ### Step 4: Commit
 
@@ -410,16 +410,16 @@ git commit -m "perf(understand): remove addendum injection from Phase 2 batches,
 
 ---
 
-## Task 5: C1a — Extend scanner to pre-resolve imports
+## Tarefa 5: C1a — Estender o scanner para pré-resolver imports
 
-Adds a new Step 8 to the project scanner script: parse import statements from every source file and resolve relative imports against the discovered file list. The resolved map is written into `scan-result.json` as `importMap`. This is the data that lets us eliminate `allProjectFiles` from every batch in Task 7.
+Adiciona um novo Step 8 ao script do project scanner: faz parsing de import statements de cada arquivo fonte e resolve imports relativos contra a lista de arquivos descobertos. O mapa resolvido é escrito em `scan-result.json` como `importMap`. Estes são os dados que nos permitem eliminar `allProjectFiles` de cada batch na Tarefa 7.
 
-**Files:**
-- Modify: `understand-anything-plugin/skills/understand/project-scanner-prompt.md`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/skills/understand/project-scanner-prompt.md`
 
-### Step 1: Add Step 8 to the scanner script requirements
+### Step 1: Adicionar Step 8 aos requisitos do script do scanner
 
-Open `project-scanner-prompt.md`. Find "**Step 7 -- Project Name**" (around line 100). After its content (the priority list), add a new step:
+Abra `project-scanner-prompt.md`. Encontre "**Step 7 -- Project Name**" (em torno da linha 100). Após seu conteúdo (a lista de prioridades), adicione um novo step:
 
 ```markdown
 **Step 8 -- Import Resolution**
@@ -457,11 +457,11 @@ Output format in the script result:
 Keys are project-relative paths. Values are arrays of resolved project-relative paths. Every key in the file list must appear in `importMap` (use an empty array `[]` if no imports were resolved). External packages and unresolvable imports are omitted entirely.
 ```
 
-### Step 2: Update the scanner script output format
+### Step 2: Atualizar o formato de saída do script do scanner
 
-Find the "### Script Output Format" section (around line 109) and update the example JSON to include `importMap`:
+Encontre a seção "### Script Output Format" (em torno da linha 109) e atualize o JSON de exemplo para incluir `importMap`:
 
-Find this in the example:
+Encontre isto no exemplo:
 ```json
 {
   "scriptCompleted": true,
@@ -471,7 +471,7 @@ Find this in the example:
 }
 ```
 
-Add `importMap` to the example:
+Adicione `importMap` ao exemplo:
 ```json
 {
   "scriptCompleted": true,
@@ -492,24 +492,24 @@ Add `importMap` to the example:
 }
 ```
 
-Also update the field documentation list below the example to add:
+Atualize também a lista de documentação dos campos abaixo do exemplo para adicionar:
 ```
 - `importMap` (object) — map from every source file path to its list of resolved project-internal import paths; empty array if no resolved imports; external packages excluded
 ```
 
-### Step 3: Update the final assembly section to preserve importMap
+### Step 3: Atualizar a seção de assembly final para preservar importMap
 
-Find "## Phase 2 -- Description and Final Assembly" (around line 153). Find the IMPORTANT note:
+Encontre "## Phase 2 -- Description and Final Assembly" (em torno da linha 153). Encontre a nota IMPORTANT:
 ```
 **IMPORTANT:** The final output must NOT contain the `scriptCompleted`, `rawDescription`, or `readmeHead` fields.
 ```
 
-Update it to:
+Atualize para:
 ```
 **IMPORTANT:** The final output must NOT contain the `scriptCompleted`, `rawDescription`, or `readmeHead` fields. All other fields — including `importMap` — MUST be preserved exactly as output by the script.
 ```
 
-Also update the final output example to include `importMap`:
+Atualize também o exemplo de saída final para incluir `importMap`:
 ```json
 {
   "name": "project-name",
@@ -525,13 +525,13 @@ Also update the final output example to include `importMap`:
 }
 ```
 
-### Step 4: Verify
+### Step 4: Verificar
 
-Re-read `project-scanner-prompt.md` and confirm:
-- Step 8 is present with full import resolution logic
-- Script output format includes `importMap`
-- Field documentation includes `importMap`
-- Final assembly section preserves `importMap` in output
+Releia o `project-scanner-prompt.md` e confirme:
+- Step 8 está presente com lógica completa de resolução de imports
+- O formato de saída do script inclui `importMap`
+- A documentação de campos inclui `importMap`
+- A seção de assembly final preserva `importMap` na saída
 
 ### Step 5: Commit
 
@@ -542,16 +542,16 @@ git commit -m "perf(understand): extend scanner to pre-resolve imports, output i
 
 ---
 
-## Task 6: C1b — Update file-analyzer to use batchImportData
+## Tarefa 6: C1b — Atualizar file-analyzer para usar batchImportData
 
-Removes `allProjectFiles` from the file-analyzer input schema and replaces it with `batchImportData` (pre-resolved imports for this batch's files only). Updates the extraction script section to skip import resolution entirely (already done by scanner). Updates the edge creation step to use `batchImportData` directly.
+Remove `allProjectFiles` do input schema do file-analyzer e o substitui por `batchImportData` (imports pré-resolvidos somente para os arquivos deste batch). Atualiza a seção do script de extração para pular completamente a resolução de imports (já feita pelo scanner). Atualiza o step de criação de edges para usar `batchImportData` diretamente.
 
-**Files:**
-- Modify: `understand-anything-plugin/skills/understand/file-analyzer-prompt.md`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/skills/understand/file-analyzer-prompt.md`
 
-### Step 1: Update the input JSON schema (Script Requirements, step 1)
+### Step 1: Atualizar o input JSON schema (Script Requirements, step 1)
 
-Find the input schema block around line 19:
+Encontre o bloco do input schema em torno da linha 19:
 ```json
 {
   "projectRoot": "/path/to/project",
@@ -563,7 +563,7 @@ Find the input schema block around line 19:
 }
 ```
 
-Replace with:
+Substitua por:
 ```json
 {
   "projectRoot": "/path/to/project",
@@ -578,13 +578,13 @@ Replace with:
 }
 ```
 
-Update the field descriptions:
-- Remove: `allProjectFiles` description
-- Add: `batchImportData` (object) — map from each batch file's project-relative path to its list of pre-resolved project-internal imports. Produced by the project scanner. Use this directly for import edge creation — do NOT attempt to re-resolve imports yourself.
+Atualize as descrições dos campos:
+- Remover: descrição de `allProjectFiles`
+- Adicionar: `batchImportData` (object) — mapa do path relativo ao projeto de cada arquivo do batch para sua lista de imports pré-resolvidos internos ao projeto. Produzido pelo project scanner. Use isto diretamente para criação de edges de import — NÃO tente re-resolver imports você mesmo.
 
-### Step 2: Remove the imports extraction from "What the Script Must Extract"
+### Step 2: Remover a extração de imports de "What the Script Must Extract"
 
-Find the "**Imports:**" subsection under "What the Script Must Extract" (around lines 49–53):
+Encontre a subseção "**Imports:**" sob "What the Script Must Extract" (em torno das linhas 49–53):
 ```
 **Imports:**
 - Source module path (exactly as written in the import statement)
@@ -593,7 +593,7 @@ Find the "**Imports:**" subsection under "What the Script Must Extract" (around 
 - For relative imports (starting with `./` or `../`), compute the resolved path...
 ```
 
-Replace this entire subsection with:
+Substitua esta subseção inteira por:
 ```markdown
 **Imports:**
 - Do NOT extract imports in the script. Import resolution has already been performed by the project scanner.
@@ -601,9 +601,9 @@ Replace this entire subsection with:
 - Do not include an `imports` field in the script output — import edges will be created in Phase 2 using `batchImportData` directly.
 ```
 
-### Step 3: Update the script output format to remove imports
+### Step 3: Atualizar o formato de saída do script para remover imports
 
-Find the `results` array in the script output format (around line 67). The current `imports` array in the output:
+Encontre o array `results` no formato de saída do script (em torno da linha 67). O array atual `imports` na saída:
 ```json
 "imports": [
   {"source": "./utils", "resolvedPath": "src/utils.ts", "specifiers": ["formatDate"], "line": 1, "isExternal": false},
@@ -611,7 +611,7 @@ Find the `results` array in the script output format (around line 67). The curre
 ],
 ```
 
-Remove the `imports` array from the script output format entirely. The result for each file should be:
+Remova o array `imports` do formato de saída do script inteiramente. O resultado de cada arquivo deve ser:
 ```json
 {
   "path": "src/index.ts",
@@ -630,16 +630,16 @@ Remove the `imports` array from the script output format entirely. The result fo
 }
 ```
 
-Keep `metrics.importCount` (derived from `batchImportData[path].length`) as a useful metric.
+Mantenha `metrics.importCount` (derivado de `batchImportData[path].length`) como uma métrica útil.
 
-Update the metrics description to say:
+Atualize a descrição das métricas para dizer:
 ```
 - `importCount` (integer) — use `batchImportData[file.path].length` from the input JSON
 ```
 
-### Step 4: Update "Preparing the Script Input" section
+### Step 4: Atualizar a seção "Preparing the Script Input"
 
-Find the `cat` command around line 113 that creates the input JSON:
+Encontre o comando `cat` em torno da linha 113 que cria o input JSON:
 ```bash
 cat > $PROJECT_ROOT/.understand-anything/tmp/ua-file-analyzer-input-<batchIndex>.json << 'ENDJSON'
 {
@@ -650,7 +650,7 @@ cat > $PROJECT_ROOT/.understand-anything/tmp/ua-file-analyzer-input-<batchIndex>
 ENDJSON
 ```
 
-Replace with:
+Substitua por:
 ```bash
 cat > $PROJECT_ROOT/.understand-anything/tmp/ua-file-analyzer-input-<batchIndex>.json << 'ENDJSON'
 {
@@ -661,39 +661,39 @@ cat > $PROJECT_ROOT/.understand-anything/tmp/ua-file-analyzer-input-<batchIndex>
 ENDJSON
 ```
 
-### Step 5: Update Step 3 (Create Edges) — Import edge creation rule
+### Step 5: Atualizar Step 3 (Create Edges) — Regra de criação de edge de import
 
-Find the "**Import edge creation rule:**" in the "Step 3 -- Create Edges" section (around line 213):
+Encontre "**Import edge creation rule:**" na seção "Step 3 -- Create Edges" (em torno da linha 213):
 ```
 **Import edge creation rule:** For each import in the script output where `isExternal` is `false` and `resolvedPath` is non-null, create an `imports` edge from the current file node to `file:<resolvedPath>`. Do NOT create edges for external package imports.
 ```
 
-Replace with:
+Substitua por:
 ```markdown
 **Import edge creation rule:** For each resolved path in `batchImportData[filePath]` (provided in the input JSON), create an `imports` edge from the current file node to `file:<resolvedPath>`. The `batchImportData` values contain only resolved project-internal paths — external packages have already been filtered out. Do NOT attempt to re-resolve imports from source.
 ```
 
-### Step 6: Remove `allProjectFiles` references from Critical Constraints
+### Step 6: Remover referências a `allProjectFiles` em Critical Constraints
 
-Find the last bullet in "## Critical Constraints" (around line 304):
+Encontre o último bullet em "## Critical Constraints" (em torno da linha 304):
 ```
 - For import edges, use the script's `resolvedPath` field directly. Do NOT attempt to resolve import paths yourself -- the script already did this deterministically.
 ```
 
-Replace with:
+Substitua por:
 ```markdown
 - For import edges, use `batchImportData[filePath]` directly from the input JSON. Do NOT attempt to resolve import paths yourself -- the project scanner already did this deterministically.
 ```
 
-### Step 7: Verify
+### Step 7: Verificar
 
-Re-read `file-analyzer-prompt.md` and confirm:
-- Input schema has `batchImportData`, no `allProjectFiles`
-- Script "What to Extract" section: imports extraction replaced with "do not extract"
-- Script output format: no `imports` array per file
-- Preparing the Script Input: cat command has no `allProjectFiles`
-- Import edge creation rule: uses `batchImportData` not script output
-- Critical Constraints: no reference to `resolvedPath` from script
+Releia o `file-analyzer-prompt.md` e confirme:
+- Input schema tem `batchImportData`, sem `allProjectFiles`
+- Seção "What to Extract" do script: extração de imports substituída por "do not extract"
+- Formato de saída do script: sem array `imports` por arquivo
+- Preparing the Script Input: comando cat sem `allProjectFiles`
+- Regra de criação de edge de import: usa `batchImportData` não a saída do script
+- Critical Constraints: sem referência a `resolvedPath` do script
 
 ### Step 8: Commit
 
@@ -704,16 +704,16 @@ git commit -m "perf(understand): replace allProjectFiles with batchImportData in
 
 ---
 
-## Task 7: C1c + C2 — Update SKILL.md Phase 2 orchestration
+## Tarefa 7: C1c + C2 — Atualizar a orquestração da Fase 2 do SKILL.md
 
-Wires up the `importMap` from Phase 1 into per-batch `batchImportData` slices. Increases batch size from 5-10 to 20-30 files. Increases concurrency from 3 to 5. Removes `allProjectFiles` from the dispatch prompt.
+Conecta o `importMap` da Fase 1 em fatias `batchImportData` por batch. Aumenta o tamanho do batch de 5-10 para 20-30 arquivos. Aumenta a concorrência de 3 para 5. Remove `allProjectFiles` do prompt de dispatch.
 
-**Files:**
-- Modify: `understand-anything-plugin/skills/understand/SKILL.md` (Phase 0, Phase 1, Phase 2)
+**Arquivos:**
+- Modificar: `understand-anything-plugin/skills/understand/SKILL.md` (Phase 0, Phase 1, Phase 2)
 
-### Step 1: Update Phase 1 to note importMap is now in scan-result.json
+### Step 1: Atualizar a Fase 1 para indicar que importMap agora está em scan-result.json
 
-Find Phase 1 (around line 62) where it says:
+Encontre a Fase 1 (em torno da linha 62) onde diz:
 ```
 After the subagent completes, read `$PROJECT_ROOT/.understand-anything/intermediate/scan-result.json` to get:
 - Project name, description
@@ -722,41 +722,41 @@ After the subagent completes, read `$PROJECT_ROOT/.understand-anything/intermedi
 - Complexity estimate
 ```
 
-Add one item to the list:
+Adicione um item à lista:
 ```
 - Import map (`importMap`): pre-resolved project-internal imports per file
 ```
 
-Also add a note:
+Adicione também uma nota:
 ```
 Store `importMap` in memory as `$IMPORT_MAP` for use in Phase 2 batch construction.
 ```
 
-### Step 2: Change batch size and concurrency in Phase 2
+### Step 2: Mudar o tamanho do batch e a concorrência na Fase 2
 
-Find line 100:
+Encontre a linha 100:
 ```
 Batch the file list from Phase 1 into groups of **5-10 files each** (aim for balanced batch sizes).
 ```
 
-Replace with:
+Substitua por:
 ```
 Batch the file list from Phase 1 into groups of **20-30 files each** (aim for ~25 files per batch for balanced sizes).
 ```
 
-Find line 102:
+Encontre a linha 102:
 ```
 For each batch, dispatch a subagent using the prompt template at `./file-analyzer-prompt.md`. Run up to **3 subagents concurrently** using parallel dispatch.
 ```
 
-Replace with:
+Substitua por:
 ```
 For each batch, dispatch a subagent using the prompt template at `./file-analyzer-prompt.md`. Run up to **5 subagents concurrently** using parallel dispatch.
 ```
 
-### Step 3: Add batchImportData construction to the dispatch block
+### Step 3: Adicionar a construção de batchImportData ao bloco de dispatch
 
-Find the dispatch prompt block (around lines 119–134):
+Encontre o bloco do prompt de dispatch (em torno das linhas 119–134):
 ```
 Fill in batch-specific parameters below and dispatch:
 
@@ -775,7 +775,7 @@ Fill in batch-specific parameters below and dispatch:
 > ...
 ```
 
-Replace with:
+Substitua por:
 ```markdown
 Before dispatching each batch, construct `batchImportData` from `$IMPORT_MAP`:
 ```json
@@ -804,27 +804,27 @@ Fill in batch-specific parameters below and dispatch:
 > ...
 ```
 
-### Step 4: Update incremental update path
+### Step 4: Atualizar o caminho de update incremental
 
-Find "### Incremental update path" (around line 140):
+Encontre "### Incremental update path" (em torno da linha 140):
 ```
 Use the changed files list from Phase 0. Batch and dispatch file-analyzer subagents using the same process as above, but only for changed files.
 ```
 
-Update to clarify that batchImportData still applies:
+Atualize para esclarecer que batchImportData ainda se aplica:
 ```
 Use the changed files list from Phase 0. Batch and dispatch file-analyzer subagents using the same process as above (20-30 files per batch, up to 5 concurrent, with batchImportData constructed from $IMPORT_MAP), but only for changed files.
 ```
 
-### Step 5: Verify all Phase 2 changes
+### Step 5: Verificar todas as mudanças da Fase 2
 
-Re-read SKILL.md Phase 2 in full and confirm:
-- Batch size says "20-30 files"
-- Concurrency says "5 subagents concurrently"
-- "Build the prompt" block: only step 1 (read base template), no addendum steps
-- Additional context block: no "Frameworks detected" line, no addendum reference
-- Dispatch prompt: has `batchImportData` injection, no `allProjectFiles`
-- Incremental path: mentions batchImportData
+Releia a Fase 2 do SKILL.md por completo e confirme:
+- Tamanho do batch diz "20-30 files"
+- Concorrência diz "5 subagents concurrently"
+- Bloco "Build the prompt": apenas step 1 (read base template), sem steps de addendum
+- Bloco de contexto adicional: sem linha "Frameworks detected", sem referência a addendum
+- Prompt de dispatch: tem injeção de `batchImportData`, sem `allProjectFiles`
+- Caminho incremental: menciona batchImportData
 
 ### Step 6: Commit
 
@@ -835,41 +835,41 @@ git commit -m "perf(understand): wire importMap into batchImportData per batch, 
 
 ---
 
-## Task 8: Version bump
+## Tarefa 8: Bump de versão
 
-Per project convention, all four version files must stay in sync when changes are pushed.
+Por convenção do projeto, todos os quatro arquivos de versão devem ficar em sync quando mudanças são pushadas.
 
-**Files:**
-- Modify: `understand-anything-plugin/package.json`
-- Modify: `.claude-plugin/marketplace.json`
-- Modify: `.claude-plugin/plugin.json`
-- Modify: `.cursor-plugin/plugin.json`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/package.json`
+- Modificar: `.claude-plugin/marketplace.json`
+- Modificar: `.claude-plugin/plugin.json`
+- Modificar: `.cursor-plugin/plugin.json`
 
-### Step 1: Read current version
+### Step 1: Ler a versão atual
 
 ```bash
 node -e "const p = require('./understand-anything-plugin/package.json'); console.log(p.version)"
 ```
 
-Expected: `1.2.1` (or whatever the current version is).
+Esperado: `1.2.1` (ou qualquer que seja a versão atual).
 
-### Step 2: Bump patch version in all four files
+### Step 2: Bumpar versão patch em todos os quatro arquivos
 
-New version: `1.2.2` (patch bump — internal optimization, no API changes).
+Nova versão: `1.2.2` (bump patch — otimização interna, sem mudanças de API).
 
-Update each file:
+Atualize cada arquivo:
 - `understand-anything-plugin/package.json`: `"version": "1.2.2"`
-- `.claude-plugin/marketplace.json`: `"version": "1.2.2"` in `plugins[0]`
+- `.claude-plugin/marketplace.json`: `"version": "1.2.2"` em `plugins[0]`
 - `.claude-plugin/plugin.json`: `"version": "1.2.2"`
 - `.cursor-plugin/plugin.json`: `"version": "1.2.2"`
 
-### Step 3: Verify all four files match
+### Step 3: Verificar que todos os quatro arquivos batem
 
 ```bash
 grep -r '"version"' understand-anything-plugin/package.json .claude-plugin/marketplace.json .claude-plugin/plugin.json .cursor-plugin/plugin.json
 ```
 
-All four should show `"version": "1.2.2"`.
+Todos os quatro devem mostrar `"version": "1.2.2"`.
 
 ### Step 4: Commit
 
@@ -883,28 +883,28 @@ git commit -m "chore: bump version to 1.2.2"
 
 ---
 
-## Task 9: Build and smoke test
+## Tarefa 9: Build e smoke test
 
-Verifies all changes work end-to-end by running `/understand --full` against a real project.
+Verifica se todas as mudanças funcionam end-to-end executando `/understand --full` contra um projeto real.
 
-**Files:** None (testing only)
+**Arquivos:** Nenhum (somente teste)
 
-### Step 1: Build the packages
+### Step 1: Buildar os pacotes
 
 ```bash
 pnpm --filter @understand-anything/core build
 pnpm --filter @understand-anything/skill build
 ```
 
-Expected: both build without errors.
+Esperado: ambos buildam sem erros.
 
-### Step 2: Find installed plugin version and copy to cache
+### Step 2: Encontrar a versão do plugin instalado e copiar para o cache
 
 ```bash
 ls ~/.claude/plugins/cache/understand-anything/understand-anything/
 ```
 
-Note the version (e.g., `1.0.1`). Copy local build into the cache:
+Anote a versão (ex.: `1.0.1`). Copie o build local para o cache:
 
 ```bash
 VERSION=$(node -e "const p = require('./understand-anything-plugin/package.json'); console.log(p.version)")
@@ -912,40 +912,40 @@ rm -rf ~/.claude/plugins/cache/understand-anything/understand-anything/$VERSION
 cp -R ./understand-anything-plugin ~/.claude/plugins/cache/understand-anything/understand-anything/$VERSION
 ```
 
-### Step 3: Smoke test on a small project (~20 files)
+### Step 3: Smoke test em um projeto pequeno (~20 arquivos)
 
-Open a fresh Claude Code session in a small TypeScript project. Run:
+Abra uma sessão Claude Code nova em um projeto TypeScript pequeno. Execute:
 ```
 /understand --full
 ```
 
-Verify:
-- Phases 0–7 complete without errors
-- `knowledge-graph.json` is created
-- Node count and edge count are reasonable
-- Layers and tour are present
-- No "allProjectFiles" or addendum errors in the output
+Verifique:
+- Fases 0–7 completam sem erros
+- `knowledge-graph.json` é criado
+- A contagem de nós e edges é razoável
+- Layers e tour estão presentes
+- Sem erros de "allProjectFiles" ou addendum na saída
 
-### Step 4: Smoke test on a larger project (~100+ files)
+### Step 4: Smoke test em um projeto maior (~100+ arquivos)
 
-Run `/understand --full` on a medium/large TypeScript+React project.
+Execute `/understand --full` em um projeto TypeScript+React médio/grande.
 
-Verify:
-- Batch count is ~4-6 (at 20-30 files per batch for 100 files), not 10-20
-- No errors about missing import resolution
-- `importMap` is present in `scan-result.json` (check `.understand-anything/intermediate/` before cleanup, or add a temporary debug log)
-- Graph quality is comparable to before (summaries are descriptive, layers are correct)
+Verifique:
+- Contagem de batches é ~4-6 (a 20-30 arquivos por batch para 100 arquivos), não 10-20
+- Sem erros sobre resolução de imports faltando
+- `importMap` está presente em `scan-result.json` (cheque `.understand-anything/intermediate/` antes do cleanup, ou adicione um log de debug temporário)
+- A qualidade do graph é comparável à de antes (summaries são descritivos, layers estão corretas)
 
-### Step 5: Test `--review` flag
+### Step 5: Testar a flag `--review`
 
-Run `/understand --full --review` on the same project.
+Execute `/understand --full --review` no mesmo projeto.
 
-Verify:
-- Phase 6 now dispatches the LLM graph-reviewer subagent (not the inline script)
-- `review.json` is produced with `approved` field
-- Pipeline completes normally
+Verifique:
+- A Fase 6 agora dispara o subagent reviewer LLM (não o script inline)
+- `review.json` é produzido com o campo `approved`
+- O pipeline completa normalmente
 
-### Step 6: Final commit (if any fixes needed from smoke test)
+### Step 6: Commit final (se forem necessárias correções pelo smoke test)
 
 ```bash
 git add -A
@@ -954,18 +954,18 @@ git commit -m "fix(understand): smoke test fixes for token reduction changes"
 
 ---
 
-## Summary
+## Resumo
 
-| Task | Change | Risk |
+| Tarefa | Mudança | Risco |
 |---|---|---|
-| 1 | C5: Gate reviewer | Low |
-| 2 | C4a: Slim Phase 4 payload | Low |
-| 3 | C4b: Slim Phase 5 payload | Low |
-| 4 | C3: Remove addendums from batches | Low |
-| 5 | C1a: Scanner import resolution | Medium |
-| 6 | C1b: File-analyzer uses batchImportData | Medium |
-| 7 | C1c+C2: SKILL.md orchestration + batch size | Medium |
-| 8 | Version bump | Low |
+| 1 | C5: Gating do reviewer | Baixo |
+| 2 | C4a: Slim do payload da Fase 4 | Baixo |
+| 3 | C4b: Slim do payload da Fase 5 | Baixo |
+| 4 | C3: Remover addendums dos batches | Baixo |
+| 5 | C1a: Resolução de imports do scanner | Médio |
+| 6 | C1b: File-analyzer usa batchImportData | Médio |
+| 7 | C1c+C2: Orquestração do SKILL.md + tamanho do batch | Médio |
+| 8 | Bump de versão | Baixo |
 | 9 | Smoke test | — |
 
-Tasks 1–4 are independent of Tasks 5–7. They can be shipped separately if needed. Tasks 5, 6, and 7 are tightly coupled (scanner produces importMap → SKILL.md passes batchImportData → file-analyzer consumes it) and must be shipped together.
+Tarefas 1–4 são independentes das Tarefas 5–7. Podem ser shippadas separadamente se necessário. Tarefas 5, 6 e 7 são fortemente acopladas (scanner produz importMap → SKILL.md passa batchImportData → file-analyzer consome) e devem ser shippadas juntas.

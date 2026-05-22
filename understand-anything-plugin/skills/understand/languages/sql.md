@@ -1,36 +1,36 @@
-# SQL Language Prompt Snippet
+# Snippet de Prompt da Linguagem SQL
 
-## Key Concepts
+## Conceitos-Chave
 
-- **DDL (Data Definition)**: `CREATE TABLE`, `ALTER TABLE`, `DROP TABLE` for schema management
-- **DML (Data Manipulation)**: `SELECT`, `INSERT`, `UPDATE`, `DELETE` for data operations
-- **Normalization**: Organizing tables to reduce redundancy through 1NF, 2NF, 3NF relationships
-- **Foreign Keys**: `REFERENCES` constraints enforcing referential integrity between tables
-- **Indexes**: `CREATE INDEX` for query performance optimization on frequently queried columns
-- **Migrations**: Numbered, sequential schema changes applied in order for version control
-- **Transactions**: `BEGIN`/`COMMIT`/`ROLLBACK` for atomic multi-statement operations
-- **Views**: Named queries (`CREATE VIEW`) providing virtual tables for complex joins
-- **Stored Procedures**: Server-side functions for encapsulating business logic in the database
-- **Constraints**: `NOT NULL`, `UNIQUE`, `CHECK`, `DEFAULT` for data integrity rules
+- **DDL (Data Definition)**: `CREATE TABLE`, `ALTER TABLE`, `DROP TABLE` para gerenciamento de schema
+- **DML (Data Manipulation)**: `SELECT`, `INSERT`, `UPDATE`, `DELETE` para operações sobre dados
+- **Normalização**: organização de tabelas para reduzir redundância via relacionamentos 1NF, 2NF, 3NF
+- **Foreign Keys**: constraints `REFERENCES` aplicando integridade referencial entre tabelas
+- **Indexes**: `CREATE INDEX` para otimização de performance de queries em colunas frequentemente consultadas
+- **Migrations**: mudanças de schema numeradas e sequenciais aplicadas em ordem para controle de versão
+- **Transactions**: `BEGIN`/`COMMIT`/`ROLLBACK` para operações multi-statement atômicas
+- **Views**: queries nomeadas (`CREATE VIEW`) que fornecem tabelas virtuais para joins complexos
+- **Stored Procedures**: funções server-side para encapsular lógica de negócio no banco
+- **Constraints**: `NOT NULL`, `UNIQUE`, `CHECK`, `DEFAULT` para regras de integridade dos dados
 
-## Notable File Patterns
+## Padrões de Arquivo Notáveis
 
-- `migrations/*.sql` — Numbered migration files (e.g., `001_create_users.sql`, `002_add_orders.sql`)
-- `schema.sql` — Full database schema definition (often generated from migrations)
-- `seeds/*.sql` — Seed data for development and testing environments
-- `*.up.sql` / `*.down.sql` — Reversible migration pairs (up applies, down reverts)
-- `init.sql` — Database initialization script for Docker or fresh setup
-- `procedures/*.sql` — Stored procedure definitions
+- `migrations/*.sql` — arquivos de migration numerados (por exemplo, `001_create_users.sql`, `002_add_orders.sql`)
+- `schema.sql` — definição completa do schema do banco (frequentemente gerada a partir das migrations)
+- `seeds/*.sql` — dados de seed para ambientes de desenvolvimento e teste
+- `*.up.sql` / `*.down.sql` — pares reversíveis de migration (up aplica, down reverte)
+- `init.sql` — script de inicialização de banco para Docker ou setup novo
+- `procedures/*.sql` — definições de stored procedures
 
-## Edge Patterns
+## Padrões de Aresta
 
-- SQL migration files `migrates` the tables they create or alter
-- Schema definition files `defines_schema` for the ORM models or data layer code that reads them
-- Table definitions create implicit `related` edges between tables connected by foreign keys
-- Seed files `depends_on` the migration files that create the tables they populate
+- Arquivos de migration SQL `migrates` as tabelas que criam ou alteram
+- Arquivos de definição de schema `defines_schema` para os modelos do ORM ou código da camada de dados que os lê
+- Definições de tabela criam arestas `related` implícitas entre tabelas conectadas por foreign keys
+- Arquivos de seed `depends_on` os arquivos de migration que criam as tabelas que populam
 
-## Summary Style
+## Estilo de Resumo
 
-> "Database migration creating the users table with email, name, and authentication columns."
-> "Schema definition with N tables covering user management, orders, and payment processing."
-> "Seed data populating N tables with development fixtures for testing."
+> "Migration de banco criando a tabela users com colunas de email, nome e autenticação."
+> "Definição de schema com N tabelas cobrindo gerenciamento de usuários, pedidos e processamento de pagamentos."
+> "Seed data populando N tabelas com fixtures de desenvolvimento para testes."

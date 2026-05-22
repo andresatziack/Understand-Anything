@@ -1,55 +1,55 @@
-# Token Reduction Design
+# Design de Redução de Tokens
 
-**Date:** 2026-03-27
-**Status:** Draft
-**Goal:** Reduce total token cost of `/understand` by ~85-90% on large codebases (200+ files)
+**Data:** 2026-03-27
+**Status:** Rascunho
+**Objetivo:** Reduzir o custo total de tokens do `/understand` em ~85-90% em codebases grandes (200+ arquivos)
 
 ---
 
-## Problem
+## Problema
 
-For large codebases, the `/understand` pipeline spends the vast majority of its tokens on **repeated context injection**. The same data is sent to every subagent independently, even when that data could be computed once and shared.
+Em codebases grandes, o pipeline `/understand` gasta a vasta maioria dos seus tokens em **injeção de contexto repetida**. Os mesmos dados são enviados para cada subagente independentemente, mesmo quando esses dados poderiam ser computados uma vez e compartilhados.
 
-### Token cost breakdown (500-file TypeScript+React project, baseline)
+### Detalhamento do custo de tokens (projeto TypeScript+React de 500 arquivos, baseline)
 
-| Source | Phase | Tokens (input) | % of total |
+| Origem | Fase | Tokens (input) | % do total |
 |---|---|---|---|
-| `allProjectFiles` list × 67 batches | Phase 2 | ~167,000 | ~50% |
-| `file-analyzer-prompt.md` × 67 batches | Phase 2 | ~134,000 | ~40% |
-| Language/framework addendums × 67 batches | Phase 2 | ~68,000 | ~20% |
-| Tour builder payload (all nodes + edges) | Phase 5 | ~80,000 | ~24% |
-| Graph reviewer (assembled graph + inventory) | Phase 6 | ~58,000 | ~17% |
-| Architecture analyzer payload | Phase 4 | ~22,000 | ~7% |
+| Lista `allProjectFiles` × 67 batches | Fase 2 | ~167,000 | ~50% |
+| `file-analyzer-prompt.md` × 67 batches | Fase 2 | ~134,000 | ~40% |
+| Adendos de linguagem/framework × 67 batches | Fase 2 | ~68,000 | ~20% |
+| Payload do tour builder (todos os nós + arestas) | Fase 5 | ~80,000 | ~24% |
+| Graph reviewer (grafo montado + inventário) | Fase 6 | ~58,000 | ~17% |
+| Payload do architecture analyzer | Fase 4 | ~22,000 | ~7% |
 | **Total** | | **~529,000** | |
 
-The root cause: **Phase 2 runs 67 batches (at 5-10 files each), and every single batch receives the full 500-file list for import resolution.** The file list alone costs ~2,500 tokens × 67 repetitions = 167,000 tokens on input, doing work that is entirely redundant between batches.
+A causa raiz: **a Fase 2 roda 67 batches (em 5-10 arquivos cada) e cada batch recebe a lista completa de 500 arquivos para resolução de imports.** Apenas a lista de arquivos custa ~2.500 tokens × 67 repetições = 167.000 tokens no input, fazendo um trabalho que é totalmente redundante entre batches.
 
 ---
 
-## Goals
+## Objetivos
 
-- Reduce total input tokens by 85%+ on a 500-file project
-- No degradation in graph quality for standard projects
-- Preserve the `--full` / incremental / scope flags
-- Maintain backward compatibility with existing `knowledge-graph.json` output schema
-
----
-
-## Changes
-
-Five changes compose the full approach (C1–C5). Each is independent and can be shipped separately, but all five are needed for the full reduction.
+- Reduzir os tokens totais de input em 85%+ em um projeto de 500 arquivos
+- Sem degradação na qualidade do grafo para projetos padrão
+- Preservar as flags `--full` / incremental / scope
+- Manter compatibilidade retroativa com o schema de saída existente do `knowledge-graph.json`
 
 ---
 
-### C1 — Pre-resolve imports in the project scanner
+## Mudanças
 
-**Root cause addressed:** `allProjectFiles` (the entire file list) is injected into every file-analyzer batch solely so each batch's extraction script can resolve relative imports. This is redundant: the full file list is available during Phase 1, and import resolution is deterministic. It should happen once, not 67 times.
+Cinco mudanças compõem a abordagem completa (C1–C5). Cada uma é independente e pode ser shippada separadamente, mas todas as cinco são necessárias para a redução completa.
 
-**Change:** Extend the Phase 1 scanner script to also parse import statements from every source file and resolve relative imports against the discovered file list. The resolved results are written into `scan-result.json` as a new `importMap` field. File-analyzer batches then receive only their own batch's pre-resolved imports — not the full file list.
+---
 
-#### Scanner output addition
+### C1 — Pré-resolver imports no project scanner
 
-`scan-result.json` gains:
+**Causa raiz endereçada:** `allProjectFiles` (a lista de arquivos inteira) é injetada em todo batch do file-analyzer apenas para que o script de extração de cada batch consiga resolver imports relativos. Isso é redundante: a lista completa de arquivos está disponível durante a Fase 1, e a resolução de imports é determinística. Ela deveria acontecer uma vez, não 67.
+
+**Mudança:** Estender o script do scanner da Fase 1 para também parsear declarações de import de cada arquivo source e resolver imports relativos contra a lista de arquivos descobertos. Os resultados resolvidos são escritos em `scan-result.json` como um novo campo `importMap`. Os batches do file-analyzer recebem então apenas os imports pré-resolvidos do seu próprio batch — não a lista completa de arquivos.
+
+#### Adição na saída do scanner
+
+`scan-result.json` ganha:
 
 ```json
 {
@@ -61,13 +61,13 @@ Five changes compose the full approach (C1–C5). Each is independent and can be
 }
 ```
 
-- Keys are project-relative paths (matching `files[*].path`)
-- Values are resolved project-relative paths only (external/unresolvable imports are omitted)
-- External imports (`node_modules`, unresolvable paths) are excluded from the map entirely
+- Chaves são caminhos relativos ao projeto (combinando com `files[*].path`)
+- Valores são apenas caminhos resolvidos relativos ao projeto (imports externos/não resolvíveis são omitidos)
+- Imports externos (`node_modules`, caminhos não resolvíveis) são excluídos do mapa por completo
 
-#### Scanner script additions (Phase 1 Step 8)
+#### Adições no script do scanner (Fase 1, Step 8)
 
-After the existing 7 steps, the scanner script adds a new step:
+Após os 7 steps existentes, o script do scanner adiciona um novo step:
 
 ```
 Step 8 — Import Resolution
@@ -92,9 +92,9 @@ For each file in the discovered source list:
 Output the full importMap in the JSON result.
 ```
 
-#### File-analyzer input schema change
+#### Mudança no schema de input do file-analyzer
 
-**Before:**
+**Antes:**
 ```json
 {
   "projectRoot": "/path/to/project",
@@ -105,7 +105,7 @@ Output the full importMap in the JSON result.
 }
 ```
 
-**After:**
+**Depois:**
 ```json
 {
   "projectRoot": "/path/to/project",
@@ -119,18 +119,18 @@ Output the full importMap in the JSON result.
 }
 ```
 
-`allProjectFiles` is removed entirely. `batchImportData` contains only the pre-resolved imports for the files in this batch (sliced from `importMap` by the orchestrator).
+`allProjectFiles` é removido por completo. `batchImportData` contém apenas os imports pré-resolvidos para os arquivos deste batch (fatiados do `importMap` pelo orquestrador).
 
-#### File-analyzer extraction script change
+#### Mudança no script de extração do file-analyzer
 
-The extraction script no longer performs import resolution. It:
-- Still extracts: functions, classes, exports, metrics (unchanged)
-- For imports: reads `batchImportData[file.path]` from the input JSON — no cross-referencing needed
-- The `imports` array in each file result becomes: `batchImportData[file.path]` mapped to import edge objects with `resolvedPath` already populated, `isExternal: false`
+O script de extração não realiza mais resolução de imports. Ele:
+- Continua extraindo: funções, classes, exports, métricas (inalterado)
+- Para imports: lê `batchImportData[file.path]` do JSON de input — sem cross-referencing necessário
+- O array `imports` em cada resultado de arquivo se torna: `batchImportData[file.path]` mapeado para objetos de aresta de import com `resolvedPath` já populado, `isExternal: false`
 
-#### SKILL.md Phase 2 change
+#### Mudança na Fase 2 do SKILL.md
 
-Remove the `allProjectFiles` injection from the batch dispatch prompt. Replace with a per-batch `batchImportData` slice:
+Remover a injeção de `allProjectFiles` do prompt de dispatch do batch. Substituir por uma fatia de `batchImportData` por batch:
 
 ```
 For each batch, slice importData from the importMap read in Phase 1:
@@ -138,60 +138,60 @@ batchImportData = { [file.path]: importMap[file.path] ?? [] }
   for each file in this batch
 ```
 
-#### Token savings estimate
+#### Estimativa de economia de tokens
 
 | | Batches | Tokens/batch | Total |
 |---|---|---|---|
-| Before | 67 | ~2,500 (file list) | ~167,500 |
-| After (C1 alone) | 67 | ~200 (batch importData) | ~13,400 |
-| **Savings** | | | **~154,100** |
+| Antes | 67 | ~2,500 (lista de arquivos) | ~167,500 |
+| Depois (C1 sozinho) | 67 | ~200 (batch importData) | ~13,400 |
+| **Economia** | | | **~154,100** |
 
 ---
 
-### C2 — Increase batch size from 5-10 to 20-30 files
+### C2 — Aumentar o tamanho do batch de 5-10 para 20-30 arquivos
 
-**Root cause addressed:** Every batch incurs the full cost of `file-analyzer-prompt.md` (~2,000 tokens) plus the batch dispatch overhead. With 67 batches, this adds up even without `allProjectFiles`. Fewer, larger batches directly reduce this repetition.
+**Causa raiz endereçada:** Cada batch incorre no custo total do `file-analyzer-prompt.md` (~2.000 tokens) mais o overhead do dispatch do batch. Com 67 batches, isso soma muito mesmo sem `allProjectFiles`. Menos batches, maiores, reduzem diretamente essa repetição.
 
-**Change:** In SKILL.md Phase 2, change the batch size guidance:
+**Mudança:** Na Fase 2 do SKILL.md, mudar a orientação de tamanho de batch:
 
-- **Before:** "Batch the file list from Phase 1 into groups of **5-10 files each**"
-- **After:** "Batch the file list from Phase 1 into groups of **20-30 files each** (aim for ~25 per batch)"
+- **Antes:** "Batch the file list from Phase 1 into groups of **5-10 files each**"
+- **Depois:** "Batch the file list from Phase 1 into groups of **20-30 files each** (aim for ~25 per batch)"
 
-Also update the concurrency limit from 3 to **5** concurrent batches. Fewer total batches means we can afford more parallelism without overwhelming the system.
+Também atualizar o limite de concorrência de 3 para **5** batches concorrentes. Menos batches no total significa que podemos pagar por mais paralelismo sem sobrecarregar o sistema.
 
 #### Trade-offs
 
-| | Smaller batches (current) | Larger batches (new) |
+| | Batches menores (atual) | Batches maiores (novo) |
 |---|---|---|
-| Files per batch | 5-10 | 20-30 |
-| Total batches (500 files) | ~67 | ~20 |
-| Prompt repetition | 67× | 20× |
-| Quality risk | Lower (focused) | Slightly higher (more files per subagent) |
-| Concurrency | 3 | 5 |
+| Arquivos por batch | 5-10 | 20-30 |
+| Total de batches (500 arquivos) | ~67 | ~20 |
+| Repetição de prompt | 67× | 20× |
+| Risco de qualidade | Menor (focado) | Levemente maior (mais arquivos por subagente) |
+| Concorrência | 3 | 5 |
 
-Quality risk is low: each subagent still operates on distinct, non-overlapping file groups. The extraction script is deterministic regardless of batch size. Semantic analysis (summaries, tags) may be marginally less focused, but the quality difference is negligible in practice for well-structured files.
+O risco de qualidade é baixo: cada subagente ainda opera sobre grupos de arquivos distintos e não sobrepostos. O script de extração é determinístico independente do tamanho do batch. A análise semântica (resumos, tags) pode estar marginalmente menos focada, mas a diferença de qualidade é desprezível na prática para arquivos bem-estruturados.
 
-#### Token savings estimate (combined with C1)
+#### Estimativa de economia de tokens (combinada com C1)
 
 | | Batches | Tokens/batch (prompt) | Total |
 |---|---|---|---|
-| Before (C1 only) | 67 | ~2,000 | ~134,000 |
-| After (C1+C2) | 20 | ~2,000 | ~40,000 |
-| **Savings from C2** | | | **~94,000** |
+| Antes (apenas C1) | 67 | ~2,000 | ~134,000 |
+| Depois (C1+C2) | 20 | ~2,000 | ~40,000 |
+| **Economia de C2** | | | **~94,000** |
 
-C1+C2 combined eliminate ~248,000 tokens from Phase 2 (down from ~301,500 to ~53,500, a ~82% Phase 2 reduction).
+C1+C2 combinados eliminam ~248.000 tokens da Fase 2 (de ~301.500 para ~53.500, uma redução de ~82% na Fase 2).
 
 ---
 
-### C3 — Remove language/framework addendums from file-analyzer batches
+### C3 — Remover adendos de linguagem/framework dos batches do file-analyzer
 
-**Root cause addressed:** `languages/typescript.md` (~600 tokens) and `frameworks/react.md` (~700 tokens) are read and injected into every file-analyzer batch prompt. For a TypeScript+React project with 20 batches (after C2), this costs 20 × 1,300 = 26,000 additional tokens — and the model already has deep knowledge of these languages from training.
+**Causa raiz endereçada:** `languages/typescript.md` (~600 tokens) e `frameworks/react.md` (~700 tokens) são lidos e injetados em todo prompt de batch do file-analyzer. Para um projeto TypeScript+React com 20 batches (após C2), isso custa 20 × 1.300 = 26.000 tokens adicionais — e o modelo já tem conhecimento profundo dessas linguagens a partir do treinamento.
 
-**Change:** Stop injecting addendum files into Phase 2 batch prompts entirely. The addendums remain injected into Phase 4 (architecture analyzer) where there is only **one** subagent call, making the cost acceptable.
+**Mudança:** Parar de injetar arquivos de adendo nos prompts dos batches da Fase 2 por completo. Os adendos permanecem injetados na Fase 4 (architecture analyzer), onde há apenas **uma** chamada de subagente, tornando o custo aceitável.
 
-Instead, add a compact "Language and Framework Hints" reference section directly into `file-analyzer-prompt.md`. This section is a distilled, one-time addition (~150 tokens total) that captures the most useful patterns from all addendums in a concise lookup table.
+Em vez disso, adicionar uma seção compacta de "Language and Framework Hints" diretamente no `file-analyzer-prompt.md`. Essa seção é uma adição única e destilada (~150 tokens no total) que captura os padrões mais úteis de todos os adendos em uma tabela de lookup concisa.
 
-#### New section in `file-analyzer-prompt.md` (replace addendum injection)
+#### Nova seção em `file-analyzer-prompt.md` (substituindo a injeção de adendos)
 
 ```markdown
 ## Language and Framework Quick Reference
@@ -213,89 +213,89 @@ Use these hints to improve tag and edge accuracy. These supplement your training
 For React: create `depends_on` edges from components to hooks they call. Create `publishes`/`subscribes` edges for Context provider/consumer patterns.
 ```
 
-#### SKILL.md Phase 2 change
+#### Mudança na Fase 2 do SKILL.md
 
-Remove steps 2 and 3 from the "Build the combined prompt template" block:
-- **Remove:** Step 2 (Language context injection — read `./languages/<language-id>.md` per detected language)
-- **Remove:** Step 3 (Framework addendum injection — read `./frameworks/<framework-id>.md` per detected framework)
-- **Keep:** Step 1 (Read the base template at `./file-analyzer-prompt.md`)
+Remover os passos 2 e 3 do bloco "Build the combined prompt template":
+- **Remover:** Passo 2 (injeção de Language context — ler `./languages/<language-id>.md` por linguagem detectada)
+- **Remover:** Passo 3 (injeção de adendo de Framework — ler `./frameworks/<framework-id>.md` por framework detectado)
+- **Manter:** Passo 1 (Ler o template base em `./file-analyzer-prompt.md`)
 
-The addendum injection steps **remain unchanged** in Phase 4 (architecture analyzer), since they run once.
+Os passos de injeção de adendo **permanecem inalterados** na Fase 4 (architecture analyzer), já que rodam uma vez.
 
-#### Token savings estimate
+#### Estimativa de economia de tokens
 
-| | Batches | Addendum tokens/batch | Total |
+| | Batches | Tokens de adendo/batch | Total |
 |---|---|---|---|
-| Before (after C2) | 20 | ~1,300 (TS+React) | ~26,000 |
-| After | 20 | ~150 (inline hints) | ~3,000 |
-| **Savings** | | | **~23,000** |
+| Antes (após C2) | 20 | ~1,300 (TS+React) | ~26,000 |
+| Depois | 20 | ~150 (hints inline) | ~3,000 |
+| **Economia** | | | **~23,000** |
 
 ---
 
-### C4 — Slim Phase 4 and Phase 5 payloads
+### C4 — Enxugar os payloads das Fases 4 e 5
 
-**Root cause addressed:** Phase 5 (tour builder) receives all nodes (file + function + class) and all edges (imports + contains + calls + exports + ...). For a 500-file project, this can include 1,500+ nodes and 3,000+ edges. Most of this data is not needed for tour design.
+**Causa raiz endereçada:** A Fase 5 (tour builder) recebe todos os nós (file + function + class) e todas as arestas (imports + contains + calls + exports + ...). Para um projeto de 500 arquivos, isso pode incluir 1.500+ nós e 3.000+ arestas. A maior parte desses dados não é necessária para o design do tour.
 
-#### Phase 4 (Architecture Analyzer) — minor trim
+#### Fase 4 (Architecture Analyzer) — corte menor
 
-Phase 4 already only sends file-type nodes, which is correct. Minor change: explicitly strip `languageNotes` from each node object in the payload (it's not useful for layer assignment and can be verbose). Also strip `name` — it is always derivable as the basename of `filePath`.
+A Fase 4 já envia apenas nós do tipo file, o que está correto. Mudança menor: explicitamente remover `languageNotes` de cada objeto de nó no payload (não é útil para atribuição de camada e pode ser verboso). Também remover `name` — sempre derivável como o basename de `filePath`.
 
-**Before per node:** `{id, name, filePath, summary, tags, complexity, languageNotes?}`
-**After per node:** `{id, filePath, summary, tags}`
+**Antes por nó:** `{id, name, filePath, summary, tags, complexity, languageNotes?}`
+**Depois por nó:** `{id, filePath, summary, tags}`
 
-Savings: ~15-20% fewer tokens per node, ~3,000–5,000 tokens total for Phase 4.
+Economia: ~15-20% menos tokens por nó, ~3.000–5.000 tokens no total para a Fase 4.
 
-#### Phase 5 (Tour Builder) — major trim
+#### Fase 5 (Tour Builder) — corte maior
 
-Three changes to what the orchestrator injects into the tour-builder subagent:
+Três mudanças no que o orquestrador injeta no subagente tour-builder:
 
-**1. File nodes only (strip function/class nodes)**
+**1. Apenas nós de arquivo (remover nós de function/class)**
 
-The tour references node IDs for wayfinding. In practice the tour always references `file:` nodes — function and class nodes are visible in the dashboard's NodeInfo sidebar once a file is selected, but the tour itself navigates at the file level.
+O tour referencia IDs de nó para wayfinding. Na prática o tour sempre referencia nós `file:` — nós function e class são visíveis na sidebar NodeInfo do dashboard quando um arquivo é selecionado, mas o próprio tour navega no nível de arquivo.
 
-- **Before:** all nodes (file + function + class) — for 500 files, maybe 1,500+ nodes
-- **After:** file-type nodes only — 500 nodes
+- **Antes:** todos os nós (file + function + class) — para 500 arquivos, talvez 1.500+ nós
+- **Depois:** apenas nós do tipo file — 500 nós
 
-**2. Slim node format**
+**2. Formato de nó enxuto**
 
-The tour builder script only uses node IDs, names, and types for graph computation. Summaries and tags are used in Phase 2 (pedagogical narrative writing). Strip heavy optional fields from the injected payload:
+O script do tour builder usa apenas IDs, nomes e tipos dos nós para computação do grafo. Resumos e tags são usados na Fase 2 (escrita narrativa pedagógica). Remover campos opcionais pesados do payload injetado:
 
-- **Before per node:** `{id, name, filePath, summary, type, tags, complexity, languageNotes?}`
-- **After per node:** `{id, name, filePath, summary, type}` (drop tags, complexity, languageNotes)
+- **Antes por nó:** `{id, name, filePath, summary, type, tags, complexity, languageNotes?}`
+- **Depois por nó:** `{id, name, filePath, summary, type}` (remover tags, complexity, languageNotes)
 
-**3. Slim edges (imports + calls only) and slim layers**
+**3. Arestas enxutas (apenas imports + calls) e camadas enxutas**
 
-The tour's BFS traversal only traverses `imports` and `calls` edges. `contains`, `exports`, `tested_by`, `depends_on`, and other edge types add no value to the traversal and inflate the payload.
+A travessia BFS do tour só percorre arestas `imports` e `calls`. `contains`, `exports`, `tested_by`, `depends_on` e outros tipos de aresta não agregam valor à travessia e inflam o payload.
 
-- **Before edges:** all edge types (~3,000+ edges including all `contains` edges to function/class nodes)
-- **After edges:** only `imports` and `calls` edge types (~400–800 edges for typical projects)
+- **Antes (arestas):** todos os tipos de aresta (~3.000+ arestas incluindo todas as arestas `contains` para nós function/class)
+- **Depois (arestas):** apenas tipos de aresta `imports` e `calls` (~400–800 arestas para projetos típicos)
 
-For layers, the tour builder uses layer data only to inform the tour's narrative arc (which layer to introduce first, second, etc.). It does not need the full `nodeIds` arrays — those can be very large.
+Para camadas, o tour builder usa os dados de camada apenas para informar o arco narrativo do tour (qual camada apresentar primeiro, segunda, etc.). Ele não precisa dos arrays completos de `nodeIds` — esses podem ser muito grandes.
 
-- **Before per layer:** `{id, name, description, nodeIds: [...hundreds of IDs]}`
-- **After per layer:** `{id, name, description}` (drop nodeIds)
+- **Antes por camada:** `{id, name, description, nodeIds: [...centenas de IDs]}`
+- **Depois por camada:** `{id, name, description}` (remover nodeIds)
 
-#### Token savings estimate (Phase 5)
+#### Estimativa de economia de tokens (Fase 5)
 
-| Data | Before | After |
+| Dados | Antes | Depois |
 |---|---|---|
-| Node count | ~1,500 × ~180 chars | ~500 × ~120 chars |
-| Node tokens | ~67,500 | ~15,000 |
-| Edge count | ~3,000 × ~80 chars | ~600 × ~80 chars |
-| Edge tokens | ~60,000 | ~12,000 |
-| Layer tokens | ~5,000 | ~500 |
-| **Phase 5 total** | **~132,500** | **~27,500** |
-| **Savings** | | **~105,000** |
+| Contagem de nós | ~1.500 × ~180 chars | ~500 × ~120 chars |
+| Tokens de nó | ~67,500 | ~15,000 |
+| Contagem de arestas | ~3.000 × ~80 chars | ~600 × ~80 chars |
+| Tokens de aresta | ~60,000 | ~12,000 |
+| Tokens de camada | ~5,000 | ~500 |
+| **Total Fase 5** | **~132,500** | **~27,500** |
+| **Economia** | | **~105,000** |
 
-#### SKILL.md changes
+#### Mudanças no SKILL.md
 
-In **Phase 4** dispatch prompt template, update the file node format:
+No template de prompt de dispatch da **Fase 4**, atualizar o formato de nó de arquivo:
 ```
 File nodes:
 [list of {id, filePath, summary, tags} for all file-type nodes]
 ```
 
-In **Phase 5** dispatch prompt template, update all three payload specs:
+No template de prompt de dispatch da **Fase 5**, atualizar todas as três especificações de payload:
 ```
 Nodes (file nodes only):
 [list of {id, name, filePath, summary, type} for all file-type nodes only — do NOT include function or class nodes]
@@ -309,87 +309,87 @@ Layers:
 
 ---
 
-### C5 — Gate the graph-reviewer subagent behind `--review`
+### C5 — Colocar o subagente graph-reviewer atrás de `--review`
 
-**Root cause addressed:** The graph-reviewer subagent (Phase 6) reads the entire assembled graph (~500 nodes, all edges, layers, tour) and runs a LLM-powered validation. However, its Phase 1 is entirely a deterministic script, and its Phase 2 is a simple threshold decision: if `issues.length === 0`, approve. There is no LLM judgment needed for the happy path.
+**Causa raiz endereçada:** O subagente graph-reviewer (Fase 6) lê o grafo montado inteiro (~500 nós, todas as arestas, camadas, tour) e roda uma validação alimentada por LLM. Entretanto, sua Fase 1 é inteiramente um script determinístico, e sua Fase 2 é uma decisão simples de threshold: se `issues.length === 0`, aprova. Não há julgamento de LLM necessário no happy path.
 
-**Change:** By default, skip the graph-reviewer subagent. The orchestrator performs inline deterministic validation using a pre-written script. Only when `--review` is explicitly passed in `$ARGUMENTS` does the full LLM reviewer subagent run.
+**Mudança:** Por padrão, pular o subagente graph-reviewer. O orquestrador realiza validação determinística inline usando um script pré-escrito. Apenas quando `--review` é passado explicitamente em `$ARGUMENTS`, o subagente reviewer LLM completo roda.
 
-#### Default path (no `--review`)
+#### Caminho padrão (sem `--review`)
 
-In Phase 6, instead of dispatching the graph-reviewer subagent, the orchestrator:
+Na Fase 6, em vez de despachar o subagente graph-reviewer, o orquestrador:
 
-1. Writes a compact validation script inline (embedded in SKILL.md, ~50 lines of Node.js):
-   - Check: every edge source/target references a real node ID
-   - Check: every file node appears in exactly one layer
-   - Check: every tour step nodeId exists
-   - Check: no duplicate node IDs
-   - Check: required fields present on nodes and edges
-2. Runs the script against `assembled-graph.json`
-3. If `issues.length === 0`: proceed to Phase 7 (save)
-4. If `issues.length > 0`: apply the same automated fixes as before (remove dangling edges, fill defaults), then save
+1. Escreve um script compacto de validação inline (embutido no SKILL.md, ~50 linhas de Node.js):
+   - Verificar: toda aresta source/target referencia um ID de nó real
+   - Verificar: todo nó de arquivo aparece em exatamente uma camada
+   - Verificar: todo nodeId de step do tour existe
+   - Verificar: sem IDs de nó duplicados
+   - Verificar: campos obrigatórios presentes em nós e arestas
+2. Roda o script contra `assembled-graph.json`
+3. Se `issues.length === 0`: prossegue para a Fase 7 (save)
+4. Se `issues.length > 0`: aplica os mesmos fixes automatizados de antes (remove dangling edges, preenche defaults), então salva
 
-This is sufficient for standard runs. The LLM reviewer adds value for catching subtle quality issues (generic summaries, orphan nodes, tour step coherence) — but those are nice-to-have, not blocking.
+Isto é suficiente para execuções padrão. O reviewer LLM agrega valor para capturar problemas sutis de qualidade (resumos genéricos, nós órfãos, coerência de step do tour) — mas estes são nice-to-have, não bloqueantes.
 
-#### `--review` path
+#### Caminho `--review`
 
-When `--review` is in `$ARGUMENTS`, the full graph-reviewer subagent runs as it does today. No change to that code path.
+Quando `--review` está em `$ARGUMENTS`, o subagente graph-reviewer completo roda como hoje. Sem mudança nesse code path.
 
-#### Token savings estimate
+#### Estimativa de economia de tokens
 
-| Path | Tokens |
+| Caminho | Tokens |
 |---|---|
-| Current (always runs LLM reviewer) | ~58,000 input + ~500 output |
-| Default (inline script, no LLM) | ~0 |
-| `--review` (unchanged) | ~58,000 (same as current) |
-| **Savings for default runs** | **~58,500** |
+| Atual (sempre roda LLM reviewer) | ~58.000 input + ~500 output |
+| Padrão (script inline, sem LLM) | ~0 |
+| `--review` (inalterado) | ~58.000 (igual ao atual) |
+| **Economia para execuções padrão** | **~58,500** |
 
 ---
 
-## Combined savings summary
+## Resumo combinado de economia
 
-| Change | Tokens before | Tokens after | Savings |
+| Mudança | Tokens antes | Tokens depois | Economia |
 |---|---|---|---|
-| C1+C2: import map + batch consolidation | ~301,500 | ~53,500 | ~248,000 |
-| C3: remove addendums from batches | ~26,000 | ~3,000 | ~23,000 |
-| C4: slim Phase 4+5 payloads | ~154,500 | ~33,000 | ~121,500 |
-| C5: gate reviewer (default path) | ~58,500 | ~0 | ~58,500 |
+| C1+C2: import map + consolidação de batch | ~301,500 | ~53,500 | ~248,000 |
+| C3: remover adendos dos batches | ~26,000 | ~3,000 | ~23,000 |
+| C4: enxugar payloads das Fases 4+5 | ~154,500 | ~33,000 | ~121,500 |
+| C5: gate do reviewer (caminho padrão) | ~58,500 | ~0 | ~58,500 |
 | **Total** | **~540,500** | **~89,500** | **~451,000 (~83%)** |
 
-Estimates are for a 500-file TypeScript+React project. Actual savings scale with project size — a 1,000-file project would see proportionally larger savings from C1+C2 (more batches = more repetition eliminated).
+As estimativas são para um projeto TypeScript+React de 500 arquivos. A economia real escala com o tamanho do projeto — um projeto de 1.000 arquivos veria economia proporcionalmente maior em C1+C2 (mais batches = mais repetição eliminada).
 
 ---
 
-## File changes
+## Mudanças de arquivos
 
-| File | Change |
+| Arquivo | Mudança |
 |---|---|
-| `skills/understand/project-scanner-prompt.md` | Add Step 8 (import resolution); add `importMap` to output schema |
-| `skills/understand/file-analyzer-prompt.md` | Replace `allProjectFiles` with `batchImportData` in input schema; update extraction script to use pre-resolved imports; add compact Language/Framework Quick Reference section; remove addendum injection steps |
-| `skills/understand/SKILL.md` | Phase 1: note importMap in scan result; Phase 2: remove addendum injection (steps 2+3), increase batch size 5-10→20-30, increase concurrency 3→5, replace `allProjectFiles` injection with `batchImportData` slice; Phase 4: slim node format in dispatch; Phase 5: file nodes only + slim edges + slim layers in dispatch; Phase 6: conditional reviewer — default inline script, `--review` flag for LLM reviewer |
-| `skills/understand/architecture-analyzer-prompt.md` | No change (addendums still injected here) |
-| `skills/understand/tour-builder-prompt.md` | Update input schema to reflect file-only nodes, imports+calls-only edges, slim layer format |
-| `skills/understand/graph-reviewer-prompt.md` | No change (only used when `--review` flag is passed) |
+| `skills/understand/project-scanner-prompt.md` | Adicionar Step 8 (resolução de imports); adicionar `importMap` ao schema de saída |
+| `skills/understand/file-analyzer-prompt.md` | Substituir `allProjectFiles` por `batchImportData` no schema de input; atualizar o script de extração para usar imports pré-resolvidos; adicionar seção compacta de Language/Framework Quick Reference; remover passos de injeção de adendo |
+| `skills/understand/SKILL.md` | Fase 1: notar importMap no resultado do scan; Fase 2: remover injeção de adendo (passos 2+3), aumentar tamanho do batch 5-10→20-30, aumentar concorrência 3→5, substituir injeção de `allProjectFiles` por fatia de `batchImportData`; Fase 4: formato de nó enxuto no dispatch; Fase 5: apenas nós de arquivo + arestas enxutas + camadas enxutas no dispatch; Fase 6: reviewer condicional — script inline padrão, flag `--review` para reviewer LLM |
+| `skills/understand/architecture-analyzer-prompt.md` | Sem mudança (adendos ainda injetados aqui) |
+| `skills/understand/tour-builder-prompt.md` | Atualizar schema de input para refletir nós apenas-de-arquivo, arestas apenas-imports+calls, formato enxuto de camada |
+| `skills/understand/graph-reviewer-prompt.md` | Sem mudança (usado apenas quando a flag `--review` é passada) |
 
 ---
 
-## Risks and mitigations
+## Riscos e mitigações
 
-| Risk | Likelihood | Mitigation |
+| Risco | Probabilidade | Mitigação |
 |---|---|---|
-| Scanner import resolution misses edge cases (complex re-exports, dynamic imports) | Medium | Log unresolved imports; file-analyzer still uses resolved data and creates edges only for confirmed matches. Missed imports = missing edges, which is same behavior as before for unresolvable imports |
-| Larger batches (C2) reduce summary quality | Low | Summary quality is driven by the model's analysis of individual files. Batch size mainly affects how many files share one subagent's context window, not per-file quality. 20-30 files remains well within context limits |
-| Stripping function/class nodes from tour (C4) breaks existing tour steps | None | Tour steps reference `file:` node IDs. No existing tour data references function/class nodes at the step level |
-| Removing reviewer by default (C5) misses graph errors | Low | The inline deterministic script catches all critical structural issues (dangling refs, missing layers, duplicate IDs). The LLM reviewer's additional value is quality warnings (orphan nodes, generic summaries), which are non-blocking |
-| Import map generation slows down Phase 1 | Low | The scanner script already reads all files for line counting. Import parsing adds one regex pass per file — negligible overhead |
+| A resolução de imports do scanner perde casos de borda (re-exports complexos, dynamic imports) | Média | Logar imports não resolvidos; o file-analyzer ainda usa os dados resolvidos e cria arestas apenas para matches confirmados. Imports perdidos = arestas faltando, que é o mesmo comportamento de antes para imports não resolvíveis |
+| Batches maiores (C2) reduzem a qualidade do resumo | Baixa | A qualidade do resumo é dirigida pela análise do modelo de arquivos individuais. O tamanho do batch afeta principalmente quantos arquivos compartilham a context window de um subagente, não a qualidade por arquivo. 20-30 arquivos permanece bem dentro dos limites de contexto |
+| Remover nós function/class do tour (C4) quebra steps de tour existentes | Nenhuma | Os steps de tour referenciam IDs de nó `file:`. Nenhum dado de tour existente referencia nós function/class no nível de step |
+| Remover o reviewer por padrão (C5) deixa passar erros de grafo | Baixa | O script determinístico inline captura todos os problemas estruturais críticos (refs dangling, camadas faltando, IDs duplicados). O valor adicional do reviewer LLM é warnings de qualidade (nós órfãos, resumos genéricos), que são não-bloqueantes |
+| A geração do import map atrasa a Fase 1 | Baixa | O script do scanner já lê todos os arquivos para contagem de linhas. O parsing de imports adiciona uma passada de regex por arquivo — overhead desprezível |
 
 ---
 
-## Phased rollout recommendation
+## Recomendação de rollout em fases
 
-Given the risk profile, implement in this order:
+Dado o perfil de risco, implementar nesta ordem:
 
-1. **C5 first** — gate the reviewer, lowest risk, immediate 58K token savings per run
-2. **C4** — slim Phase 5 payload, no scanner changes, no quality risk
-3. **C3** — remove addendums from batches, add inline hints
-4. **C1+C2 together** — scanner changes and batch consolidation, test thoroughly on small/medium/large projects before releasing
+1. **C5 primeiro** — colocar o reviewer atrás de gate, menor risco, economia imediata de 58K tokens por execução
+2. **C4** — enxugar o payload da Fase 5, sem mudanças no scanner, sem risco de qualidade
+3. **C3** — remover adendos dos batches, adicionar hints inline
+4. **C1+C2 juntos** — mudanças no scanner e consolidação de batch, testar exaustivamente em projetos pequenos/médios/grandes antes de release

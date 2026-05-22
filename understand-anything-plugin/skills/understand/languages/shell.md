@@ -1,35 +1,35 @@
-# Shell Language Prompt Snippet
+# Snippet de Prompt da Linguagem Shell
 
-## Key Concepts
+## Conceitos-Chave
 
-- **Shebang Line**: `#!/bin/bash` or `#!/usr/bin/env bash` specifying the interpreter
-- **Variables**: `VAR=value` assignment, `$VAR` or `${VAR}` expansion, no spaces around `=`
-- **Functions**: `function name()` or `name()` for reusable command groups
-- **Conditionals**: `if [[ condition ]]; then ... fi` with `[[ ]]` for extended tests
-- **Loops**: `for item in list`, `while condition`, `until condition` iteration patterns
-- **Pipes and Redirection**: `|` for chaining commands, `>` / `>>` / `2>&1` for output redirection
-- **Exit Codes**: `$?` captures last command status; `set -e` exits on any failure
-- **Strict Mode**: `set -euo pipefail` for robust error handling (exit on error, undefined vars, pipe failures)
-- **Command Substitution**: `$(command)` captures command output as a string
-- **Here Documents**: `<<EOF ... EOF` for multi-line string input to commands
+- **Linha Shebang**: `#!/bin/bash` ou `#!/usr/bin/env bash` especificando o interpretador
+- **Variáveis**: atribuição `VAR=value`, expansão `$VAR` ou `${VAR}`, sem espaços ao redor de `=`
+- **Funções**: `function name()` ou `name()` para grupos de comandos reutilizáveis
+- **Condicionais**: `if [[ condition ]]; then ... fi` com `[[ ]]` para testes estendidos
+- **Loops**: padrões de iteração `for item in list`, `while condition`, `until condition`
+- **Pipes e Redirecionamento**: `|` para encadear comandos, `>` / `>>` / `2>&1` para redirecionamento de saída
+- **Códigos de Saída**: `$?` captura o status do último comando; `set -e` sai em qualquer falha
+- **Strict Mode**: `set -euo pipefail` para tratamento robusto de erros (sai em erro, variáveis indefinidas, falhas de pipe)
+- **Substituição de Comando**: `$(command)` captura a saída do comando como uma string
+- **Here Documents**: `<<EOF ... EOF` para entrada de string multi-linha em comandos
 
-## Notable File Patterns
+## Padrões de Arquivo Notáveis
 
-- `*.sh` / `*.bash` — Shell script files
-- `scripts/*.sh` — Project automation scripts (build, deploy, setup)
-- `entrypoint.sh` — Docker container entry point script
-- `install.sh` / `setup.sh` — Environment setup scripts
-- `.bashrc` / `.bash_profile` / `.zshrc` — Shell configuration files
+- `*.sh` / `*.bash` — arquivos de script shell
+- `scripts/*.sh` — scripts de automação do projeto (build, deploy, setup)
+- `entrypoint.sh` — script de ponto de entrada de container Docker
+- `install.sh` / `setup.sh` — scripts de setup de ambiente
+- `.bashrc` / `.bash_profile` / `.zshrc` — arquivos de configuração de shell
 
-## Edge Patterns
+## Padrões de Aresta
 
-- Shell scripts `triggers` other scripts or build processes they invoke
-- Entry point scripts `deploys` the application they start
-- Setup scripts `configures` the development environment
-- Build scripts `depends_on` the source files they compile or package
+- Scripts shell `triggers` outros scripts ou processos de build que invocam
+- Scripts de entry point `deploys` a aplicação que iniciam
+- Scripts de setup `configures` o ambiente de desenvolvimento
+- Scripts de build `depends_on` os arquivos de fonte que compilam ou empacotam
 
-## Summary Style
+## Estilo de Resumo
 
-> "Build automation script compiling TypeScript, running tests, and packaging the release artifact."
-> "Docker entry point script handling signal forwarding and graceful shutdown."
-> "Environment setup script installing dependencies and configuring development tools."
+> "Script de automação de build compilando TypeScript, executando testes e empacotando o artefato de release."
+> "Script de entry point Docker tratando encaminhamento de sinais e shutdown gracioso."
+> "Script de setup de ambiente instalando dependências e configurando ferramentas de desenvolvimento."

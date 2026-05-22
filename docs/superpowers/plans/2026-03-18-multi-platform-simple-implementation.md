@@ -1,35 +1,35 @@
-# Multi-Platform Simple Implementation Plan
+# Plano de Implementação Multi-Plataforma (Versão Simples)
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **Para o Claude:** SUB-SKILL OBRIGATÓRIA: Use superpowers:executing-plans para implementar este plano tarefa por tarefa.
 
-**Goal:** Make Understand-Anything skills work across Codex, OpenClaw, OpenCode, and Cursor — same files everywhere, no build step.
+**Objetivo:** Fazer com que as skills do Understand-Anything funcionem em Codex, OpenClaw, OpenCode e Cursor — os mesmos arquivos em todos os lugares, sem build step.
 
-**Architecture:** Move 5 pipeline agents into `skills/understand/` as prompt templates. Create a reusable `knowledge-graph-guide` agent. Move per-platform config directories to repo root for auto-discovery. Add Cursor and Claude plugin descriptors.
+**Arquitetura:** Mover 5 agents do pipeline para `skills/understand/` como prompt templates. Criar um agent reutilizável `knowledge-graph-guide`. Mover diretórios de configuração por plataforma para a raiz do repositório para auto-discovery. Adicionar descritores de plugin do Cursor e do Claude.
 
-**Tech Stack:** Markdown (SKILL.md, INSTALL.md), YAML frontmatter, JSON (plugin descriptors), Bash (symlink/clone commands in install docs).
+**Stack Tecnológica:** Markdown (SKILL.md, INSTALL.md), frontmatter YAML, JSON (descritores de plugin), Bash (comandos de symlink/clone na documentação de instalação).
 
 **Design Doc:** `docs/plans/2026-03-18-multi-platform-simple-design.md`
 
 ---
 
-### Task 1: Move pipeline agents into skills/understand/ as prompt templates
+### Tarefa 1: Mover os agents do pipeline para skills/understand/ como prompt templates
 
-**Files:**
-- Move: `understand-anything-plugin/agents/project-scanner.md` → `understand-anything-plugin/skills/understand/project-scanner-prompt.md`
-- Move: `understand-anything-plugin/agents/file-analyzer.md` → `understand-anything-plugin/skills/understand/file-analyzer-prompt.md`
-- Move: `understand-anything-plugin/agents/architecture-analyzer.md` → `understand-anything-plugin/skills/understand/architecture-analyzer-prompt.md`
-- Move: `understand-anything-plugin/agents/tour-builder.md` → `understand-anything-plugin/skills/understand/tour-builder-prompt.md`
-- Move: `understand-anything-plugin/agents/graph-reviewer.md` → `understand-anything-plugin/skills/understand/graph-reviewer-prompt.md`
+**Arquivos:**
+- Mover: `understand-anything-plugin/agents/project-scanner.md` → `understand-anything-plugin/skills/understand/project-scanner-prompt.md`
+- Mover: `understand-anything-plugin/agents/file-analyzer.md` → `understand-anything-plugin/skills/understand/file-analyzer-prompt.md`
+- Mover: `understand-anything-plugin/agents/architecture-analyzer.md` → `understand-anything-plugin/skills/understand/architecture-analyzer-prompt.md`
+- Mover: `understand-anything-plugin/agents/tour-builder.md` → `understand-anything-plugin/skills/understand/tour-builder-prompt.md`
+- Mover: `understand-anything-plugin/agents/graph-reviewer.md` → `understand-anything-plugin/skills/understand/graph-reviewer-prompt.md`
 
-**Step 1: Copy each agent file to the new location**
+**Step 1: Copiar cada arquivo de agent para a nova localização**
 
-For each of the 5 files, copy from `agents/` to `skills/understand/` with the new name.
+Para cada um dos 5 arquivos, copie de `agents/` para `skills/understand/` com o novo nome.
 
-**Step 2: Strip agent frontmatter from the prompt templates**
+**Step 2: Remover o frontmatter de agent dos prompt templates**
 
-Each prompt template file should remove the agent-specific YAML frontmatter (`name`, `description`, `tools`, `model`). Replace it with a simple Markdown header describing the template's purpose.
+Cada arquivo de prompt template deve remover o frontmatter YAML específico de agent (`name`, `description`, `tools`, `model`). Substitua por um header Markdown simples descrevendo o propósito do template.
 
-For example, `project-scanner-prompt.md` changes from:
+Por exemplo, `project-scanner-prompt.md` muda de:
 
 ```markdown
 ---
@@ -42,7 +42,7 @@ model: sonnet
 You are a meticulous project inventory specialist...
 ```
 
-To:
+Para:
 
 ```markdown
 # Project Scanner — Prompt Template
@@ -52,29 +52,29 @@ To:
 You are a meticulous project inventory specialist...
 ```
 
-Apply this pattern to all 5 files:
+Aplique este padrão a todos os 5 arquivos:
 - `project-scanner-prompt.md` — "Used by `/understand` Phase 1"
 - `file-analyzer-prompt.md` — "Used by `/understand` Phase 2"
 - `architecture-analyzer-prompt.md` — "Used by `/understand` Phase 4"
 - `tour-builder-prompt.md` — "Used by `/understand` Phase 5"
 - `graph-reviewer-prompt.md` — "Used by `/understand` Phase 6"
 
-Keep the rest of the file content (the body instructions) exactly as-is.
+Mantenha o resto do conteúdo do arquivo (as instruções do corpo) exatamente como está.
 
-**Step 3: Delete the original agent files**
+**Step 3: Deletar os arquivos de agent originais**
 
 ```bash
 cd understand-anything-plugin
 rm agents/project-scanner.md agents/file-analyzer.md agents/architecture-analyzer.md agents/tour-builder.md agents/graph-reviewer.md
 ```
 
-**Step 4: Verify the files exist in the new location**
+**Step 4: Verificar que os arquivos existem na nova localização**
 
 ```bash
 ls understand-anything-plugin/skills/understand/
 ```
 
-Expected: `SKILL.md`, plus the 5 `*-prompt.md` files.
+Esperado: `SKILL.md`, mais os 5 arquivos `*-prompt.md`.
 
 **Step 5: Commit**
 
@@ -85,18 +85,18 @@ git commit -m "refactor: move pipeline agents into skills/understand/ as prompt 
 
 ---
 
-### Task 2: Update SKILL.md dispatch references with context injection
+### Tarefa 2: Atualizar referências de dispatch do SKILL.md com injeção de contexto
 
-**Files:**
-- Modify: `understand-anything-plugin/skills/understand/SKILL.md`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/skills/understand/SKILL.md`
 
-**Step 1: Read the current SKILL.md**
+**Step 1: Ler o SKILL.md atual**
 
-Read `understand-anything-plugin/skills/understand/SKILL.md` in full.
+Leia `understand-anything-plugin/skills/understand/SKILL.md` por completo.
 
-**Step 2: Update Phase 0 — add context collection**
+**Step 2: Atualizar Phase 0 — adicionar coleta de contexto**
 
-After the decision logic table (line ~47), add a new section for collecting project context that will be injected into later phases:
+Após a tabela de lógica de decisão (linha ~47), adicione uma nova seção para coletar contexto do projeto que será injetado em phases posteriores:
 
 ```markdown
 7. **Collect project context for subagent injection:**
@@ -110,14 +110,14 @@ After the decision logic table (line ~47), add a new section for collecting proj
    - Detect the project entry point by checking for common patterns: `src/index.ts`, `src/main.ts`, `src/App.tsx`, `main.py`, `main.go`, `src/main.rs`, `index.js`. Store first match as `$ENTRY_POINT`.
 ```
 
-**Step 3: Update Phase 1 dispatch — inject README + manifest**
+**Step 3: Atualizar dispatch da Phase 1 — injetar README + manifest**
 
-Replace the Phase 1 dispatch line:
+Substitua a linha de dispatch da Phase 1:
 ```
 Dispatch the **project-scanner** agent with this prompt:
 ```
 
-With:
+Por:
 ```markdown
 Dispatch a subagent using the prompt template at `./project-scanner-prompt.md`. Read the template file and pass the full content as the subagent's prompt, appending the following additional context:
 
@@ -138,14 +138,14 @@ Dispatch a subagent using the prompt template at `./project-scanner-prompt.md`. 
 Pass these parameters in the dispatch prompt:
 ```
 
-**Step 4: Update Phase 2 dispatch — inject scan results + framework context**
+**Step 4: Atualizar dispatch da Phase 2 — injetar resultados do scan + contexto de framework**
 
-Replace the Phase 2 dispatch paragraph:
+Substitua o parágrafo de dispatch da Phase 2:
 ```
 For each batch, dispatch a **file-analyzer** agent. Run up to **3 agents concurrently** using parallel dispatch. Each agent gets this prompt:
 ```
 
-With:
+Por:
 ```markdown
 For each batch, dispatch a subagent using the prompt template at `./file-analyzer-prompt.md`. Run up to **3 subagents concurrently** using parallel dispatch. Read the template once, then for each batch pass the full template content as the subagent's prompt, appending the following additional context:
 
@@ -166,14 +166,14 @@ For each batch, dispatch a subagent using the prompt template at `./file-analyze
 Fill in batch-specific parameters below and dispatch:
 ```
 
-**Step 5: Update Phase 4 dispatch — inject framework hints + directory tree**
+**Step 5: Atualizar dispatch da Phase 4 — injetar dicas de framework + árvore de diretórios**
 
-Replace the Phase 4 dispatch line:
+Substitua a linha de dispatch da Phase 4:
 ```
 Dispatch the **architecture-analyzer** agent with this prompt:
 ```
 
-With:
+Por:
 ```markdown
 Dispatch a subagent using the prompt template at `./architecture-analyzer-prompt.md`. Read the template file and pass the full content as the subagent's prompt, appending the following additional context:
 
@@ -197,7 +197,7 @@ Dispatch a subagent using the prompt template at `./architecture-analyzer-prompt
 Pass these parameters in the dispatch prompt:
 ```
 
-Also add after the "For incremental updates" note:
+Também adicione após a nota "For incremental updates":
 ```markdown
 **Context for incremental updates:** When re-running architecture analysis, also inject the previous layer definitions:
 
@@ -209,14 +209,14 @@ Also add after the "For incremental updates" note:
 > Maintain the same layer names and IDs where possible. Only add/remove layers if the file structure has materially changed.
 ```
 
-**Step 6: Update Phase 5 dispatch — inject README + entry point**
+**Step 6: Atualizar dispatch da Phase 5 — injetar README + entry point**
 
-Replace the Phase 5 dispatch line:
+Substitua a linha de dispatch da Phase 5:
 ```
 Dispatch the **tour-builder** agent with this prompt:
 ```
 
-With:
+Por:
 ```markdown
 Dispatch a subagent using the prompt template at `./tour-builder-prompt.md`. Read the template file and pass the full content as the subagent's prompt, appending the following additional context:
 
@@ -234,14 +234,14 @@ Dispatch a subagent using the prompt template at `./tour-builder-prompt.md`. Rea
 Pass these parameters in the dispatch prompt:
 ```
 
-**Step 7: Update Phase 6 dispatch — inject scan results for cross-validation**
+**Step 7: Atualizar dispatch da Phase 6 — injetar resultados do scan para validação cruzada**
 
-Replace the Phase 6 dispatch line:
+Substitua a linha de dispatch da Phase 6:
 ```
 2. Dispatch the **graph-reviewer** agent with this prompt:
 ```
 
-With:
+Por:
 ```markdown
 2. Dispatch a subagent using the prompt template at `./graph-reviewer-prompt.md`. Read the template file and pass the full content as the subagent's prompt, appending the following additional context:
 
@@ -260,22 +260,22 @@ With:
 Pass these parameters in the dispatch prompt:
 ```
 
-**Step 8: Update Error Handling section**
+**Step 8: Atualizar a seção Error Handling**
 
-Change:
+Substitua:
 ```
 - If any agent dispatch fails, retry **once** with the same prompt plus additional context about the failure.
 ```
 
-To:
+Por:
 ```
 - If any subagent dispatch fails, retry **once** with the same prompt plus additional context about the failure.
 - Track all warnings and errors from each phase in a `$PHASE_WARNINGS` list. Pass this list to the graph-reviewer in Phase 6 for comprehensive validation.
 ```
 
-**Step 9: Verify no references to named agent dispatch remain**
+**Step 9: Verificar que não restam referências a dispatch nominal de agent**
 
-Search for "Dispatch the **" in the file — should find 0 results.
+Pesquise por "Dispatch the **" no arquivo — deve retornar 0 resultados.
 
 **Step 10: Commit**
 
@@ -286,14 +286,14 @@ git commit -m "refactor: update SKILL.md to dispatch subagents with context inje
 
 ---
 
-### Task 3: Create knowledge-graph-guide agent
+### Tarefa 3: Criar o agent knowledge-graph-guide
 
-**Files:**
-- Create: `understand-anything-plugin/agents/knowledge-graph-guide.md`
+**Arquivos:**
+- Criar: `understand-anything-plugin/agents/knowledge-graph-guide.md`
 
-**Step 1: Write the agent definition**
+**Step 1: Escrever a definição do agent**
 
-Create `understand-anything-plugin/agents/knowledge-graph-guide.md`:
+Crie `understand-anything-plugin/agents/knowledge-graph-guide.md`:
 
 ```markdown
 ---
@@ -376,15 +376,15 @@ git commit -m "feat: add knowledge-graph-guide agent for graph navigation and qu
 
 ---
 
-### Task 4: Move platform INSTALL.md files to repo root
+### Tarefa 4: Mover arquivos INSTALL.md das plataformas para a raiz do repositório
 
-**Files:**
-- Move: `understand-anything-plugin/.codex/INSTALL.md` → `.codex/INSTALL.md`
-- Move: `understand-anything-plugin/.opencode/INSTALL.md` → `.opencode/INSTALL.md`
-- Move: `understand-anything-plugin/.openclaw/INSTALL.md` → `.openclaw/INSTALL.md`
-- Delete: `understand-anything-plugin/.cursor/INSTALL.md` (replaced by `.cursor-plugin/plugin.json`)
+**Arquivos:**
+- Mover: `understand-anything-plugin/.codex/INSTALL.md` → `.codex/INSTALL.md`
+- Mover: `understand-anything-plugin/.opencode/INSTALL.md` → `.opencode/INSTALL.md`
+- Mover: `understand-anything-plugin/.openclaw/INSTALL.md` → `.openclaw/INSTALL.md`
+- Deletar: `understand-anything-plugin/.cursor/INSTALL.md` (substituído por `.cursor-plugin/plugin.json`)
 
-**Step 1: Move the three platform directories to root**
+**Step 1: Mover os três diretórios de plataforma para a raiz**
 
 ```bash
 cd /Users/yuxianglin/Desktop/opensource/Understand-Anything
@@ -393,15 +393,15 @@ git mv understand-anything-plugin/.opencode ./.opencode
 git mv understand-anything-plugin/.openclaw ./.openclaw
 ```
 
-**Step 2: Delete .cursor/ (replaced by .cursor-plugin/ in Task 5)**
+**Step 2: Deletar .cursor/ (substituído por .cursor-plugin/ na Tarefa 5)**
 
 ```bash
 git rm -r understand-anything-plugin/.cursor/
 ```
 
-**Step 3: Verify symlink paths are correct**
+**Step 3: Verificar que os paths de symlink estão corretos**
 
-Read each INSTALL.md. The symlink paths should reference `understand-anything-plugin/skills` — this is still correct since the skills directory remains inside the plugin wrapper.
+Leia cada INSTALL.md. Os paths de symlink devem referenciar `understand-anything-plugin/skills` — isto continua correto, já que o diretório de skills permanece dentro do wrapper do plugin.
 
 **Step 4: Commit**
 
@@ -412,13 +412,13 @@ git commit -m "refactor: move platform config directories to repo root for disco
 
 ---
 
-### Task 5: Add plugin descriptors
+### Tarefa 5: Adicionar descritores de plugin
 
-**Files:**
-- Create: `.cursor-plugin/plugin.json`
-- Create: `.claude-plugin/plugin.json`
+**Arquivos:**
+- Criar: `.cursor-plugin/plugin.json`
+- Criar: `.claude-plugin/plugin.json`
 
-**Step 1: Create `.cursor-plugin/plugin.json`**
+**Step 1: Criar `.cursor-plugin/plugin.json`**
 
 ```json
 {
@@ -436,9 +436,9 @@ git commit -m "refactor: move platform config directories to repo root for disco
 }
 ```
 
-Note: paths point into `understand-anything-plugin/` since the source stays nested.
+Nota: os paths apontam para dentro de `understand-anything-plugin/` já que o source permanece aninhado.
 
-**Step 2: Create `.claude-plugin/plugin.json`**
+**Step 2: Criar `.claude-plugin/plugin.json`**
 
 ```json
 {
@@ -462,18 +462,18 @@ git commit -m "feat: add Cursor and Claude plugin descriptors for auto-discovery
 
 ---
 
-### Task 6: Update README with corrected multi-platform URLs
+### Tarefa 6: Atualizar README com URLs multi-plataforma corrigidas
 
-**Files:**
-- Modify: `README.md`
+**Arquivos:**
+- Modificar: `README.md`
 
-**Step 1: Read current README**
+**Step 1: Ler o README atual**
 
-Read `README.md` in full.
+Leia `README.md` por completo.
 
-**Step 2: Update raw GitHub URLs for INSTALL.md files**
+**Step 2: Atualizar URLs raw do GitHub para os arquivos INSTALL.md**
 
-The INSTALL.md files moved from `understand-anything-plugin/.codex/INSTALL.md` to `.codex/INSTALL.md`. Update all raw GitHub URLs:
+Os arquivos INSTALL.md foram movidos de `understand-anything-plugin/.codex/INSTALL.md` para `.codex/INSTALL.md`. Atualize todas as URLs raw do GitHub:
 
 ```
 OLD: .../refs/heads/main/understand-anything-plugin/.codex/INSTALL.md
@@ -486,9 +486,9 @@ OLD: .../refs/heads/main/understand-anything-plugin/.opencode/INSTALL.md
 NEW: .../refs/heads/main/.opencode/INSTALL.md
 ```
 
-**Step 3: Replace Cursor section**
+**Step 3: Substituir a seção do Cursor**
 
-Replace the Cursor AI-driven install section with:
+Substitua a seção de instalação AI-driven do Cursor por:
 
 ```markdown
 ### Cursor
@@ -505,18 +505,18 @@ git commit -m "docs: update multi-platform URLs after moving configs to root"
 
 ---
 
-### Task 7: Verify everything works
+### Tarefa 7: Verificar que tudo funciona
 
-**Step 1: Check platform configs at root**
+**Step 1: Conferir configs de plataforma na raiz**
 
 ```bash
 ls .codex/INSTALL.md .opencode/INSTALL.md .openclaw/INSTALL.md
 ls .cursor-plugin/plugin.json .claude-plugin/plugin.json
 ```
 
-All should exist.
+Todos devem existir.
 
-**Step 2: Verify plugin source is intact**
+**Step 2: Verificar que o source do plugin está intacto**
 
 ```bash
 ls understand-anything-plugin/skills/understand/
@@ -524,9 +524,9 @@ ls understand-anything-plugin/agents/
 ls understand-anything-plugin/packages/
 ```
 
-Skills, agents, and packages should all still exist inside the wrapper.
+Skills, agents e packages devem todos continuar existindo dentro do wrapper.
 
-**Step 3: Verify no platform configs remain inside the wrapper**
+**Step 3: Verificar que nenhum config de plataforma permanece dentro do wrapper**
 
 ```bash
 ls understand-anything-plugin/.codex/ 2>/dev/null    # should fail
@@ -535,26 +535,26 @@ ls understand-anything-plugin/.opencode/ 2>/dev/null # should fail
 ls understand-anything-plugin/.openclaw/ 2>/dev/null # should fail
 ```
 
-**Step 4: Run tests**
+**Step 4: Executar os testes**
 
 ```bash
 pnpm --filter @understand-anything/core build && pnpm --filter @understand-anything/core test
 ```
 
-All tests should pass — only config files moved, not source code.
+Todos os testes devem passar — apenas arquivos de config foram movidos, não código fonte.
 
-**Step 5: Verify marketplace.json is unchanged**
+**Step 5: Verificar que marketplace.json não foi alterado**
 
 ```bash
 cat .claude-plugin/marketplace.json | grep source
 ```
 
-Expected: `"source": "./understand-anything-plugin"` — unchanged, still correct.
+Esperado: `"source": "./understand-anything-plugin"` — inalterado, ainda correto.
 
-**Step 6: Verify no stale raw GitHub URLs**
+**Step 6: Verificar que não há URLs raw do GitHub desatualizadas**
 
 ```bash
 grep -r "understand-anything-plugin/\." README.md
 ```
 
-Expected: 0 results (no URLs pointing to old nested platform config locations).
+Esperado: 0 resultados (nenhuma URL apontando para localizações antigas aninhadas de config de plataforma).

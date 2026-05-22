@@ -1,35 +1,35 @@
-# YAML Language Prompt Snippet
+# Snippet de Prompt da Linguagem YAML
 
-## Key Concepts
+## Conceitos-Chave
 
-- **Indentation-Based Nesting**: Whitespace-sensitive structure (spaces only, no tabs) defining hierarchy
-- **Anchors and Aliases**: `&anchor` defines a reusable block, `*anchor` references it to avoid duplication
-- **Merge Keys**: `<<: *anchor` merges anchor contents into the current mapping
-- **Multi-Line Strings**: Literal block (`|`) preserves newlines, folded block (`>`) joins lines
-- **Document Separators**: `---` starts a new document, `...` ends one (multi-document streams)
-- **Tags and Types**: `!!str`, `!!int`, `!!bool` for explicit typing; custom tags for application-specific types
-- **Flow Style**: Inline JSON-like syntax `{key: value}` and `[item1, item2]` for compact notation
-- **Environment Variable Substitution**: `${VAR}` patterns used in docker-compose and CI configs
+- **Aninhamento Baseado em Indentação**: estrutura sensível a whitespace (apenas espaços, sem tabs) definindo a hierarquia
+- **Anchors e Aliases**: `&anchor` define um bloco reutilizável, `*anchor` o referencia para evitar duplicação
+- **Merge Keys**: `<<: *anchor` mescla o conteúdo de um anchor no mapping atual
+- **Strings Multi-Linha**: bloco literal (`|`) preserva newlines, bloco folded (`>`) junta linhas
+- **Separadores de Documento**: `---` inicia um novo documento, `...` encerra um (streams multi-documento)
+- **Tags e Tipos**: `!!str`, `!!int`, `!!bool` para tipagem explícita; tags customizadas para tipos específicos da aplicação
+- **Estilo Flow**: sintaxe inline estilo JSON `{key: value}` e `[item1, item2]` para notação compacta
+- **Substituição de Variáveis de Ambiente**: padrões `${VAR}` usados em docker-compose e configs de CI
 
-## Notable File Patterns
+## Padrões de Arquivo Notáveis
 
-- `docker-compose.yml` / `docker-compose.yaml` — Multi-container Docker application definition
-- `.github/workflows/*.yml` — GitHub Actions CI/CD workflow definitions
-- `.gitlab-ci.yml` — GitLab CI/CD pipeline configuration
-- `kubernetes/*.yaml` / `k8s/*.yaml` — Kubernetes resource manifests
-- `*.config.yaml` — Application configuration files
-- `mkdocs.yml` — MkDocs documentation site configuration
-- `serverless.yml` — Serverless Framework configuration
+- `docker-compose.yml` / `docker-compose.yaml` — definição de aplicação Docker multi-container
+- `.github/workflows/*.yml` — definições de workflows do GitHub Actions para CI/CD
+- `.gitlab-ci.yml` — configuração de pipeline CI/CD do GitLab
+- `kubernetes/*.yaml` / `k8s/*.yaml` — manifestos de recursos do Kubernetes
+- `*.config.yaml` — arquivos de configuração de aplicação
+- `mkdocs.yml` — configuração de site de documentação MkDocs
+- `serverless.yml` — configuração do Serverless Framework
 
-## Edge Patterns
+## Padrões de Aresta
 
-- YAML config files `configures` the code modules they control (e.g., database settings affect data layer)
-- CI/CD YAML files `triggers` build and deployment pipelines
-- docker-compose YAML `deploys` services and `depends_on` Dockerfiles
-- Kubernetes YAML `deploys` and `provisions` application services
+- Arquivos YAML de configuração `configures` os módulos de código que controlam (por exemplo, configurações de banco afetam a camada de dados)
+- Arquivos YAML de CI/CD `triggers` pipelines de build e deploy
+- YAML do docker-compose `deploys` serviços e `depends_on` Dockerfiles
+- YAML do Kubernetes `deploys` e `provisions` serviços de aplicação
 
-## Summary Style
+## Estilo de Resumo
 
-> "Docker Compose configuration defining N services with networking, volumes, and health checks."
-> "GitHub Actions workflow running tests on push and deploying to production on merge to main."
-> "Kubernetes deployment manifest with N replicas, resource limits, and liveness probes."
+> "Configuração Docker Compose definindo N serviços com networking, volumes e health checks."
+> "Workflow do GitHub Actions executando testes em push e fazendo deploy em produção ao mergear na main."
+> "Manifesto de deployment Kubernetes com N réplicas, limites de recurso e liveness probes."

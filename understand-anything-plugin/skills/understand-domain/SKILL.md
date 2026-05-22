@@ -6,21 +6,21 @@ argument-hint: [--full]
 
 # /understand-domain
 
-Extracts business domain knowledge — domains, business flows, and process steps — from a codebase and produces an interactive horizontal flow graph in the dashboard.
+Extrai conhecimento de domínio de negócio — domínios, fluxos de negócio e passos de processo — de um codebase e produz um grafo de fluxo horizontal interativo no dashboard.
 
-## How It Works
+## Como Funciona
 
-- If a knowledge graph already exists (`.understand-anything/knowledge-graph.json`), derives domain knowledge from it (cheap, no file scanning)
-- If no knowledge graph exists, performs a lightweight scan: file tree + entry point detection + sampled files
-- Use `--full` flag to force a fresh scan even if a knowledge graph exists
+- Se um knowledge graph já existir (`.understand-anything/knowledge-graph.json`), deriva o conhecimento de domínio a partir dele (barato, sem varredura de arquivos)
+- Se não existir knowledge graph, faz uma varredura leve: árvore de arquivos + detecção de entry-points + arquivos amostrados
+- Use a flag `--full` para forçar uma nova varredura mesmo que exista um knowledge graph
 
-## Instructions
+## Instruções
 
-### Phase 0: Resolve `PROJECT_ROOT`
+### Fase 0: Resolver `PROJECT_ROOT`
 
-Set `PROJECT_ROOT` to the current working directory.
+Defina `PROJECT_ROOT` como o diretório de trabalho atual.
 
-**Worktree redirect.** If `PROJECT_ROOT` is inside a git worktree (not the main checkout), redirect output to the main repository root. Worktrees managed by Claude Code are ephemeral — `.understand-anything/` written there is destroyed when the session ends, taking the domain graph with it (issue #133). Detect a worktree by comparing `git rev-parse --git-dir` against `git rev-parse --git-common-dir`; in a normal checkout or submodule they resolve to the same path, in a worktree they differ and the parent of `--git-common-dir` is the main repo root.
+**Redirecionamento de worktree.** Se `PROJECT_ROOT` está dentro de um git worktree (não o checkout principal), redirecione a saída para a raiz do repositório principal. Worktrees gerenciados pelo Claude Code são efêmeros — `.understand-anything/` gravado lá é destruído quando a sessão termina, levando junto o domain graph (issue #133). Detecte um worktree comparando `git rev-parse --git-dir` com `git rev-parse --git-common-dir`; em um checkout normal ou submódulo eles resolvem para o mesmo caminho, em um worktree eles diferem e o pai de `--git-common-dir` é a raiz do repo principal.
 
 ```bash
 COMMON_DIR=$(git -C "$PROJECT_ROOT" rev-parse --git-common-dir 2>/dev/null)
@@ -40,11 +40,11 @@ if [ -n "$COMMON_DIR" ] && [ -n "$GIT_DIR" ]; then
 fi
 ```
 
-Use `$PROJECT_ROOT` (not the bare CWD) for every reference to "the current project" / `<project-root>` in subsequent phases.
+Use `$PROJECT_ROOT` (não o CWD nu) para toda referência ao "projeto atual" / `<project-root>` nas fases seguintes.
 
-**Important:** do **not** assume the plugin root is simply two directories above the skill path string. In many installations `~/.agents/skills/understand-domain` is a symlink into the real plugin checkout. Prefer runtime-provided plugin roots first (for Claude), then fall back to universal symlinks, skill symlink resolution, and common clone-based install paths.
+**Importante:** **não** assuma que a raiz do plugin está simplesmente dois diretórios acima da string do caminho da skill. Em muitas instalações, `~/.agents/skills/understand-domain` é um symlink para o checkout real do plugin. Prefira raízes de plugin fornecidas em runtime primeiro (para o Claude), e então faça fallback para symlinks universais, resolução de symlink da skill e caminhos comuns de instalação por clone.
 
-Resolve the plugin root like this:
+Resolva a raiz do plugin assim:
 
 ```bash
 SKILL_REAL=$(realpath ~/.agents/skills/understand-domain 2>/dev/null || readlink -f ~/.agents/skills/understand-domain 2>/dev/null || echo "")
@@ -84,57 +84,57 @@ if [ -z "$PLUGIN_ROOT" ]; then
 fi
 ```
 
-Use `$PLUGIN_ROOT` for every reference to agent definitions in subsequent phases.
+Use `$PLUGIN_ROOT` para toda referência a definições de agente nas fases seguintes.
 
-### Phase 1: Detect Existing Graph
+### Fase 1: Detectar Grafo Existente
 
-1. Check if `$PROJECT_ROOT/.understand-anything/knowledge-graph.json` exists
-2. If it exists AND `--full` was NOT passed → proceed to Phase 3 (derive from graph)
-3. Otherwise → proceed to Phase 2 (lightweight scan)
+1. Verifique se `$PROJECT_ROOT/.understand-anything/knowledge-graph.json` existe
+2. Se existir E `--full` NÃO foi passado → prossiga para a Fase 3 (derivar do grafo)
+3. Caso contrário → prossiga para a Fase 2 (varredura leve)
 
-### Phase 2: Lightweight Scan (Path 1)
+### Fase 2: Varredura Leve (Caminho 1)
 
-The preprocessing script does NOT produce a domain graph — it produces **raw material** (file tree, entry points, exports/imports) so the domain-analyzer agent can focus on the actual domain analysis instead of spending dozens of tool calls exploring the codebase. Think of it as a cheat sheet: cheap Python preprocessing → expensive LLM gets a clean, small input → better results for less cost.
+O script de pré-processamento NÃO produz um domain graph — ele produz **matéria-prima** (árvore de arquivos, entry-points, exports/imports) para que o agente domain-analyzer possa focar na análise de domínio em si, em vez de gastar dezenas de chamadas de ferramenta explorando o codebase. Pense nele como uma cola: pré-processamento Python barato → o LLM caro recebe uma entrada limpa e pequena → resultados melhores por menos custo.
 
-1. Run the preprocessing script bundled with this skill, passing `$PROJECT_ROOT` from Phase 0:
+1. Execute o script de pré-processamento empacotado com esta skill, passando o `$PROJECT_ROOT` da Fase 0:
    ```
    python ./extract-domain-context.py "$PROJECT_ROOT"
    ```
-   This outputs `$PROJECT_ROOT/.understand-anything/intermediate/domain-context.json` containing:
-   - File tree (respecting `.gitignore`)
-   - Detected entry points (HTTP routes, CLI commands, event handlers, cron jobs, exported handlers)
-   - File signatures (exports, imports per file)
-   - Code snippets for each entry point (signature + first few lines)
-   - Project metadata (package.json, README, etc.)
-2. Read the generated `domain-context.json` as context for Phase 4
-3. Proceed to Phase 4
+   Isso gera `$PROJECT_ROOT/.understand-anything/intermediate/domain-context.json` contendo:
+   - Árvore de arquivos (respeitando `.gitignore`)
+   - Entry-points detectados (rotas HTTP, comandos CLI, event handlers, cron jobs, handlers exportados)
+   - Assinaturas de arquivo (exports, imports por arquivo)
+   - Trechos de código para cada entry-point (assinatura + primeiras linhas)
+   - Metadados do projeto (package.json, README, etc.)
+2. Leia o `domain-context.json` gerado como contexto para a Fase 4
+3. Prossiga para a Fase 4
 
-### Phase 3: Derive from Existing Graph (Path 2)
+### Fase 3: Derivar do Grafo Existente (Caminho 2)
 
-1. Read `$PROJECT_ROOT/.understand-anything/knowledge-graph.json`
-2. Format the graph data as structured context:
-   - All nodes with their types, names, summaries, and tags
-   - All edges with their types (especially `calls`, `imports`, `contains`)
-   - All layers with their descriptions
-   - Tour steps if available
-3. This is the context for the domain analyzer — no file reading needed
-4. Proceed to Phase 4
+1. Leia `$PROJECT_ROOT/.understand-anything/knowledge-graph.json`
+2. Formate os dados do grafo como contexto estruturado:
+   - Todos os nós com seus tipos, nomes, resumos e tags
+   - Todas as arestas com seus tipos (especialmente `calls`, `imports`, `contains`)
+   - Todas as camadas com suas descrições
+   - Passos do tour, se disponíveis
+3. Esse é o contexto para o domain-analyzer — não é necessário ler arquivos
+4. Prossiga para a Fase 4
 
-### Phase 4: Domain Analysis
+### Fase 4: Análise de Domínio
 
-1. Read the domain-analyzer agent prompt from `$PLUGIN_ROOT/agents/domain-analyzer.md`
-2. Dispatch a subagent with the domain-analyzer prompt + the context from Phase 2 or 3
-3. The agent writes its output to `$PROJECT_ROOT/.understand-anything/intermediate/domain-analysis.json`
+1. Leia o prompt do agente domain-analyzer em `$PLUGIN_ROOT/agents/domain-analyzer.md`
+2. Despache um subagente com o prompt do domain-analyzer + o contexto da Fase 2 ou 3
+3. O agente grava sua saída em `$PROJECT_ROOT/.understand-anything/intermediate/domain-analysis.json`
 
-### Phase 5: Validate and Save
+### Fase 5: Validar e Salvar
 
-1. Read the domain analysis output
-2. Validate using the standard graph validation pipeline (the schema now supports domain/flow/step types)
-3. If validation fails, log warnings but save what's valid (error tolerance)
-4. Save to `$PROJECT_ROOT/.understand-anything/domain-graph.json`
-5. Clean up `$PROJECT_ROOT/.understand-anything/intermediate/domain-analysis.json` and `$PROJECT_ROOT/.understand-anything/intermediate/domain-context.json`
+1. Leia a saída da análise de domínio
+2. Valide usando o pipeline padrão de validação de grafo (o schema agora suporta os tipos domain/flow/step)
+3. Se a validação falhar, registre warnings mas salve o que for válido (tolerância a erros)
+4. Salve em `$PROJECT_ROOT/.understand-anything/domain-graph.json`
+5. Limpe `$PROJECT_ROOT/.understand-anything/intermediate/domain-analysis.json` e `$PROJECT_ROOT/.understand-anything/intermediate/domain-context.json`
 
-### Phase 6: Launch Dashboard
+### Fase 6: Iniciar Dashboard
 
-1. Auto-trigger `/understand-dashboard` to visualize the domain graph
-2. The dashboard will detect `domain-graph.json` and show the domain view by default
+1. Auto-dispare `/understand-dashboard` para visualizar o domain graph
+2. O dashboard detecta `domain-graph.json` e exibe a visão de domínio por padrão

@@ -1,55 +1,55 @@
-# React Framework Addendum
+# Adendo do Framework React
 
-> Injected into file-analyzer and architecture-analyzer prompts when React is detected.
-> Do NOT use as a standalone prompt — always appended to the base prompt template.
+> Injetado nos prompts do file-analyzer e do architecture-analyzer quando React é detectado.
+> NÃO use como prompt independente — sempre anexado ao template de prompt base.
 
-## React Project Structure
+## Estrutura de Projeto React
 
-When analyzing a React project, apply these additional conventions on top of the base analysis rules.
+Ao analisar um projeto React, aplique estas convenções adicionais sobre as regras base de análise.
 
-### Canonical File Roles
+### Funções Canônicas de Arquivos
 
-| File / Pattern | Role | Tags |
+| Arquivo / Padrão | Função | Tags |
 |---|---|---|
-| `src/App.tsx` | Root application component — mounts providers, router, and top-level layout | `entry-point`, `ui` |
-| `components/*.tsx`, `components/**/*.tsx` | Reusable UI components | `ui` |
-| `hooks/*.ts`, `hooks/*.tsx` | Custom React hooks — encapsulate reusable stateful logic | `service`, `utility` |
-| `contexts/*.tsx`, `context/*.tsx` | React Context providers and consumers — shared state across component tree | `service`, `state` |
-| `pages/*.tsx`, `views/*.tsx` | Page-level components mapped to routes | `ui`, `routing` |
-| `utils/*.ts`, `helpers/*.ts` | Pure utility functions — formatting, validation, transformations | `utility` |
-| `types/*.ts`, `types/*.d.ts` | TypeScript type definitions and interfaces | `type-definition` |
-| `services/*.ts`, `api/*.ts` | API client functions and data-fetching logic | `service` |
-| `store/*.ts`, `slices/*.ts` | State management (Redux, Zustand, etc.) | `service`, `state` |
-| `constants/*.ts` | Application-wide constants and enums | `config` |
-| `__tests__/*.tsx`, `*.test.tsx`, `*.spec.tsx` | Unit and integration tests | `test` |
+| `src/App.tsx` | Componente raiz da aplicação — monta providers, router e o layout de nível superior | `entry-point`, `ui` |
+| `components/*.tsx`, `components/**/*.tsx` | Componentes de UI reutilizáveis | `ui` |
+| `hooks/*.ts`, `hooks/*.tsx` | Hooks React customizados — encapsulam lógica stateful reutilizável | `service`, `utility` |
+| `contexts/*.tsx`, `context/*.tsx` | Providers e consumers de Context — estado compartilhado pela árvore de componentes | `service`, `state` |
+| `pages/*.tsx`, `views/*.tsx` | Componentes de página mapeados para rotas | `ui`, `routing` |
+| `utils/*.ts`, `helpers/*.ts` | Funções utilitárias puras — formatação, validação, transformações | `utility` |
+| `types/*.ts`, `types/*.d.ts` | Definições de tipos e interfaces TypeScript | `type-definition` |
+| `services/*.ts`, `api/*.ts` | Funções cliente de API e lógica de data fetching | `service` |
+| `store/*.ts`, `slices/*.ts` | Gerenciamento de estado (Redux, Zustand, etc.) | `service`, `state` |
+| `constants/*.ts` | Constantes e enums de toda a aplicação | `config` |
+| `__tests__/*.tsx`, `*.test.tsx`, `*.spec.tsx` | Testes unitários e de integração | `test` |
 
-### Edge Patterns to Look For
+### Padrões de Aresta a Procurar
 
-**Component composition** — When a parent component renders a child component in its JSX return, create `contains` edges from the parent to the child. These edges represent the component tree hierarchy.
+**Composição de componentes** — Quando um componente pai renderiza um componente filho em seu JSX de retorno, crie arestas `contains` do pai para o filho. Essas arestas representam a hierarquia da árvore de componentes.
 
-**Hook usage** — When a component or hook imports and calls a custom hook (`useX`), create `depends_on` edges from the consumer to the hook module. Hooks are the primary mechanism for shared logic in React.
+**Uso de hooks** — Quando um componente ou hook importa e chama um hook customizado (`useX`), crie arestas `depends_on` do consumidor para o módulo do hook. Hooks são o principal mecanismo de lógica compartilhada em React.
 
-**Context provider/consumer** — When a Context provider wraps components, create `publishes` edges from the provider to the context definition. When components call `useContext` or use a custom context hook, create `subscribes` edges from the consumer to the context.
+**Provider/consumer de Context** — Quando um Context provider envolve componentes, crie arestas `publishes` do provider para a definição do context. Quando componentes chamam `useContext` ou usam um hook de context customizado, crie arestas `subscribes` do consumidor para o context.
 
-**Props drilling chains** — When props are passed through multiple component layers without being used, create `depends_on` edges along the chain to surface the coupling depth.
+**Cadeias de props drilling** — Quando props são passadas por várias camadas de componentes sem serem usadas, crie arestas `depends_on` ao longo da cadeia para revelar a profundidade do acoplamento.
 
-### Architectural Layers for React
+### Camadas Arquiteturais para React
 
-Assign nodes to these layers when detected:
+Atribua nós a estas camadas quando detectadas:
 
-| Layer ID | Layer Name | What Goes Here |
+| ID da Camada | Nome da Camada | O Que Vai Aqui |
 |---|---|---|
-| `layer:ui` | UI Layer | `components/`, `pages/`, `views/`, layout components |
+| `layer:ui` | UI Layer | `components/`, `pages/`, `views/`, componentes de layout |
 | `layer:service` | Service Layer | `hooks/`, `contexts/`, `services/`, `api/`, `store/` |
-| `layer:types` | Types Layer | `types/`, shared TypeScript interfaces and type definitions |
-| `layer:utility` | Utility Layer | `utils/`, `helpers/`, pure functions |
-| `layer:config` | Config Layer | `App.tsx`, router configuration, provider setup, constants |
+| `layer:types` | Types Layer | `types/`, interfaces e definições de tipo TypeScript compartilhadas |
+| `layer:utility` | Utility Layer | `utils/`, `helpers/`, funções puras |
+| `layer:config` | Config Layer | `App.tsx`, configuração do router, setup de providers, constantes |
 | `layer:test` | Test Layer | `__tests__/`, `*.test.tsx`, `*.spec.tsx` |
 
-### Notable Patterns to Capture in languageLesson
+### Padrões Notáveis a Capturar em languageLesson
 
-- **Component composition over inheritance**: React favors composing components via props and children rather than class inheritance hierarchies
-- **Custom hooks for reusable logic**: Hooks prefixed with `use` extract stateful logic into shareable modules without changing the component tree
-- **React.memo for performance**: Components wrapped in `React.memo` skip re-renders when props are unchanged — indicates performance-sensitive paths
-- **Controlled vs. uncontrolled components**: Controlled components derive state from props; uncontrolled components manage internal state via refs
-- **Render props pattern**: Components that accept a function as children or a render prop to delegate rendering decisions to the consumer
+- **Composição de componentes em vez de herança**: o React favorece compor componentes via props e children em vez de hierarquias de herança de classe
+- **Hooks customizados para lógica reutilizável**: hooks prefixados com `use` extraem lógica stateful em módulos compartilháveis sem alterar a árvore de componentes
+- **React.memo para performance**: componentes envolvidos em `React.memo` pulam re-renders quando as props não mudam — indica caminhos sensíveis a performance
+- **Componentes controlados vs. não controlados**: componentes controlados derivam o estado das props; componentes não controlados gerenciam estado interno via refs
+- **Padrão render props**: componentes que aceitam uma função como children ou um render prop para delegar decisões de renderização ao consumidor
