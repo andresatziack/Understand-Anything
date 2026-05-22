@@ -1,46 +1,47 @@
-# JavaScript Language Prompt Snippet
+# Snippet de Prompt da Linguagem JavaScript
 
-## Key Concepts
+## Conceitos-Chave
 
-- **Closures**: Functions that capture variables from their enclosing lexical scope
-- **Prototypes**: Prototype chain-based inheritance underlying all JavaScript objects
-- **Promises**: Asynchronous value containers enabling `.then()` chaining and `async/await`
-- **Event Loop**: Single-threaded concurrency model with microtask and macrotask queues
-- **Destructuring**: Extract values from objects and arrays into distinct variables
-- **Spread/Rest Operators**: `...` for expanding iterables or collecting remaining arguments
-- **Proxies**: Meta-programming construct to intercept and customize object operations
-- **Generators**: Functions using `function*` and `yield` for lazy iteration
-- **Symbol**: Unique, immutable primitive used for non-string property keys
-- **WeakMap/WeakSet**: Collections with weakly-held keys allowing garbage collection
-- **Modules (ESM vs CJS)**: ES Modules use `import/export`; CommonJS uses `require/module.exports`
+- **Closures**: funções que capturam variáveis do seu escopo léxico envolvente
+- **Prototypes**: herança baseada em cadeia de prototypes que sustenta todos os objetos JavaScript
+- **Promises**: containers de valor assíncrono que habilitam encadeamento `.then()` e `async/await`
+- **Event Loop**: modelo de concorrência single-threaded com filas de microtasks e macrotasks
+- **Destructuring**: extrai valores de objetos e arrays para variáveis distintas
+- **Operadores Spread/Rest**: `...` para expandir iteráveis ou coletar argumentos restantes
+- **Proxies**: construto de meta-programação para interceptar e customizar operações de objeto
+- **Generators**: funções usando `function*` e `yield` para iteração preguiçosa
+- **Symbol**: primitiva única e imutável usada como chaves de propriedade não-string
+- **WeakMap/WeakSet**: coleções com chaves mantidas por referências fracas, permitindo coleta de lixo
+- **Modules (ESM vs CJS)**: ES Modules usam `import/export`; CommonJS usa `require/module.exports`
 
-## Import Patterns
+## Padrões de Importação
 
-- `import { X } from 'module'` — ESM named import
-- `const X = require('module')` — CommonJS require
-- `import('module')` — dynamic import returning a Promise (code splitting)
-- `export default X` / `export { X }` — ESM export forms
+- `import { X } from 'module'` — named import ESM
+- `const X = require('module')` — require CommonJS
+- `import('module')` — dynamic import retornando uma Promise (code splitting)
+- `export default X` / `export { X }` — formas de export ESM
 
-## File Patterns
+## Padrões de Arquivos
 
-- `index.js` — barrel file or directory entry point
-- `.mjs` — explicitly ES Module files
-- `.cjs` — explicitly CommonJS files
-- `package.json` `"type"` field — sets default module system (`"module"` or `"commonjs"`)
+- `index.js` — barrel file ou ponto de entrada do diretório
+- `.mjs` — arquivos explicitamente ES Module
+- `.cjs` — arquivos explicitamente CommonJS
+- Campo `"type"` em `package.json` — define o sistema de módulos padrão (`"module"` ou `"commonjs"`)
 
-## Common Frameworks
+## Frameworks Comuns
 
-- **React** — Declarative UI with virtual DOM and component model
-- **Vue** — Progressive framework with reactivity system and single-file components
-- **Express** — Minimal and flexible Node.js web application framework
-- **Next.js** — React framework for production with hybrid rendering
-- **Svelte** — Compile-time framework that shifts work from runtime to build step
+- **React** — UI declarativa com virtual DOM e modelo de componentes
+- **Vue** — framework progressivo com sistema de reatividade e single-file components
+- **Express** — framework web mínimo e flexível para Node.js
+- **Next.js** — framework React para produção com renderização híbrida
+- **Svelte** — framework em tempo de compilação que move trabalho do runtime para o build step
 
-## Example Language Notes
+## Exemplo de Notas da Linguagem
 
-> Closure captures outer `config` variable, providing encapsulated state without class
-> overhead. The returned object's methods share access to the same `config` reference,
-> forming a module pattern that was standard before ES Modules.
+> Closure captura a variável externa `config`, fornecendo estado encapsulado sem o
+> overhead de uma classe. Os métodos do objeto retornado compartilham acesso à mesma
+> referência de `config`, formando o module pattern que era padrão antes dos ES Modules.
 >
-> When encountering `.mjs` vs `.cjs` extensions, the module system is determined by
-> extension regardless of the `package.json` type field — useful in mixed codebases.
+> Ao encontrar extensões `.mjs` vs `.cjs`, o sistema de módulos é determinado pela
+> extensão independentemente do campo `type` do `package.json` — útil em codebases
+> mistos.

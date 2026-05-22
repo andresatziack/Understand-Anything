@@ -1,57 +1,57 @@
-# Express Framework Addendum
+# Adendo do Framework Express
 
-> Injected into file-analyzer and architecture-analyzer prompts when Express is detected.
-> Do NOT use as a standalone prompt — always appended to the base prompt template.
+> Injetado nos prompts do file-analyzer e do architecture-analyzer quando Express é detectado.
+> NÃO use como prompt independente — sempre anexado ao template de prompt base.
 
-## Express Project Structure
+## Estrutura de Projeto Express
 
-When analyzing an Express project, apply these additional conventions on top of the base analysis rules.
+Ao analisar um projeto Express, aplique estas convenções adicionais sobre as regras base de análise.
 
-### Canonical File Roles
+### Funções Canônicas de Arquivos
 
-| File / Pattern | Role | Tags |
+| Arquivo / Padrão | Função | Tags |
 |---|---|---|
-| `app.js`, `app.ts` | Application entry point — creates Express app, mounts middleware and routes | `entry-point`, `config` |
-| `server.js`, `server.ts`, `index.js`, `index.ts` | Server bootstrap — starts HTTP listener, may import app | `entry-point`, `config` |
-| `routes/*.js`, `routes/*.ts` | Route definitions — map HTTP methods and paths to handlers | `api-handler`, `routing` |
-| `controllers/*.js`, `controllers/*.ts` | Request handlers — process requests, orchestrate services, return responses | `api-handler`, `service` |
-| `models/*.js`, `models/*.ts` | Data models — Mongoose schemas, Sequelize models, or plain data definitions | `data-model` |
-| `middleware/*.js`, `middleware/*.ts` | Middleware functions — authentication, logging, validation, error handling | `middleware` |
-| `services/*.js`, `services/*.ts` | Business logic — domain operations decoupled from HTTP layer | `service` |
-| `db/*.js`, `db/*.ts`, `database/*.js` | Database connection and configuration | `data-model`, `config` |
-| `config/*.js`, `config/*.ts` | Application configuration — environment variables, feature flags | `config` |
-| `validators/*.js`, `validators/*.ts` | Request validation schemas (Joi, Zod, express-validator) | `validation`, `utility` |
-| `utils/*.js`, `utils/*.ts` | Shared utility functions | `utility` |
-| `tests/*.js`, `test/*.js`, `__tests__/*.js` | Unit and integration tests | `test` |
+| `app.js`, `app.ts` | Ponto de entrada da aplicação — cria o app Express, registra middleware e rotas | `entry-point`, `config` |
+| `server.js`, `server.ts`, `index.js`, `index.ts` | Bootstrap do servidor — inicia o listener HTTP, pode importar o app | `entry-point`, `config` |
+| `routes/*.js`, `routes/*.ts` | Definições de rotas — mapeiam métodos e caminhos HTTP para handlers | `api-handler`, `routing` |
+| `controllers/*.js`, `controllers/*.ts` | Tratadores de requisição — processam requisições, orquestram services, retornam respostas | `api-handler`, `service` |
+| `models/*.js`, `models/*.ts` | Modelos de dados — schemas do Mongoose, modelos do Sequelize ou definições de dados puras | `data-model` |
+| `middleware/*.js`, `middleware/*.ts` | Funções de middleware — autenticação, logging, validação, tratamento de erros | `middleware` |
+| `services/*.js`, `services/*.ts` | Lógica de negócio — operações de domínio desacopladas da camada HTTP | `service` |
+| `db/*.js`, `db/*.ts`, `database/*.js` | Conexão e configuração de banco de dados | `data-model`, `config` |
+| `config/*.js`, `config/*.ts` | Configuração da aplicação — variáveis de ambiente, feature flags | `config` |
+| `validators/*.js`, `validators/*.ts` | Schemas de validação de requisição (Joi, Zod, express-validator) | `validation`, `utility` |
+| `utils/*.js`, `utils/*.ts` | Funções utilitárias compartilhadas | `utility` |
+| `tests/*.js`, `test/*.js`, `__tests__/*.js` | Testes unitários e de integração | `test` |
 
-### Edge Patterns to Look For
+### Padrões de Aresta a Procurar
 
-**Route mounting** — When `app.use('/api/users', usersRouter)` mounts a router, create `depends_on` edges from the main app to the router module. These edges represent the HTTP routing tree.
+**Montagem de rotas** — Quando `app.use('/api/users', usersRouter)` monta um router, crie arestas `depends_on` do app principal para o módulo do router. Essas arestas representam a árvore de roteamento HTTP.
 
-**Middleware chain** — When `app.use(cors())`, `app.use(authMiddleware)`, or `router.use(validate)` registers middleware, create middleware edges from the app or router to the middleware function. Order matters — middleware executes in registration order.
+**Cadeia de middleware** — Quando `app.use(cors())`, `app.use(authMiddleware)` ou `router.use(validate)` registra um middleware, crie arestas de middleware do app ou router para a função de middleware. A ordem importa — middleware é executado na ordem de registro.
 
-**Controller-to-service calls** — When a controller imports and calls a service function, create `depends_on` edges from the controller to the service. This represents the separation between HTTP handling and business logic.
+**Chamadas controller-service** — Quando um controller importa e chama uma função de service, crie arestas `depends_on` do controller para o service. Isso representa a separação entre tratamento HTTP e lógica de negócio.
 
-**Model relationships** — When models reference each other (Mongoose `ref`, Sequelize associations), create `depends_on` edges between model files with descriptions indicating the relationship type.
+**Relacionamentos de modelos** — Quando modelos referenciam uns aos outros (`ref` do Mongoose, associations do Sequelize), crie arestas `depends_on` entre os arquivos de modelo com descrições indicando o tipo de relacionamento.
 
-### Architectural Layers for Express
+### Camadas Arquiteturais para Express
 
-Assign nodes to these layers when detected:
+Atribua nós a estas camadas quando detectadas:
 
-| Layer ID | Layer Name | What Goes Here |
+| ID da Camada | Nome da Camada | O Que Vai Aqui |
 |---|---|---|
-| `layer:api` | API Layer | `routes/`, `controllers/`, request validators |
-| `layer:data` | Data Layer | `models/`, `db/`, migration files, seeders |
-| `layer:service` | Service Layer | `services/`, business logic modules |
-| `layer:middleware` | Middleware Layer | `middleware/`, error handlers, authentication, logging |
-| `layer:config` | Config Layer | `app.js`, `config/`, environment setup, `server.js` |
-| `layer:utility` | Utility Layer | `utils/`, `helpers/`, shared pure functions |
+| `layer:api` | API Layer | `routes/`, `controllers/`, validadores de requisição |
+| `layer:data` | Data Layer | `models/`, `db/`, arquivos de migration, seeders |
+| `layer:service` | Service Layer | `services/`, módulos de lógica de negócio |
+| `layer:middleware` | Middleware Layer | `middleware/`, tratadores de erro, autenticação, logging |
+| `layer:config` | Config Layer | `app.js`, `config/`, configuração de ambiente, `server.js` |
+| `layer:utility` | Utility Layer | `utils/`, `helpers/`, funções puras compartilhadas |
 | `layer:test` | Test Layer | `tests/`, `__tests__/`, `*.test.js`, `*.spec.js` |
 
-### Notable Patterns to Capture in languageLesson
+### Padrões Notáveis a Capturar em languageLesson
 
-- **Middleware chain (req, res, next)**: Express processes requests through a pipeline of middleware functions — each receives the request, response, and a `next()` callback to pass control forward
-- **Error-handling middleware (4 params)**: Middleware with signature `(err, req, res, next)` catches errors — must be registered after all routes to act as a global error handler
-- **Router modularity**: `express.Router()` creates modular, mountable route handlers that can be composed into the main app at different path prefixes
-- **MVC pattern**: Express apps commonly separate concerns into Models (data), Views (response formatting), and Controllers (request handling)
-- **Body parsing and validation**: Request body parsing (`express.json()`, `express.urlencoded()`) and validation (Joi, Zod, express-validator) are middleware concerns applied before route handlers
+- **Cadeia de middleware (req, res, next)**: o Express processa requisições por uma pipeline de funções de middleware — cada uma recebe a requisição, a resposta e um callback `next()` para passar o controle adiante
+- **Middleware de tratamento de erros (4 parâmetros)**: middleware com a assinatura `(err, req, res, next)` captura erros — deve ser registrado depois de todas as rotas para atuar como tratador global de erros
+- **Modularidade do Router**: `express.Router()` cria handlers de rota modulares e montáveis, que podem ser compostos no app principal sob diferentes prefixos de caminho
+- **Padrão MVC**: aplicações Express geralmente separam responsabilidades em Models (dados), Views (formatação de resposta) e Controllers (tratamento de requisição)
+- **Parsing e validação de body**: o parsing do body da requisição (`express.json()`, `express.urlencoded()`) e a validação (Joi, Zod, express-validator) são preocupações de middleware aplicadas antes dos handlers de rota

@@ -1,53 +1,53 @@
-# Flask Framework Addendum
+# Adendo do Framework Flask
 
-> Injected into file-analyzer and architecture-analyzer prompts when Flask is detected.
-> Do NOT use as a standalone prompt — always appended to the base prompt template.
+> Injetado nos prompts do file-analyzer e do architecture-analyzer quando Flask é detectado.
+> NÃO use como prompt independente — sempre anexado ao template de prompt base.
 
-## Flask Project Structure
+## Estrutura de Projeto Flask
 
-When analyzing a Flask project, apply these additional conventions on top of the base analysis rules.
+Ao analisar um projeto Flask, aplique estas convenções adicionais sobre as regras base de análise.
 
-### Canonical File Roles
+### Funções Canônicas de Arquivos
 
-| File / Pattern | Role | Tags |
+| Arquivo / Padrão | Função | Tags |
 |---|---|---|
-| `app.py`, `__init__.py` (in app package) | Application factory (`create_app()`) or direct `Flask(__name__)` instance | `entry-point`, `config` |
-| `run.py`, `wsgi.py` | Production/dev server entry point | `entry-point`, `config` |
-| `*/views.py`, `*/routes.py` | Route handler functions with `@app.route` or `@blueprint.route` | `api-handler`, `routing` |
-| `*/blueprints/*.py`, `*/api/*.py` | Blueprint modules — group routes by feature | `api-handler`, `routing` |
-| `*/models.py` | SQLAlchemy models or other ORM models | `data-model` |
-| `*/forms.py` | WTForms form classes | `validation`, `ui` |
-| `*/schemas.py` | Marshmallow serialization schemas | `serialization`, `type-definition` |
-| `*/config.py` | Config classes (`DevelopmentConfig`, `ProductionConfig`) | `config` |
-| `*/extensions.py` | Flask extension initialization (`db = SQLAlchemy()`, `login_manager = LoginManager()`) | `config`, `singleton` |
-| `*/decorators.py` | Custom route decorators (auth guards, rate limiting) | `middleware`, `utility` |
-| `*/utils.py`, `*/helpers.py` | Shared utility functions | `utility` |
-| `*/templates/**/*.html` | Jinja2 templates | `ui` |
-| `*/static/` | CSS, JS, and asset files | `assets` |
-| `*/tests/*.py`, `test_*.py` | pytest or unittest test files | `test` |
+| `app.py`, `__init__.py` (no pacote do app) | Application factory (`create_app()`) ou instância direta `Flask(__name__)` | `entry-point`, `config` |
+| `run.py`, `wsgi.py` | Ponto de entrada do servidor de produção/desenvolvimento | `entry-point`, `config` |
+| `*/views.py`, `*/routes.py` | Funções tratadoras de rota com `@app.route` ou `@blueprint.route` | `api-handler`, `routing` |
+| `*/blueprints/*.py`, `*/api/*.py` | Módulos de blueprint — agrupam rotas por feature | `api-handler`, `routing` |
+| `*/models.py` | Modelos do SQLAlchemy ou outros modelos de ORM | `data-model` |
+| `*/forms.py` | Classes de form do WTForms | `validation`, `ui` |
+| `*/schemas.py` | Schemas de serialização do Marshmallow | `serialization`, `type-definition` |
+| `*/config.py` | Classes de configuração (`DevelopmentConfig`, `ProductionConfig`) | `config` |
+| `*/extensions.py` | Inicialização de extensões do Flask (`db = SQLAlchemy()`, `login_manager = LoginManager()`) | `config`, `singleton` |
+| `*/decorators.py` | Decorators de rota customizados (auth guards, rate limiting) | `middleware`, `utility` |
+| `*/utils.py`, `*/helpers.py` | Funções utilitárias compartilhadas | `utility` |
+| `*/templates/**/*.html` | Templates Jinja2 | `ui` |
+| `*/static/` | Arquivos de CSS, JS e demais assets | `assets` |
+| `*/tests/*.py`, `test_*.py` | Arquivos de teste do pytest ou unittest | `test` |
 
-### Edge Patterns to Look For
+### Padrões de Aresta a Procurar
 
-**Blueprint registration** — When `app.register_blueprint(bp, url_prefix='/api')` appears in the application factory, create `depends_on` edges from the app factory to each blueprint module.
+**Registro de blueprints** — Quando `app.register_blueprint(bp, url_prefix='/api')` aparece na application factory, crie arestas `depends_on` da factory do app para cada módulo de blueprint.
 
-**Extension coupling** — When a view imports from `extensions.py` (e.g., `from .extensions import db, login_manager`), create `imports` edges to show which views depend on which extensions.
+**Acoplamento via extensões** — Quando uma view importa de `extensions.py` (por exemplo, `from .extensions import db, login_manager`), crie arestas `imports` para mostrar quais views dependem de quais extensões.
 
-**Before/after request hooks** — When `@app.before_request` or `@blueprint.before_request` decorates a function, create `middleware` edges from those functions to the app/blueprint they attach to.
+**Hooks before/after request** — Quando `@app.before_request` ou `@blueprint.before_request` decora uma função, crie arestas de middleware dessas funções para o app/blueprint ao qual elas se conectam.
 
-### Architectural Layers for Flask
+### Camadas Arquiteturais para Flask
 
-| Layer ID | Layer Name | What Goes Here |
+| ID da Camada | Nome da Camada | O Que Vai Aqui |
 |---|---|---|
-| `layer:api` | API Layer | Blueprint route files, view functions |
-| `layer:data` | Data Layer | `models.py`, database migration files |
-| `layer:service` | Service Layer | Business logic modules, `schemas.py`, service classes |
+| `layer:api` | API Layer | Arquivos de rota de blueprints, funções de view |
+| `layer:data` | Data Layer | `models.py`, arquivos de migration de banco |
+| `layer:service` | Service Layer | Módulos de lógica de negócio, `schemas.py`, classes de service |
 | `layer:ui` | UI Layer | `templates/`, `forms.py`, `static/` |
-| `layer:config` | Config Layer | `app.py` factory, `config.py`, `extensions.py` |
-| `layer:middleware` | Middleware Layer | `decorators.py`, before/after request hooks |
-| `layer:test` | Test Layer | Test files, `conftest.py` |
+| `layer:config` | Config Layer | Factory `app.py`, `config.py`, `extensions.py` |
+| `layer:middleware` | Middleware Layer | `decorators.py`, hooks before/after request |
+| `layer:test` | Test Layer | Arquivos de teste, `conftest.py` |
 
-### Notable Patterns to Capture in languageLesson
+### Padrões Notáveis a Capturar em languageLesson
 
-- **Application factory pattern**: `create_app()` functions allow multiple app instances (e.g., for testing) and delay extension initialization — avoids circular imports
-- **Blueprint modularity**: Blueprints group related routes, templates, and static files; they are registered on the app with a URL prefix, making them independently testable
-- **Flask extension protocol**: Extensions follow `init_app(app)` for lazy initialization — the extension object is created globally but bound to an app instance later
+- **Padrão application factory**: funções `create_app()` permitem múltiplas instâncias do app (por exemplo, para testes) e adiam a inicialização de extensões — evita imports circulares
+- **Modularidade de blueprints**: blueprints agrupam rotas, templates e arquivos estáticos relacionados; são registrados no app com um prefixo de URL, tornando-os testáveis de forma independente
+- **Protocolo de extensões do Flask**: extensões seguem o padrão `init_app(app)` para inicialização preguiçosa — o objeto da extensão é criado globalmente, mas vinculado a uma instância do app posteriormente

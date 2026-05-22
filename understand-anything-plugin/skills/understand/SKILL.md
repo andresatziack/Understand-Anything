@@ -6,31 +6,31 @@ argument-hint: ["[path] [--full|--auto-update|--no-auto-update|--review|--langua
 
 # /understand
 
-Analyze the current codebase and produce a `knowledge-graph.json` file in `.understand-anything/`. This file powers the interactive dashboard for exploring the project's architecture.
+Analise o codebase atual e produza um arquivo `knowledge-graph.json` em `.understand-anything/`. Esse arquivo alimenta o dashboard interativo para exploração da arquitetura do projeto.
 
-## Options
+## Opções
 
-- `$ARGUMENTS` may contain:
-  - `--full` — Force a full rebuild, ignoring any existing graph
-  - `--auto-update` — Enable automatic graph updates on commit (writes `autoUpdate: true` to `.understand-anything/config.json`)
-  - `--no-auto-update` — Disable automatic graph updates (writes `autoUpdate: false` to `.understand-anything/config.json`)
-  - `--review` — Run full LLM graph-reviewer instead of inline deterministic validation
-  - `--language <lang>` — Generate all textual content (summaries, descriptions, tags, titles, languageNotes, languageLesson) in the specified language. Accepts ISO 639-1 codes (`zh`, `ja`, `ko`, `en`, `es`, `fr`, `de`, etc.) or friendly names (`chinese`, `japanese`, `korean`, `english`, `spanish`, etc.). Locale variants supported: `zh-TW`, `zh-HK`, etc. Defaults to `en` (English). Stores preference in `.understand-anything/config.json` for consistency across incremental updates.
-  - A directory path (e.g. `/path/to/repo` or `../other-project`) — Analyze the given directory instead of the current working directory
+- `$ARGUMENTS` pode conter:
+  - `--full` — Força um rebuild completo, ignorando qualquer grafo existente
+  - `--auto-update` — Habilita atualizações automáticas do grafo no commit (grava `autoUpdate: true` em `.understand-anything/config.json`)
+  - `--no-auto-update` — Desabilita atualizações automáticas do grafo (grava `autoUpdate: false` em `.understand-anything/config.json`)
+  - `--review` — Roda o LLM graph-reviewer completo em vez da validação determinística inline
+  - `--language <lang>` — Gera todo o conteúdo textual (summaries, descriptions, tags, titles, languageNotes, languageLesson) no idioma especificado. Aceita códigos ISO 639-1 (`zh`, `ja`, `ko`, `en`, `es`, `fr`, `de`, etc.) ou nomes amigáveis (`chinese`, `japanese`, `korean`, `english`, `spanish`, etc.). Variantes de locale suportadas: `zh-TW`, `zh-HK`, etc. Padrão `en` (Inglês). Armazena a preferência em `.understand-anything/config.json` para consistência ao longo de atualizações incrementais.
+  - Um caminho de diretório (ex.: `/path/to/repo` ou `../other-project`) — Analisa o diretório informado em vez do diretório de trabalho atual
 
 ---
 
-## Phase 0 — Pre-flight
+## Fase 0 — Pré-execução
 
-Determine whether to run a full analysis or incremental update.
+Determine se deve rodar uma análise completa ou uma atualização incremental.
 
-1. **Resolve `PROJECT_ROOT`:**
-   - Parse `$ARGUMENTS` for a non-flag token (any argument that does not start with `--`). If found, treat it as the target directory path.
-     - If the path is relative, resolve it against the current working directory.
-     - Verify the resolved path exists and is a directory (run `test -d <path>`). If it does not exist or is not a directory, report an error to the user and **STOP**.
-     - Set `PROJECT_ROOT` to the resolved absolute path.
-   - If no directory path argument is found, set `PROJECT_ROOT` to the current working directory.
-   - **Worktree redirect.** If `PROJECT_ROOT` is inside a git worktree (not the main checkout), redirect output to the main repository root. Worktrees managed by Claude Code are ephemeral — `.understand-anything/` written there is destroyed when the session ends, taking the knowledge graph with it (issue #133). Detect a worktree by comparing `git rev-parse --git-dir` against `git rev-parse --git-common-dir`; in a normal checkout or submodule they resolve to the same path, in a worktree they differ and the parent of `--git-common-dir` is the main repo root.
+1. **Resolva `PROJECT_ROOT`:**
+   - Faça parse de `$ARGUMENTS` em busca de um token que não seja flag (qualquer argumento que não comece com `--`). Se encontrado, trate-o como caminho do diretório alvo.
+     - Se o caminho for relativo, resolva-o contra o diretório de trabalho atual.
+     - Verifique se o caminho resolvido existe e é um diretório (rode `test -d <path>`). Se não existir ou não for um diretório, reporte um erro ao usuário e **PARE**.
+     - Defina `PROJECT_ROOT` como o caminho absoluto resolvido.
+   - Se nenhum argumento de caminho for encontrado, defina `PROJECT_ROOT` como o diretório de trabalho atual.
+   - **Redirecionamento de worktree.** Se `PROJECT_ROOT` está dentro de um git worktree (não o checkout principal), redirecione a saída para a raiz do repositório principal. Worktrees gerenciados pelo Claude Code são efêmeros — `.understand-anything/` gravado lá é destruído quando a sessão termina, levando junto o knowledge graph (issue #133). Detecte um worktree comparando `git rev-parse --git-dir` com `git rev-parse --git-common-dir`; em um checkout normal ou submódulo eles resolvem para o mesmo caminho, em um worktree eles diferem e o pai de `--git-common-dir` é a raiz do repo principal.
 
      ```bash
      COMMON_DIR=$(git -C "$PROJECT_ROOT" rev-parse --git-common-dir 2>/dev/null)
@@ -50,12 +50,12 @@ Determine whether to run a full analysis or incremental update.
      fi
      ```
 
-     Set `UNDERSTAND_NO_WORKTREE_REDIRECT=1` if you intentionally want a per-worktree graph (rare — most users want the redirect).
-1.5. **Ensure the plugin is built.** Later phases invoke Node scripts that import `@understand-anything/core`. On a fresh install `packages/core/dist/` does not exist yet — build once.
+     Defina `UNDERSTAND_NO_WORKTREE_REDIRECT=1` se intencionalmente quiser um grafo por worktree (raro — a maioria dos usuários quer o redirecionamento).
+1.5. **Garanta que o plugin esteja construído.** Fases posteriores invocam scripts Node que importam `@understand-anything/core`. Em uma instalação nova, `packages/core/dist/` ainda não existe — faça o build uma vez.
 
-   **Important:** do **not** assume the plugin root is simply two directories above the skill path string. In many installations `~/.agents/skills/understand` is a symlink into the real plugin checkout. Prefer runtime-provided plugin roots first (for Claude), then fall back to universal symlinks, skill symlink resolution, and common clone-based install paths.
+   **Importante:** **não** assuma que a raiz do plugin está simplesmente dois diretórios acima da string do caminho da skill. Em muitas instalações, `~/.agents/skills/understand` é um symlink para o checkout real do plugin. Prefira raízes de plugin fornecidas em runtime primeiro (para o Claude), e então faça fallback para symlinks universais, resolução de symlink da skill e caminhos comuns de instalação por clone.
 
-   Resolve the plugin root like this:
+   Resolva a raiz do plugin assim:
 
    ```bash
    SKILL_REAL=$(realpath ~/.agents/skills/understand 2>/dev/null || readlink -f ~/.agents/skills/understand 2>/dev/null || echo "")
@@ -99,84 +99,84 @@ Determine whether to run a full analysis or incremental update.
    fi
    ```
 
-   If `pnpm` is missing, report to the user: "Install Node.js ≥ 22 and pnpm ≥ 10, then re-run `/understand`."
+   Se `pnpm` estiver ausente, reporte ao usuário: "Install Node.js ≥ 22 and pnpm ≥ 10, then re-run `/understand`."
 
-2. Get the current git commit hash:
+2. Obtenha o hash do commit git atual:
    ```bash
    git rev-parse HEAD
    ```
-3. Create the intermediate and temp output directories:
+3. Crie os diretórios intermediários e de saída temporária:
    ```bash
    mkdir -p $PROJECT_ROOT/.understand-anything/intermediate
    mkdir -p $PROJECT_ROOT/.understand-anything/tmp
    ```
-3.5. **Auto-update configuration:**
-    - If `--auto-update` is in `$ARGUMENTS`: write `{"autoUpdate": true}` to `$PROJECT_ROOT/.understand-anything/config.json`
-    - If `--no-auto-update` is in `$ARGUMENTS`: write `{"autoUpdate": false}` to `$PROJECT_ROOT/.understand-anything/config.json`
-    - These flags only set the config — analysis proceeds normally regardless.
+3.5. **Configuração de auto-update:**
+    - Se `--auto-update` está em `$ARGUMENTS`: grave `{"autoUpdate": true}` em `$PROJECT_ROOT/.understand-anything/config.json`
+    - Se `--no-auto-update` está em `$ARGUMENTS`: grave `{"autoUpdate": false}` em `$PROJECT_ROOT/.understand-anything/config.json`
+    - Essas flags apenas definem a config — a análise prossegue normalmente em qualquer caso.
 
- 3.6. **Language configuration:**
-    - Parse `$ARGUMENTS` for `--language <lang>` flag. If found, extract the language code.
-    - **Language code normalization:** Map friendly names to ISO codes:
+ 3.6. **Configuração de idioma:**
+    - Faça parse de `$ARGUMENTS` em busca da flag `--language <lang>`. Se encontrada, extraia o código de idioma.
+    - **Normalização de código de idioma:** Mapeie nomes amigáveis para códigos ISO:
       - `chinese` → `zh`, `japanese` → `ja`, `korean` → `ko`, `english` → `en`, `spanish` → `es`, `french` → `fr`, `german` → `de`, `portuguese` → `pt`, `russian` → `ru`, `arabic` → `ar`, etc.
-      - Locale variants: `zh-TW`, `zh-HK`, `zh-CN`, `pt-BR`, etc. are preserved as-is.
-    - If `--language` is NOT specified:
-      - Check `$PROJECT_ROOT/.understand-anything/config.json` for an existing `outputLanguage` field. If present, use that.
-      - If no stored preference, default to `en` (English).
-    - If `--language` IS specified:
-      - Update `$PROJECT_ROOT/.understand-anything/config.json` with the new language: merge `{"outputLanguage": "<lang>"}` into existing config.
-      - Store as `$OUTPUT_LANGUAGE` for use throughout all phases.
-    - **Language directive template:** Store as `$LANGUAGE_DIRECTIVE`:
+      - Variantes de locale: `zh-TW`, `zh-HK`, `zh-CN`, `pt-BR`, etc. são preservadas como estão.
+    - Se `--language` NÃO for especificado:
+      - Verifique `$PROJECT_ROOT/.understand-anything/config.json` em busca de um campo `outputLanguage` existente. Se presente, use-o.
+      - Se não houver preferência armazenada, use o padrão `en` (Inglês).
+    - Se `--language` FOR especificado:
+      - Atualize `$PROJECT_ROOT/.understand-anything/config.json` com o novo idioma: mescle `{"outputLanguage": "<lang>"}` na config existente.
+      - Armazene como `$OUTPUT_LANGUAGE` para uso em todas as fases.
+    - **Template da diretiva de idioma:** Armazene como `$LANGUAGE_DIRECTIVE`:
       ```markdown
       > **Language directive**: Generate all textual content (summaries, descriptions, tags, titles, languageNotes, languageLesson) in **{language}**. Maintain technical accuracy while using natural, native-level phrasing in the target language. Keep technical terms in English when no standard translation exists (e.g., "middleware", "hook", "barrel").
       ```
 
- 4. **Check for subdomain knowledge graphs to merge:**
-   List all `*knowledge-graph*.json` files in `$PROJECT_ROOT/.understand-anything/` **excluding** `knowledge-graph.json` itself (e.g. `frontend-knowledge-graph.json`, `backend-knowledge-graph.json`). If any subdomain graphs exist, run the merge script bundled with this skill (located next to this SKILL.md file — use the skill directory path, not the project root):
+ 4. **Verifique knowledge graphs de subdomínio para mesclar:**
+   Liste todos os arquivos `*knowledge-graph*.json` em `$PROJECT_ROOT/.understand-anything/` **excluindo** o próprio `knowledge-graph.json` (ex.: `frontend-knowledge-graph.json`, `backend-knowledge-graph.json`). Se houver grafos de subdomínio, execute o script de merge empacotado com esta skill (localizado ao lado deste SKILL.md — use o caminho do diretório da skill, não a raiz do projeto):
    ```bash
    python <SKILL_DIR>/merge-subdomain-graphs.py $PROJECT_ROOT
    ```
-   The script discovers subdomain graphs, loads the existing `knowledge-graph.json` as a base (if present), and merges everything into `knowledge-graph.json` (deduplicating nodes and edges). Report the merge summary to the user, then continue with the merged graph.
+   O script descobre os grafos de subdomínio, carrega o `knowledge-graph.json` existente como base (se houver) e mescla tudo em `knowledge-graph.json` (deduplicando nós e arestas). Reporte o resumo do merge ao usuário e prossiga com o grafo mesclado.
 
-5. Check if `$PROJECT_ROOT/.understand-anything/knowledge-graph.json` exists. If it does, read it.
-6. Check if `$PROJECT_ROOT/.understand-anything/meta.json` exists. If it does, read it to get `gitCommitHash`.
-7. **Decision logic:**
+5. Verifique se `$PROJECT_ROOT/.understand-anything/knowledge-graph.json` existe. Se sim, leia-o.
+6. Verifique se `$PROJECT_ROOT/.understand-anything/meta.json` existe. Se sim, leia-o para obter `gitCommitHash`.
+7. **Lógica de decisão:**
 
-   | Condition | Action |
+   | Condição | Ação |
    |---|---|
-   | `--full` flag in `$ARGUMENTS` | Full analysis (all phases) |
-   | No existing graph or meta | Full analysis (all phases) |
-   | `--review` flag + existing graph + unchanged commit hash | Skip to Phase 6 (review-only — reuse existing assembled graph) |
-   | Existing graph + unchanged commit hash | Ask the user: "The graph is up to date at this commit. Would you like to: **(a)** run a full rebuild (`--full`), **(b)** run the LLM graph reviewer (`--review`), or **(c)** do nothing?" Then follow their choice. If they pick (c), STOP. |
-   | Existing graph + changed files | Incremental update (re-analyze changed files only) |
+   | Flag `--full` em `$ARGUMENTS` | Análise completa (todas as fases) |
+   | Sem grafo ou meta existente | Análise completa (todas as fases) |
+   | Flag `--review` + grafo existente + hash de commit inalterado | Pule para a Fase 6 (apenas review — reuse o assembled graph existente) |
+   | Grafo existente + hash de commit inalterado | Pergunte ao usuário: "The graph is up to date at this commit. Would you like to: **(a)** run a full rebuild (`--full`), **(b)** run the LLM graph reviewer (`--review`), or **(c)** do nothing?" Em seguida, siga a escolha. Se ele escolher (c), PARE. |
+   | Grafo existente + arquivos alterados | Atualização incremental (reanalise apenas os arquivos alterados) |
 
-   **Review-only path:** Copy the existing `knowledge-graph.json` to `$PROJECT_ROOT/.understand-anything/intermediate/assembled-graph.json`, then jump directly to Phase 6 step 3.
+   **Caminho apenas-review:** Copie o `knowledge-graph.json` existente para `$PROJECT_ROOT/.understand-anything/intermediate/assembled-graph.json` e pule diretamente para o passo 3 da Fase 6.
 
-   For incremental updates, get the changed file list:
+   Para atualizações incrementais, obtenha a lista de arquivos alterados:
    ```bash
    git diff <lastCommitHash>..HEAD --name-only
    ```
-   If this returns no files, report "Graph is up to date" and STOP.
+   Se isso não retornar arquivos, reporte "Graph is up to date" e PARE.
 
-8. **Collect project context for subagent injection:**
-   - Read `README.md` (or `README.rst`, `readme.md`) from `$PROJECT_ROOT` if it exists. Store as `$README_CONTENT` (first 3000 characters).
-   - Read the primary package manifest (`package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `pom.xml`) if it exists. Store as `$MANIFEST_CONTENT`.
-   - Capture the top-level directory tree:
+8. **Colete contexto do projeto para injeção em subagentes:**
+   - Leia `README.md` (ou `README.rst`, `readme.md`) de `$PROJECT_ROOT` se existir. Armazene como `$README_CONTENT` (primeiros 3000 caracteres).
+   - Leia o manifesto principal de pacote (`package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `pom.xml`) se existir. Armazene como `$MANIFEST_CONTENT`.
+   - Capture a árvore de diretórios de topo:
      ```bash
      find $PROJECT_ROOT -maxdepth 2 -type f -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/dist/*' | head -100
      ```
-     Store as `$DIR_TREE`.
-   - Detect the project entry point by checking for common patterns (in order): `src/index.ts`, `src/main.ts`, `src/App.tsx`, `index.js`, `main.py`, `manage.py`, `app.py`, `wsgi.py`, `asgi.py`, `run.py`, `__main__.py`, `main.go`, `cmd/*/main.go`, `src/main.rs`, `src/lib.rs`, `src/main/java/**/Application.java`, `Program.cs`, `config.ru`, `index.php`. Store first match as `$ENTRY_POINT`.
+     Armazene como `$DIR_TREE`.
+   - Detecte o entry-point do projeto verificando padrões comuns (em ordem): `src/index.ts`, `src/main.ts`, `src/App.tsx`, `index.js`, `main.py`, `manage.py`, `app.py`, `wsgi.py`, `asgi.py`, `run.py`, `__main__.py`, `main.go`, `cmd/*/main.go`, `src/main.rs`, `src/lib.rs`, `src/main/java/**/Application.java`, `Program.cs`, `config.ru`, `index.php`. Armazene o primeiro match como `$ENTRY_POINT`.
 
 ---
 
-## Phase 0.5 — Ignore Configuration
+## Fase 0.5 — Configuração de Ignore
 
-Set up and verify the `.understandignore` file before scanning.
+Configure e verifique o arquivo `.understandignore` antes da varredura.
 
-1. Check if `$PROJECT_ROOT/.understand-anything/.understandignore` exists.
-2. **If it does NOT exist**, generate a starter file:
-   - Run the following Node.js one-liner in `$PROJECT_ROOT` (reads `.gitignore` and deduplicates against built-in defaults):
+1. Verifique se `$PROJECT_ROOT/.understand-anything/.understandignore` existe.
+2. **Se NÃO existir**, gere um arquivo inicial:
+   - Execute o seguinte one-liner em Node.js em `$PROJECT_ROOT` (lê `.gitignore` e deduplica contra defaults built-in):
      ```bash
      node -e "
      const fs = require('fs');
@@ -201,19 +201,19 @@ Set up and verify the `.understandignore` file before scanning.
      fs.writeFileSync(path.join(outDir, '.understandignore'), header + body);
      "
      ```
-   - Report to the user:
+   - Reporte ao usuário:
      > Generated `.understand-anything/.understandignore` with suggested exclusions based on your project structure. Please review it and uncomment any patterns you'd like to exclude from analysis. When ready, confirm to continue.
-   - **Wait for user confirmation before proceeding.**
-3. **If it already exists**, report:
+   - **Aguarde a confirmação do usuário antes de prosseguir.**
+3. **Se já existir**, reporte:
    > Found `.understand-anything/.understandignore`. Review it if needed, then confirm to continue.
-   - **Wait for user confirmation before proceeding.**
-4. After confirmation, proceed to Phase 1.
+   - **Aguarde a confirmação do usuário antes de prosseguir.**
+4. Após confirmação, prossiga para a Fase 1.
 
 ---
 
-## Phase 1 — SCAN (Full analysis only)
+## Fase 1 — SCAN (apenas análise completa)
 
-Dispatch a subagent using the `project-scanner` agent definition (at `agents/project-scanner.md`). Append the following additional context:
+Despache um subagente usando a definição de agente `project-scanner` (em `agents/project-scanner.md`). Anexe o seguinte contexto adicional:
 
 > **Additional context from main session:**
 >
@@ -231,46 +231,46 @@ Dispatch a subagent using the `project-scanner` agent definition (at `agents/pro
 >
 > $LANGUAGE_DIRECTIVE
 
-Pass these parameters in the dispatch prompt:
+Passe estes parâmetros no prompt de despacho:
 
 > Scan this project directory to discover all project files (including non-code files like configs, docs, infrastructure), detect languages and frameworks.
 > Project root: `$PROJECT_ROOT`
 > Write output to: `$PROJECT_ROOT/.understand-anything/intermediate/scan-result.json`
 
-After the subagent completes, read `$PROJECT_ROOT/.understand-anything/intermediate/scan-result.json` to get:
-- Project name, description
-- Languages, frameworks
-- File list with line counts and `fileCategory` per file (`code`, `config`, `docs`, `infra`, `data`, `script`, `markup`)
-- Complexity estimate
-- Import map (`importMap`): pre-resolved project-internal imports per file (non-code files have empty arrays)
+Após o subagente concluir, leia `$PROJECT_ROOT/.understand-anything/intermediate/scan-result.json` para obter:
+- Nome do projeto, descrição
+- Linguagens, frameworks
+- Lista de arquivos com contagens de linha e `fileCategory` por arquivo (`code`, `config`, `docs`, `infra`, `data`, `script`, `markup`)
+- Estimativa de complexidade
+- Mapa de imports (`importMap`): imports internos do projeto pré-resolvidos por arquivo (arquivos não-código têm arrays vazios)
 
-Store `importMap` in memory as `$IMPORT_MAP` for use in Phase 2 batch construction.
-Store the file list as `$FILE_LIST` with `fileCategory` metadata for use in Phase 2 batch construction.
+Armazene `importMap` em memória como `$IMPORT_MAP` para uso na construção de batches da Fase 2.
+Armazene a lista de arquivos como `$FILE_LIST` com metadados de `fileCategory` para uso na construção de batches da Fase 2.
 
-**Gate check:** If >100 files, inform the user and suggest scoping with a subdirectory argument. Proceed only if user confirms or add guidance that this may take a while.
+**Gate check:** Se houver >100 arquivos, informe o usuário e sugira escopar com um argumento de subdiretório. Prossiga apenas se o usuário confirmar ou avise que isso pode demorar.
 
-If the scan result includes `filteredByIgnore > 0`, report:
+Se o resultado do scan incluir `filteredByIgnore > 0`, reporte:
 > Excluded {filteredByIgnore} files via `.understandignore`.
 
 ---
 
-## Phase 2 — ANALYZE
+## Fase 2 — ANALYZE
 
-### Full analysis path
+### Caminho de análise completa
 
-Batch the file list from Phase 1 into groups of **20-30 files each** (aim for ~25 files per batch for balanced sizes).
+Faça batch da lista de arquivos da Fase 1 em grupos de **20 a 30 arquivos cada** (mire em ~25 arquivos por batch para tamanhos balanceados).
 
-**Batching strategy for non-code files:**
-- Group related non-code files together in the same batch when possible:
-  - Dockerfile + docker-compose.yml + .dockerignore → same batch
-  - SQL migration files → same batch (ordered by filename)
-  - CI/CD config files (.github/workflows/*) → same batch
-  - Documentation files (docs/*.md) → same batch
-- This allows the file-analyzer to create cross-file edges (e.g., docker-compose `depends_on` Dockerfile)
-- Non-code files can be mixed with code files in the same batch if batch sizes are small
-- Each file's `fileCategory` from Phase 1 must be included in the batch file list
+**Estratégia de batch para arquivos não-código:**
+- Agrupe arquivos não-código relacionados no mesmo batch quando possível:
+  - Dockerfile + docker-compose.yml + .dockerignore → mesmo batch
+  - Arquivos de migration SQL → mesmo batch (ordenados por nome de arquivo)
+  - Arquivos de config CI/CD (.github/workflows/*) → mesmo batch
+  - Arquivos de documentação (docs/*.md) → mesmo batch
+- Isso permite que o file-analyzer crie arestas cross-file (ex.: docker-compose `depends_on` Dockerfile)
+- Arquivos não-código podem ser misturados com arquivos de código no mesmo batch se os tamanhos forem pequenos
+- O `fileCategory` de cada arquivo, vindo da Fase 1, deve ser incluído na lista de arquivos do batch
 
-For each batch, dispatch a subagent using the `file-analyzer` agent definition (at `agents/file-analyzer.md`). Run up to **5 subagents concurrently** using parallel dispatch. Append the following additional context:
+Para cada batch, despache um subagente usando a definição de agente `file-analyzer` (em `agents/file-analyzer.md`). Execute até **5 subagentes concorrentemente** via despacho paralelo. Anexe o seguinte contexto adicional:
 
 > **Additional context from main session:**
 >
@@ -279,14 +279,14 @@ For each batch, dispatch a subagent using the `file-analyzer` agent definition (
 >
 > $LANGUAGE_DIRECTIVE
 
-Before dispatching each batch, construct `batchImportData` from `$IMPORT_MAP`:
+Antes de despachar cada batch, construa `batchImportData` a partir de `$IMPORT_MAP`:
 ```json
 batchImportData = {}
 for each file in this batch:
   batchImportData[file.path] = $IMPORT_MAP[file.path] ?? []
 ```
 
-Fill in batch-specific parameters below and dispatch:
+Preencha os parâmetros específicos do batch abaixo e despache:
 
 > Analyze these files and produce GraphNode and GraphEdge objects.
 > Project root: `$PROJECT_ROOT`
@@ -306,46 +306,46 @@ Fill in batch-specific parameters below and dispatch:
 > 2. `<path>` (<sizeLines> lines, language: `<language>`, fileCategory: `<fileCategory>`)
 > ...
 
-After ALL batches complete, run the merge-and-normalize script bundled with this skill (located next to this SKILL.md file — use the skill directory path, not the project root):
+Após TODOS os batches terminarem, execute o script de merge e normalização empacotado com esta skill (localizado ao lado deste SKILL.md — use o caminho do diretório da skill, não a raiz do projeto):
 ```bash
 python <SKILL_DIR>/merge-batch-graphs.py $PROJECT_ROOT
 ```
 
-This script reads all `batch-*.json` files from `$PROJECT_ROOT/.understand-anything/intermediate/`, then in one pass:
-- Combines all nodes and edges across batches
-- Normalizes node IDs (strips double prefixes, project-name prefixes, adds missing prefixes)
-- Normalizes complexity values (`low`→`simple`, `medium`→`moderate`, `high`→`complex`, etc.)
-- Rewrites edge references to match corrected node IDs
-- Deduplicates nodes by ID (keeps last occurrence) and edges by `(source, target, type)`
-- Drops dangling edges referencing missing nodes
-- Logs all corrections and dropped items to stderr
+Esse script lê todos os arquivos `batch-*.json` de `$PROJECT_ROOT/.understand-anything/intermediate/` e, em uma única passada:
+- Combina todos os nós e arestas entre batches
+- Normaliza IDs de nó (remove prefixos duplicados, prefixos de nome do projeto, adiciona prefixos faltantes)
+- Normaliza valores de complexidade (`low`→`simple`, `medium`→`moderate`, `high`→`complex`, etc.)
+- Reescreve referências de aresta para casar com os IDs de nó corrigidos
+- Deduplica nós por ID (mantém a última ocorrência) e arestas por `(source, target, type)`
+- Descarta arestas pendentes que referenciam nós ausentes
+- Registra todas as correções e itens descartados no stderr
 
-The merge script also runs a `tested_by` linker that canonicalizes test-coverage edges in two passes. **Pass 1** walks LLM-emitted `tested_by` edges and flips inverted ones in place (the LLM systematically emits `test → production` because it sees the import only when analyzing the test file); semantically broken edges (test↔test, prod↔prod, orphan endpoints) are dropped. **Pass 2** supplements with path-convention pairings (`X.ts` ↔ `X.test.ts`, JS/TS `__tests__/` and `<dir>/test/` walk-out, Python in-package `tests/`, Go `_test.go` sibling, Maven/Gradle `src/test/...` ↔ `src/main/...`, .NET `<svc>/tests/` ↔ `<svc>/src/...` and `<App>.Tests/` ↔ `<App>/`). Production nodes that end up sourcing any `tested_by` edge get a `"tested"` tag. All resulting edges run `production → test`.
+O script de merge também executa um linker `tested_by` que canoniza arestas de cobertura de teste em duas passadas. **Pass 1** percorre as arestas `tested_by` emitidas pelo LLM e inverte no lugar as que estão invertidas (o LLM sistematicamente emite `test → production` porque ele só vê o import quando analisa o arquivo de teste); arestas semanticamente quebradas (test↔test, prod↔prod, endpoints órfãos) são descartadas. **Pass 2** suplementa com pareamentos por convenção de caminho (`X.ts` ↔ `X.test.ts`, walk-out de `__tests__/` e `<dir>/test/` em JS/TS, `tests/` in-package em Python, sibling `_test.go` em Go, `src/test/...` ↔ `src/main/...` em Maven/Gradle, `<svc>/tests/` ↔ `<svc>/src/...` e `<App>.Tests/` ↔ `<App>/` em .NET). Nós de produção que acabam sendo origem de qualquer aresta `tested_by` recebem uma tag `"tested"`. Todas as arestas resultantes seguem `production → test`.
 
-Output: `$PROJECT_ROOT/.understand-anything/intermediate/assembled-graph.json`
+Saída: `$PROJECT_ROOT/.understand-anything/intermediate/assembled-graph.json`
 
-Include the script's warnings in `$PHASE_WARNINGS` for the reviewer.
+Inclua os warnings do script em `$PHASE_WARNINGS` para o reviewer.
 
-### Incremental update path
+### Caminho de atualização incremental
 
-Use the changed files list from Phase 0. Batch and dispatch file-analyzer subagents using the same process as above (20-30 files per batch, up to 5 concurrent, with batchImportData constructed from $IMPORT_MAP), but only for changed files.
+Use a lista de arquivos alterados da Fase 0. Faça batch e despache subagentes file-analyzer usando o mesmo processo acima (20 a 30 arquivos por batch, até 5 concorrentes, com batchImportData construído a partir de $IMPORT_MAP), mas apenas para arquivos alterados.
 
-After batches complete:
-1. Remove old nodes whose `filePath` matches any changed file from the existing graph
-2. Remove old edges whose `source` or `target` references a removed node
-3. Write the pruned existing nodes/edges as `batch-existing.json` in the intermediate directory
-4. Run the same merge script — it will combine `batch-existing.json` with the fresh `batch-*.json` files:
+Após os batches concluírem:
+1. Remova nós antigos cujo `filePath` casa com qualquer arquivo alterado a partir do grafo existente
+2. Remova arestas antigas cujo `source` ou `target` referencia um nó removido
+3. Grave os nós/arestas existentes podados como `batch-existing.json` no diretório intermediário
+4. Execute o mesmo script de merge — ele combinará `batch-existing.json` com os arquivos `batch-*.json` novos:
    ```bash
    python <SKILL_DIR>/merge-batch-graphs.py $PROJECT_ROOT
    ```
 
 ---
 
-## Phase 3 — ASSEMBLE REVIEW
+## Fase 3 — ASSEMBLE REVIEW
 
-Dispatch a subagent using the `assemble-reviewer` agent definition (at `agents/assemble-reviewer.md`).
+Despache um subagente usando a definição de agente `assemble-reviewer` (em `agents/assemble-reviewer.md`).
 
-Pass these parameters in the dispatch prompt:
+Passe estes parâmetros no prompt de despacho:
 
 > Review the assembled graph at `$PROJECT_ROOT/.understand-anything/intermediate/assembled-graph.json`.
 > Project root: `$PROJECT_ROOT`
@@ -362,19 +362,19 @@ Pass these parameters in the dispatch prompt:
 > $IMPORT_MAP
 > ```
 
-After the subagent completes, read `$PROJECT_ROOT/.understand-anything/intermediate/assemble-review.json` and add any notes to `$PHASE_WARNINGS`.
+Após o subagente concluir, leia `$PROJECT_ROOT/.understand-anything/intermediate/assemble-review.json` e adicione quaisquer notas a `$PHASE_WARNINGS`.
 
 ---
 
-## Phase 4 — ARCHITECTURE
+## Fase 4 — ARCHITECTURE
 
-**Build the combined prompt template:**
- 1. Use the `architecture-analyzer` agent definition (at `agents/architecture-analyzer.md`).
- 2. **Language context injection:** For each language detected in Phase 1 (e.g., `python`, `markdown`, `dockerfile`, `yaml`, `sql`, `terraform`, `graphql`, `protobuf`, `shell`, `html`, `css`), read the file at `./languages/<language-id>.md` (e.g., `./languages/python.md`, `./languages/dockerfile.md`) and append its content after the base template under a `## Language Context` header. If the file does not exist for a detected language, skip it silently and continue. These files are in the `languages/` subdirectory next to this SKILL.md file. **Include non-code language snippets** — they provide edge patterns and summary styles for non-code files.
- 3. **Framework addendum injection:** For each framework detected in Phase 1 (e.g., `Django`), read the file at `./frameworks/<framework-id-lowercase>.md` (e.g., `./frameworks/django.md`) and append its full content after the language context. If the file does not exist for a detected framework, skip it silently and continue. These files are in the `frameworks/` subdirectory next to this SKILL.md file.
- 4. **Output locale injection:** If `$OUTPUT_LANGUAGE` is NOT `en` (English), read the locale guidance file at `./locales/<language-code>.md` (e.g., `./locales/zh.md`, `./locales/ja.md`, `./locales/ko.md`) and append its content after the framework addendums under a `## Output Language Guidelines` header. This provides language-specific guidance for tag naming conventions, summary style, and layer name translations. If the locale file does not exist for the specified language, skip silently — the `$LANGUAGE_DIRECTIVE` still applies. These files are in the `locales/` subdirectory next to this SKILL.md file.
+**Construa o template de prompt combinado:**
+ 1. Use a definição de agente `architecture-analyzer` (em `agents/architecture-analyzer.md`).
+ 2. **Injeção de contexto de linguagem:** Para cada linguagem detectada na Fase 1 (ex.: `python`, `markdown`, `dockerfile`, `yaml`, `sql`, `terraform`, `graphql`, `protobuf`, `shell`, `html`, `css`), leia o arquivo em `./languages/<language-id>.md` (ex.: `./languages/python.md`, `./languages/dockerfile.md`) e anexe seu conteúdo após o template base sob um cabeçalho `## Language Context`. Se o arquivo não existir para uma linguagem detectada, pule silenciosamente e continue. Esses arquivos ficam no subdiretório `languages/` ao lado deste SKILL.md. **Inclua snippets de linguagem não-código** — eles fornecem padrões de aresta e estilos de summary para arquivos não-código.
+ 3. **Injeção de adendo de framework:** Para cada framework detectado na Fase 1 (ex.: `Django`), leia o arquivo em `./frameworks/<framework-id-lowercase>.md` (ex.: `./frameworks/django.md`) e anexe seu conteúdo completo após o contexto de linguagem. Se o arquivo não existir para um framework detectado, pule silenciosamente e continue. Esses arquivos ficam no subdiretório `frameworks/` ao lado deste SKILL.md.
+ 4. **Injeção de locale de saída:** Se `$OUTPUT_LANGUAGE` NÃO for `en` (Inglês), leia o arquivo de orientação de locale em `./locales/<language-code>.md` (ex.: `./locales/zh.md`, `./locales/ja.md`, `./locales/ko.md`) e anexe seu conteúdo após os adendos de framework sob um cabeçalho `## Output Language Guidelines`. Isso fornece orientações específicas de idioma para convenções de nomeação de tags, estilo de summary e traduções de nomes de camada. Se o arquivo de locale não existir para o idioma especificado, pule silenciosamente — o `$LANGUAGE_DIRECTIVE` continua em vigor. Esses arquivos ficam no subdiretório `locales/` ao lado deste SKILL.md.
 
-Append the language/framework context and the following additional context to the agent's prompt:
+Anexe o contexto de linguagem/framework e o seguinte contexto adicional ao prompt do agente:
 
 > **Additional context from main session:**
 >
@@ -389,7 +389,7 @@ Append the language/framework context and the following additional context to th
 >
 > $LANGUAGE_DIRECTIVE
 
-Pass these parameters in the dispatch prompt:
+Passe estes parâmetros no prompt de despacho:
 
 > Analyze this codebase's structure to identify architectural layers.
 > Project root: `$PROJECT_ROOT`
@@ -411,15 +411,15 @@ Pass these parameters in the dispatch prompt:
 > [list of ALL edges — include all edge types]
 > ```
 
-After the subagent completes, read `$PROJECT_ROOT/.understand-anything/intermediate/layers.json` and normalize it into a final `layers` array. Apply these steps **in order**:
+Após o subagente concluir, leia `$PROJECT_ROOT/.understand-anything/intermediate/layers.json` e normalize-o em um array `layers` final. Aplique estes passos **nesta ordem**:
 
-1. **Unwrap envelope:** If the file contains `{ "layers": [...] }` instead of a plain array, extract the inner array. (The prompt requests a plain array, but LLMs may still produce an envelope.)
-2. **Rename legacy fields:** If any layer object has a `nodes` field instead of `nodeIds`, rename `nodes` → `nodeIds`. If `nodes` entries are objects with an `id` field rather than plain strings, extract just the `id` values into `nodeIds`.
-3. **Synthesize missing IDs:** If any layer is missing an `id`, generate one as `layer:<kebab-case-name>`.
-4. **Convert file paths:** If `nodeIds` entries are raw file paths without a known prefix (`file:`, `config:`, `document:`, `service:`, `pipeline:`, `table:`, `schema:`, `resource:`, `endpoint:`), convert them to `file:<relative-path>`.
-5. **Drop dangling refs:** Remove any `nodeIds` entries that do not exist in the merged node set.
+1. **Desembrulhe o envelope:** Se o arquivo contiver `{ "layers": [...] }` em vez de um array puro, extraia o array interno. (O prompt pede um array puro, mas LLMs ainda podem produzir um envelope.)
+2. **Renomeie campos legados:** Se algum objeto de camada tiver um campo `nodes` em vez de `nodeIds`, renomeie `nodes` → `nodeIds`. Se as entradas de `nodes` forem objetos com um campo `id` em vez de strings simples, extraia apenas os valores de `id` para `nodeIds`.
+3. **Sintetize IDs ausentes:** Se alguma camada estiver sem `id`, gere um como `layer:<kebab-case-name>`.
+4. **Converta caminhos de arquivo:** Se entradas de `nodeIds` forem caminhos de arquivo nus sem prefixo conhecido (`file:`, `config:`, `document:`, `service:`, `pipeline:`, `table:`, `schema:`, `resource:`, `endpoint:`), converta-os para `file:<relative-path>`.
+5. **Descarte refs pendentes:** Remova quaisquer entradas de `nodeIds` que não existam no conjunto de nós mesclados.
 
-Each element of the final `layers` array MUST have this shape:
+Cada elemento do array final `layers` DEVE ter este formato:
 
 ```json
 [
@@ -432,11 +432,11 @@ Each element of the final `layers` array MUST have this shape:
 ]
 ```
 
-All four fields (`id`, `name`, `description`, `nodeIds`) are required.
+Os quatro campos (`id`, `name`, `description`, `nodeIds`) são obrigatórios.
 
-**For incremental updates:** Always re-run architecture analysis on the full merged node set, since layer assignments may shift when files change.
+**Para atualizações incrementais:** Sempre re-execute a análise de arquitetura sobre o conjunto completo de nós mesclados, já que as atribuições de camada podem mudar quando os arquivos mudam.
 
-**Context for incremental updates:** When re-running architecture analysis, also inject the previous layer definitions:
+**Contexto para atualizações incrementais:** Ao re-executar a análise de arquitetura, injete também as definições anteriores de camada:
 
 > Previous layer definitions (for naming consistency):
 > ```json
@@ -447,9 +447,9 @@ All four fields (`id`, `name`, `description`, `nodeIds`) are required.
 
 ---
 
-## Phase 5 — TOUR
+## Fase 5 — TOUR
 
-Dispatch a subagent using the `tour-builder` agent definition (at `agents/tour-builder.md`). Append the following additional context:
+Despache um subagente usando a definição de agente `tour-builder` (em `agents/tour-builder.md`). Anexe o seguinte contexto adicional:
 
 > **Additional context from main session:**
 >
@@ -464,7 +464,7 @@ Dispatch a subagent using the `tour-builder` agent definition (at `agents/tour-b
 >
 > $LANGUAGE_DIRECTIVE
 
-Pass these parameters in the dispatch prompt:
+Passe estes parâmetros no prompt de despacho:
 
 > Create a guided learning tour for this codebase.
 > Project root: `$PROJECT_ROOT`
@@ -487,15 +487,15 @@ Pass these parameters in the dispatch prompt:
 > [list of ALL edges — include all edge types for complete graph topology analysis]
 > ```
 
-After the subagent completes, read `$PROJECT_ROOT/.understand-anything/intermediate/tour.json` and normalize it into a final `tour` array. Apply these steps **in order**:
+Após o subagente concluir, leia `$PROJECT_ROOT/.understand-anything/intermediate/tour.json` e normalize-o em um array `tour` final. Aplique estes passos **nesta ordem**:
 
-1. **Unwrap envelope:** If the file contains `{ "steps": [...] }` instead of a plain array, extract the inner array. (The prompt requests a plain array, but LLMs may still produce an envelope.)
-2. **Rename legacy fields:** If any step has `nodesToInspect` instead of `nodeIds`, rename it → `nodeIds`. If any step has `whyItMatters` instead of `description`, rename it → `description`.
-3. **Convert file paths:** If `nodeIds` entries are raw file paths without a known prefix (`file:`, `config:`, `document:`, `service:`, `pipeline:`, `table:`, `schema:`, `resource:`, `endpoint:`), convert them to `file:<relative-path>`.
-4. **Drop dangling refs:** Remove any `nodeIds` entries that do not exist in the merged node set.
-5. **Sort** by `order` before saving.
+1. **Desembrulhe o envelope:** Se o arquivo contiver `{ "steps": [...] }` em vez de um array puro, extraia o array interno. (O prompt pede um array puro, mas LLMs ainda podem produzir um envelope.)
+2. **Renomeie campos legados:** Se algum passo tiver `nodesToInspect` em vez de `nodeIds`, renomeie → `nodeIds`. Se algum passo tiver `whyItMatters` em vez de `description`, renomeie → `description`.
+3. **Converta caminhos de arquivo:** Se entradas de `nodeIds` forem caminhos de arquivo nus sem prefixo conhecido (`file:`, `config:`, `document:`, `service:`, `pipeline:`, `table:`, `schema:`, `resource:`, `endpoint:`), converta-os para `file:<relative-path>`.
+4. **Descarte refs pendentes:** Remova quaisquer entradas de `nodeIds` que não existam no conjunto de nós mesclados.
+5. **Ordene** por `order` antes de salvar.
 
-Each element of the final `tour` array MUST have this shape:
+Cada elemento do array final `tour` DEVE ter este formato:
 
 ```json
 [
@@ -514,13 +514,13 @@ Each element of the final `tour` array MUST have this shape:
 ]
 ```
 
-Required fields: `order`, `title`, `description`, `nodeIds`. Preserve optional `languageLesson` when present.
+Campos obrigatórios: `order`, `title`, `description`, `nodeIds`. Preserve `languageLesson` opcional quando presente.
 
 ---
 
-## Phase 6 — REVIEW
+## Fase 6 — REVIEW
 
-Assemble the full KnowledgeGraph JSON object:
+Monte o objeto JSON completo do KnowledgeGraph:
 
 ```json
 {
@@ -540,24 +540,24 @@ Assemble the full KnowledgeGraph JSON object:
 }
 ```
 
-1. Before writing the assembled graph, validate that:
-   - `layers` is an array of objects with these required fields: `id`, `name`, `description`, `nodeIds`
-   - `tour` is an array of objects with these required fields: `order`, `title`, `description`, `nodeIds`
-   - `tour[*].languageLesson` is allowed as an optional string field
-   - Every `layers[*].nodeIds` entry exists in the merged node set
-   - Every `tour[*].nodeIds` entry exists in the merged node set
+1. Antes de gravar o assembled graph, valide que:
+   - `layers` é um array de objetos com estes campos obrigatórios: `id`, `name`, `description`, `nodeIds`
+   - `tour` é um array de objetos com estes campos obrigatórios: `order`, `title`, `description`, `nodeIds`
+   - `tour[*].languageLesson` é permitido como campo opcional do tipo string
+   - Toda entrada `layers[*].nodeIds` existe no conjunto de nós mesclados
+   - Toda entrada `tour[*].nodeIds` existe no conjunto de nós mesclados
 
-   If validation fails, automatically normalize and rewrite the graph into this shape before saving. If the graph still fails final validation after the normalization pass, save it with warnings but mark dashboard auto-launch as skipped.
+   Se a validação falhar, normalize automaticamente e regrave o grafo nesse formato antes de salvar. Se o grafo ainda falhar na validação final após o passo de normalização, salve-o com warnings mas marque o auto-launch do dashboard como pulado.
 
-2. Write the assembled graph to `$PROJECT_ROOT/.understand-anything/intermediate/assembled-graph.json`.
+2. Grave o assembled graph em `$PROJECT_ROOT/.understand-anything/intermediate/assembled-graph.json`.
 
-3. **Check `$ARGUMENTS` for `--review` flag.** Then run the appropriate validation path:
+3. **Verifique `$ARGUMENTS` pela flag `--review`.** Em seguida, execute o caminho de validação apropriado:
 
 ---
 
-#### Default path (no `--review`): inline deterministic validation
+#### Caminho default (sem `--review`): validação determinística inline
 
-Write the following Node.js script to `$PROJECT_ROOT/.understand-anything/tmp/ua-inline-validate.cjs`:
+Grave o seguinte script Node.js em `$PROJECT_ROOT/.understand-anything/tmp/ua-inline-validate.cjs`:
 
 ```javascript
 #!/usr/bin/env node
@@ -625,22 +625,22 @@ try {
 } catch (err) { process.stderr.write(err.message + '\n'); process.exit(1); }
 ```
 
-Execute it:
+Execute-o:
 ```bash
 node $PROJECT_ROOT/.understand-anything/tmp/ua-inline-validate.cjs \
   "$PROJECT_ROOT/.understand-anything/intermediate/assembled-graph.json" \
   "$PROJECT_ROOT/.understand-anything/intermediate/review.json"
 ```
 
-If the script exits non-zero, read stderr, fix the script, and retry once.
+Se o script sair com código diferente de zero, leia o stderr, corrija o script e tente uma vez mais.
 
 ---
 
-#### `--review` path: full LLM reviewer
+#### Caminho `--review`: reviewer LLM completo
 
-If `--review` IS in `$ARGUMENTS`, dispatch the LLM graph-reviewer subagent as follows:
+Se `--review` ESTIVER em `$ARGUMENTS`, despache o subagente LLM graph-reviewer da seguinte forma:
 
-Dispatch a subagent using the `graph-reviewer` agent definition (at `agents/graph-reviewer.md`). Append the following additional context:
+Despache um subagente usando a definição de agente `graph-reviewer` (em `agents/graph-reviewer.md`). Anexe o seguinte contexto adicional:
 
 > **Additional context from main session:**
 >
@@ -654,7 +654,7 @@ Dispatch a subagent using the `graph-reviewer` agent definition (at `agents/grap
 >
 > Cross-validate: every file in the scan inventory should have a corresponding node in the graph (node types may vary: `file:`, `config:`, `document:`, `service:`, `pipeline:`, `table:`, `schema:`, `resource:`, `endpoint:`). Flag any missing files. Also flag any graph nodes whose `filePath` doesn't appear in the scan inventory.
 
-Pass these parameters in the dispatch prompt:
+Passe estes parâmetros no prompt de despacho:
 
 > Validate the knowledge graph at `$PROJECT_ROOT/.understand-anything/intermediate/assembled-graph.json`.
 > Project root: `$PROJECT_ROOT`
@@ -663,28 +663,28 @@ Pass these parameters in the dispatch prompt:
 
 ---
 
-4. Read `$PROJECT_ROOT/.understand-anything/intermediate/review.json`.
+4. Leia `$PROJECT_ROOT/.understand-anything/intermediate/review.json`.
 
-5. **If `issues` array is non-empty:**
-   - Review the `issues` list
-   - Apply automated fixes where possible:
-     - Remove edges with dangling references
-     - Fill missing required fields with sensible defaults (e.g., empty `tags` -> `["untagged"]`, empty `summary` -> `"No summary available"`)
-     - Remove nodes with invalid types
-   - Re-run the final graph validation after automated fixes
-   - If critical issues remain after one fix attempt, save the graph anyway but include the warnings in the final report and mark dashboard auto-launch as skipped
+5. **Se o array `issues` estiver não vazio:**
+   - Revise a lista de `issues`
+   - Aplique correções automatizadas onde for possível:
+     - Remover arestas com referências pendentes
+     - Preencher campos obrigatórios ausentes com defaults sensatos (ex.: `tags` vazio -> `["untagged"]`, `summary` vazio -> `"No summary available"`)
+     - Remover nós com tipos inválidos
+   - Re-execute a validação final do grafo após as correções automatizadas
+   - Se problemas críticos persistirem após uma tentativa de correção, salve o grafo mesmo assim mas inclua os warnings no relatório final e marque o auto-launch do dashboard como pulado
 
-6. **If `issues` array is empty:** Proceed to Phase 7.
+6. **Se o array `issues` estiver vazio:** Prossiga para a Fase 7.
 
 ---
 
-## Phase 7 — SAVE
+## Fase 7 — SAVE
 
-1. Write the final knowledge graph to `$PROJECT_ROOT/.understand-anything/knowledge-graph.json`.
+1. Grave o knowledge graph final em `$PROJECT_ROOT/.understand-anything/knowledge-graph.json`.
 
-2. **Generate structural fingerprints baseline.** This creates the basis for future automatic incremental updates and **must succeed before `meta.json` is written** — otherwise auto-update sees a fresh commit hash with no fingerprints to compare against, classifies every file as STRUCTURAL, and escalates to `FULL_UPDATE` on every subsequent commit (issue #152).
+2. **Gere a baseline de fingerprints estruturais.** Isso cria a base para futuras atualizações incrementais automáticas e **deve ter sucesso antes que `meta.json` seja gravado** — caso contrário, o auto-update vê um hash de commit novo sem fingerprints para comparar, classifica todo arquivo como STRUCTURAL e escala para `FULL_UPDATE` em todo commit subsequente (issue #152).
 
-   Write the input file:
+   Grave o arquivo de entrada:
    ```bash
    cat > $PROJECT_ROOT/.understand-anything/intermediate/fingerprint-input.json <<EOF
    {
@@ -695,17 +695,17 @@ Pass these parameters in the dispatch prompt:
    EOF
    ```
 
-   Then invoke the bundled script (located next to this SKILL.md):
+   Em seguida, invoque o script empacotado (localizado ao lado deste SKILL.md):
    ```bash
    node <SKILL_DIR>/build-fingerprints.mjs \
      $PROJECT_ROOT/.understand-anything/intermediate/fingerprint-input.json
    ```
 
-   The script uses `TreeSitterPlugin + PluginRegistry` exactly like `extract-structure.mjs`, so the baseline matches the comparison logic used during auto-updates.
+   O script usa `TreeSitterPlugin + PluginRegistry` exatamente como `extract-structure.mjs`, então a baseline casa com a lógica de comparação usada durante auto-updates.
 
-   **If the script exits non-zero or stdout does not include `Fingerprints baseline:`, abort Phase 7 and report the error. Do NOT proceed to step 3 (writing `meta.json`).**
+   **Se o script sair com código diferente de zero ou o stdout não incluir `Fingerprints baseline:`, aborte a Fase 7 e reporte o erro. NÃO prossiga para o passo 3 (gravar `meta.json`).**
 
-3. Write metadata to `$PROJECT_ROOT/.understand-anything/meta.json` (only after step 2 succeeded):
+3. Grave os metadados em `$PROJECT_ROOT/.understand-anything/meta.json` (somente após o passo 2 ter sido bem-sucedido):
    ```json
    {
      "lastAnalyzedAt": "<ISO 8601 timestamp>",
@@ -715,70 +715,70 @@ Pass these parameters in the dispatch prompt:
    }
    ```
 
-4. Clean up intermediate files:
+4. Limpe os arquivos intermediários:
    ```bash
    rm -rf $PROJECT_ROOT/.understand-anything/intermediate
    rm -rf $PROJECT_ROOT/.understand-anything/tmp
    ```
 
-5. Report a summary to the user containing:
-   - Project name and description
-   - Files analyzed / total files (with breakdown by fileCategory: code, config, docs, infra, data, script, markup)
-   - Nodes created (broken down by type: file, function, class, config, document, service, table, endpoint, pipeline, schema, resource)
-   - Edges created (broken down by type)
-   - Layers identified (with names)
-   - Tour steps generated (count)
-   - Any warnings from the reviewer
-   - Path to the output file: `$PROJECT_ROOT/.understand-anything/knowledge-graph.json`
+5. Reporte um resumo ao usuário contendo:
+   - Nome e descrição do projeto
+   - Arquivos analisados / total de arquivos (com breakdown por fileCategory: code, config, docs, infra, data, script, markup)
+   - Nós criados (com breakdown por tipo: file, function, class, config, document, service, table, endpoint, pipeline, schema, resource)
+   - Arestas criadas (com breakdown por tipo)
+   - Camadas identificadas (com nomes)
+   - Passos de tour gerados (contagem)
+   - Quaisquer warnings do reviewer
+   - Caminho do arquivo de saída: `$PROJECT_ROOT/.understand-anything/knowledge-graph.json`
 
-6. Only automatically launch the dashboard by invoking the `/understand-dashboard` skill if final graph validation passed after normalization/review fixes.
-   If final validation did not pass, report that the graph was saved with warnings and dashboard launch was skipped.
-
----
-
-## Error Handling
-
-- If any subagent dispatch fails, retry **once** with the same prompt plus additional context about the failure.
-- Track all warnings and errors from each phase in a `$PHASE_WARNINGS` list. When using `--review`, pass this list to the graph-reviewer in Phase 6. On the default path, include accumulated warnings in the Phase 7 final report.
-- If it fails a second time, skip that phase and continue with partial results.
-- ALWAYS save partial results — a partial graph is better than no graph.
-- Report any skipped phases or errors in the final summary so the user knows what happened.
-- NEVER silently drop errors. Every failure must be visible in the final report.
+6. Apenas inicie o dashboard automaticamente invocando a skill `/understand-dashboard` se a validação final do grafo passou após correções de normalização/review.
+   Se a validação final não passou, reporte que o grafo foi salvo com warnings e que o launch do dashboard foi pulado.
 
 ---
 
-## Reference: KnowledgeGraph Schema
+## Tratamento de Erros
 
-### Node Types (13 total)
-| Type | Description | ID Convention |
+- Se o despacho de algum subagente falhar, tente novamente **uma vez** com o mesmo prompt mais contexto adicional sobre a falha.
+- Acompanhe todos os warnings e erros de cada fase em uma lista `$PHASE_WARNINGS`. Quando usar `--review`, passe essa lista para o graph-reviewer na Fase 6. No caminho default, inclua os warnings acumulados no relatório final da Fase 7.
+- Se falhar uma segunda vez, pule essa fase e continue com resultados parciais.
+- SEMPRE salve resultados parciais — um grafo parcial é melhor que nenhum grafo.
+- Reporte quaisquer fases puladas ou erros no resumo final para que o usuário saiba o que aconteceu.
+- NUNCA descarte erros silenciosamente. Toda falha precisa ser visível no relatório final.
+
+---
+
+## Referência: Schema do KnowledgeGraph
+
+### Tipos de Nó (13 no total)
+| Tipo | Descrição | Convenção de ID |
 |---|---|---|
-| `file` | Source code file | `file:<relative-path>` |
-| `function` | Function or method | `function:<relative-path>:<name>` |
-| `class` | Class, interface, or type | `class:<relative-path>:<name>` |
-| `module` | Logical module or package | `module:<name>` |
-| `concept` | Abstract concept or pattern | `concept:<name>` |
-| `config` | Configuration file (YAML, JSON, TOML, env) | `config:<relative-path>` |
-| `document` | Documentation file (Markdown, RST, TXT) | `document:<relative-path>` |
-| `service` | Deployable service definition (Dockerfile, K8s) | `service:<relative-path>` |
-| `table` | Database table or migration | `table:<relative-path>:<table-name>` |
-| `endpoint` | API endpoint or route definition | `endpoint:<relative-path>:<endpoint-name>` |
-| `pipeline` | CI/CD pipeline configuration | `pipeline:<relative-path>` |
-| `schema` | Schema definition (GraphQL, Protobuf, Prisma) | `schema:<relative-path>` |
-| `resource` | Infrastructure resource (Terraform, CloudFormation) | `resource:<relative-path>` |
+| `file` | Arquivo de código-fonte | `file:<relative-path>` |
+| `function` | Função ou método | `function:<relative-path>:<name>` |
+| `class` | Classe, interface ou tipo | `class:<relative-path>:<name>` |
+| `module` | Módulo ou pacote lógico | `module:<name>` |
+| `concept` | Conceito ou padrão abstrato | `concept:<name>` |
+| `config` | Arquivo de configuração (YAML, JSON, TOML, env) | `config:<relative-path>` |
+| `document` | Arquivo de documentação (Markdown, RST, TXT) | `document:<relative-path>` |
+| `service` | Definição de service deployável (Dockerfile, K8s) | `service:<relative-path>` |
+| `table` | Tabela de banco ou migration | `table:<relative-path>:<table-name>` |
+| `endpoint` | Definição de endpoint ou rota de API | `endpoint:<relative-path>:<endpoint-name>` |
+| `pipeline` | Configuração de pipeline CI/CD | `pipeline:<relative-path>` |
+| `schema` | Definição de schema (GraphQL, Protobuf, Prisma) | `schema:<relative-path>` |
+| `resource` | Recurso de infraestrutura (Terraform, CloudFormation) | `resource:<relative-path>` |
 
-### Edge Types (26 total)
-| Category | Types |
+### Tipos de Aresta (26 no total)
+| Categoria | Tipos |
 |---|---|
-| Structural | `imports`, `exports`, `contains`, `inherits`, `implements` |
-| Behavioral | `calls`, `subscribes`, `publishes`, `middleware` |
-| Data flow | `reads_from`, `writes_to`, `transforms`, `validates` |
-| Dependencies | `depends_on`, `tested_by`, `configures` |
-| Semantic | `related`, `similar_to` |
-| Infrastructure | `deploys`, `serves`, `provisions`, `triggers` |
+| Estrutural | `imports`, `exports`, `contains`, `inherits`, `implements` |
+| Comportamental | `calls`, `subscribes`, `publishes`, `middleware` |
+| Fluxo de dados | `reads_from`, `writes_to`, `transforms`, `validates` |
+| Dependências | `depends_on`, `tested_by`, `configures` |
+| Semântica | `related`, `similar_to` |
+| Infraestrutura | `deploys`, `serves`, `provisions`, `triggers` |
 | Schema/Data | `migrates`, `documents`, `routes`, `defines_schema` |
 
-### Edge Weight Conventions
-| Edge Type | Weight |
+### Convenções de Peso de Aresta
+| Tipo de Aresta | Peso |
 |---|---|
 | `contains` | 1.0 |
 | `inherits`, `implements` | 0.9 |
@@ -786,4 +786,4 @@ Pass these parameters in the dispatch prompt:
 | `imports`, `deploys`, `migrates` | 0.7 |
 | `depends_on`, `configures`, `triggers` | 0.6 |
 | `tested_by`, `documents`, `provisions`, `serves`, `routes` | 0.5 |
-| All others | 0.5 (default) |
+| Todos os demais | 0.5 (default) |

@@ -1,57 +1,57 @@
-# Auto-Update Knowledge Graph (Internal — Hook-Triggered)
+# Atualização Automática do Knowledge Graph (Interno — Disparado por Hook)
 
-Incrementally update the knowledge graph using deterministic structural fingerprinting to minimize token usage. This prompt is triggered automatically by the post-commit hook when `autoUpdate` is enabled. It is NOT a user-facing skill.
+Atualize o knowledge graph de forma incremental usando fingerprinting estrutural determinístico para minimizar o consumo de tokens. Este prompt é disparado automaticamente pelo hook post-commit quando `autoUpdate` está habilitado. NÃO é uma skill voltada ao usuário.
 
-**Key principle:** Spend zero LLM tokens when changes are cosmetic (formatting, internal logic). Only invoke LLM agents when structural changes (new/removed functions, classes, imports, exports) are detected.
+**Princípio-chave:** Gaste zero tokens de LLM quando as mudanças forem cosméticas (formatação, lógica interna). Invoque agentes LLM apenas quando mudanças estruturais (novas/removidas funções, classes, imports, exports) forem detectadas.
 
 ---
 
-## Phase 0 — Pre-flight (Zero Token Cost)
+## Fase 0 — Pré-execução (Custo Zero de Token)
 
-1. Set `PROJECT_ROOT` to the current working directory.
+1. Defina `PROJECT_ROOT` como o diretório de trabalho atual.
 
-2. Check that `$PROJECT_ROOT/.understand-anything/knowledge-graph.json` exists.
-   - If not: report "No existing knowledge graph found. Run `/understand` first to create one." and **STOP**.
+2. Verifique se `$PROJECT_ROOT/.understand-anything/knowledge-graph.json` existe.
+   - Se não existir: reporte "No existing knowledge graph found. Run `/understand` first to create one." e **PARE**.
 
-3. Check that `$PROJECT_ROOT/.understand-anything/meta.json` exists and read `gitCommitHash`.
-   - If not: report "No analysis metadata found. Run `/understand` to create a baseline." and **STOP**.
+3. Verifique se `$PROJECT_ROOT/.understand-anything/meta.json` existe e leia `gitCommitHash`.
+   - Se não existir: reporte "No analysis metadata found. Run `/understand` to create a baseline." e **PARE**.
 
-4. Get current commit hash:
+4. Obtenha o hash do commit atual:
    ```bash
    git rev-parse HEAD
    ```
 
-5. If commit hashes match and `--force` is NOT in `$ARGUMENTS`: report "Knowledge graph is already up to date." and **STOP**.
+5. Se os hashes de commit forem iguais e `--force` NÃO estiver em `$ARGUMENTS`: reporte "Knowledge graph is already up to date." e **PARE**.
 
-6. Get changed files:
+6. Obtenha os arquivos alterados:
    ```bash
    git diff <lastCommitHash>..HEAD --name-only
    ```
-   If no files changed: update `meta.json` with the new commit hash and **STOP**.
+   Se nenhum arquivo mudou: atualize `meta.json` com o novo hash de commit e **PARE**.
 
-7. Filter to source files only (`.ts`, `.tsx`, `.js`, `.jsx`, `.py`, `.go`, `.rs`, `.java`, `.rb`, `.cpp`, `.c`, `.h`, `.cs`, `.swift`, `.kt`, `.php`).
-   If no source files changed: update `meta.json` with the new commit hash, report "Only non-source files changed. Metadata updated." and **STOP**.
+7. Filtre apenas para arquivos-fonte (`.ts`, `.tsx`, `.js`, `.jsx`, `.py`, `.go`, `.rs`, `.java`, `.rb`, `.cpp`, `.c`, `.h`, `.cs`, `.swift`, `.kt`, `.php`).
+   Se nenhum arquivo-fonte mudou: atualize `meta.json` com o novo hash de commit, reporte "Only non-source files changed. Metadata updated." e **PARE**.
 
-8. Create intermediate directory:
+8. Crie o diretório intermediário:
    ```bash
    mkdir -p $PROJECT_ROOT/.understand-anything/intermediate
    ```
 
-9. **Apply `.understandignore` exclusions** (same semantics as `/understand` Step 2.5 in `agents/project-scanner.md`).
+9. **Aplique exclusões de `.understandignore`** (mesma semântica do Passo 2.5 de `/understand` em `agents/project-scanner.md`).
 
-   Without this step, files in user-excluded paths (migrations, vendored code, tests) are counted as structural changes and can spuriously escalate the action to `FULL_UPDATE` even when the real change set is tiny.
+   Sem este passo, arquivos em caminhos excluídos pelo usuário (migrations, código vendored, testes) são contados como mudanças estruturais e podem espuriamente escalar a ação para `FULL_UPDATE` mesmo quando o conjunto real de mudanças é minúsculo.
 
-   1. If neither `$PROJECT_ROOT/.understand-anything/.understandignore` nor `$PROJECT_ROOT/.understandignore` exists, the step 7 extension filter is sufficient — skip to Phase 1.
+   1. Se nem `$PROJECT_ROOT/.understand-anything/.understandignore` nem `$PROJECT_ROOT/.understandignore` existir, o filtro de extensões do passo 7 é suficiente — pule para a Fase 1.
 
-   2. Write the step 7 file list to `$PROJECT_ROOT/.understand-anything/intermediate/changed-files-pre.json` as a JSON array of relative paths.
+   2. Grave a lista de arquivos do passo 7 em `$PROJECT_ROOT/.understand-anything/intermediate/changed-files-pre.json` como um array JSON de caminhos relativos.
 
-   3. Resolve `$PLUGIN_ROOT`:
-      - Use `$CLAUDE_PLUGIN_ROOT` if set (Claude Code's hook context sets this).
-      - Otherwise try `$HOME/.understand-anything-plugin`.
-      - Validate the chosen candidate by checking `$candidate/packages/core/dist/ignore-filter.js` exists.
-      - If neither resolves: report "Cannot locate plugin install at `$CLAUDE_PLUGIN_ROOT` or `$HOME/.understand-anything-plugin`; auto-update aborted. Run `/understand` to re-baseline." and **STOP**. Do **not** silently skip — silent skip reproduces issue #153.
+   3. Resolva `$PLUGIN_ROOT`:
+      - Use `$CLAUDE_PLUGIN_ROOT` se estiver definido (o contexto de hook do Claude Code define isso).
+      - Caso contrário, tente `$HOME/.understand-anything-plugin`.
+      - Valide o candidato escolhido verificando se `$candidate/packages/core/dist/ignore-filter.js` existe.
+      - Se nenhum resolver: reporte "Cannot locate plugin install at `$CLAUDE_PLUGIN_ROOT` or `$HOME/.understand-anything-plugin`; auto-update aborted. Run `/understand` to re-baseline." e **PARE**. Não pule silenciosamente — pular silenciosamente reproduz a issue #153.
 
-   4. Write `$PROJECT_ROOT/.understand-anything/intermediate/ignore-filter.mjs`:
+   4. Grave `$PROJECT_ROOT/.understand-anything/intermediate/ignore-filter.mjs`:
       ```javascript
       import { readFileSync, writeFileSync } from 'node:fs';
       import { pathToFileURL } from 'node:url';
@@ -78,24 +78,24 @@ Incrementally update the knowledge graph using deterministic structural fingerpr
       console.log(`.understandignore: kept ${kept.length}/${input.length} (removed ${removed})`);
       ```
 
-   5. Run it:
+   5. Execute-o:
       ```bash
       node $PROJECT_ROOT/.understand-anything/intermediate/ignore-filter.mjs \
         "$PLUGIN_ROOT" \
         $PROJECT_ROOT/.understand-anything/intermediate/changed-files-pre.json
       ```
 
-   6. Read `$PROJECT_ROOT/.understand-anything/intermediate/changed-files.json`. Pass the `kept` array as the input file list for Phase 1's fingerprint-check script.
+   6. Leia `$PROJECT_ROOT/.understand-anything/intermediate/changed-files.json`. Passe o array `kept` como lista de arquivos de entrada para o script de fingerprint da Fase 1.
 
-   7. If `kept.length === 0`: update `meta.json` with the new commit hash, report "All changed source files are in ignored paths. Metadata updated." and **STOP**.
+   7. Se `kept.length === 0`: atualize `meta.json` com o novo hash de commit, reporte "All changed source files are in ignored paths. Metadata updated." e **PARE**.
 
 ---
 
-## Phase 1 — Structural Fingerprint Check (Zero LLM Tokens)
+## Fase 1 — Verificação de Fingerprint Estrutural (Zero Tokens de LLM)
 
-This phase runs a deterministic Node.js script that compares file structures against stored fingerprints. It costs **zero LLM tokens** — only the script execution cost.
+Esta fase executa um script Node.js determinístico que compara estruturas de arquivo contra fingerprints armazenados. Custa **zero tokens de LLM** — apenas o custo de execução do script.
 
-1. Write and execute a Node.js script (`$PROJECT_ROOT/.understand-anything/intermediate/fingerprint-check.mjs`):
+1. Escreva e execute um script Node.js (`$PROJECT_ROOT/.understand-anything/intermediate/fingerprint-check.mjs`):
 
 ```javascript
 // The script should:
@@ -121,7 +121,7 @@ This phase runs a deterministic Node.js script that compares file structures aga
 // 6. Write result to .understand-anything/intermediate/change-analysis.json
 ```
 
-The output JSON should have this shape:
+O JSON de saída deve ter este formato:
 ```json
 {
   "action": "SKIP | PARTIAL_UPDATE | ARCHITECTURE_UPDATE | FULL_UPDATE",
@@ -136,28 +136,28 @@ The output JSON should have this shape:
 }
 ```
 
-2. Read `.understand-anything/intermediate/change-analysis.json`.
+2. Leia `.understand-anything/intermediate/change-analysis.json`.
 
-3. **Decision gate:**
+3. **Portão de decisão:**
 
-   | Action | What to do |
+   | Action | O que fazer |
    |---|---|
-   | `SKIP` | Update `meta.json` with new commit hash. Report: "No structural changes detected. Graph metadata updated. Zero tokens spent." **STOP.** |
-   | `FULL_UPDATE` | Report: "Major structural changes detected (reason). Recommend running `/understand --full` for a complete rebuild." **STOP.** |
-   | `PARTIAL_UPDATE` | Proceed to Phase 2 with `filesToReanalyze` |
-   | `ARCHITECTURE_UPDATE` | Proceed to Phase 2 with `filesToReanalyze`, flag architecture re-run |
+   | `SKIP` | Atualize `meta.json` com o novo hash de commit. Reporte: "No structural changes detected. Graph metadata updated. Zero tokens spent." **PARE.** |
+   | `FULL_UPDATE` | Reporte: "Major structural changes detected (reason). Recommend running `/understand --full` for a complete rebuild." **PARE.** |
+   | `PARTIAL_UPDATE` | Prossiga para a Fase 2 com `filesToReanalyze` |
+   | `ARCHITECTURE_UPDATE` | Prossiga para a Fase 2 com `filesToReanalyze`, sinalize a re-execução da arquitetura |
 
 ---
 
-## Phase 2 — Targeted Re-Analysis (Minimal Token Cost)
+## Fase 2 — Reanálise Direcionada (Custo Mínimo de Token)
 
-Only re-analyze files with structural changes. This is the **only** phase that costs LLM tokens.
+Reanalise apenas arquivos com mudanças estruturais. Esta é a **única** fase que custa tokens de LLM.
 
-1. Read the existing knowledge graph from `$PROJECT_ROOT/.understand-anything/knowledge-graph.json`.
+1. Leia o knowledge graph existente em `$PROJECT_ROOT/.understand-anything/knowledge-graph.json`.
 
-2. Batch the files from `filesToReanalyze` (from Phase 1). Use a single batch if ≤10 files, otherwise batch into groups of 5-10.
+2. Faça batch dos arquivos de `filesToReanalyze` (vindos da Fase 1). Use um único batch se ≤10 arquivos, caso contrário separe em grupos de 5 a 10.
 
-3. For each batch, dispatch a subagent using the `file-analyzer` agent definition (at `agents/file-analyzer.md`). Append:
+3. Para cada batch, despache um subagente usando a definição de agente `file-analyzer` (em `agents/file-analyzer.md`). Anexe:
 
    > **Additional context from main session:**
    >
@@ -167,7 +167,7 @@ Only re-analyze files with structural changes. This is the **only** phase that c
    >
    > **IMPORTANT:** This is an incremental update. Only the files listed below have structural changes. Analyze them thoroughly but do not invent nodes for files not in this batch.
 
-   Fill in batch-specific parameters:
+   Preencha os parâmetros específicos do batch:
 
    > Analyze these source files and produce GraphNode and GraphEdge objects.
    > Project root: `$PROJECT_ROOT`
@@ -183,24 +183,24 @@ Only re-analyze files with structural changes. This is the **only** phase that c
    > 1. `<path>` (`<sizeLines>` lines)
    > ...
 
-4. After batch(es) complete, read each `batch-<N>.json` and merge results.
+4. Após o(s) batch(es) concluírem, leia cada `batch-<N>.json` e mescle os resultados.
 
-5. **Merge with existing graph:**
-   - Remove old nodes whose `filePath` matches any file in `filesToReanalyze` or in the deleted files list
-   - Remove old edges whose `source` or `target` references a removed node
-   - Add new nodes and edges from the fresh analysis
-   - Deduplicate nodes by ID (keep latest), edges by `source + target + type`
-   - Remove any edge with dangling `source` or `target` references
+5. **Mescle com o grafo existente:**
+   - Remova nós antigos cujo `filePath` corresponda a qualquer arquivo em `filesToReanalyze` ou na lista de arquivos deletados
+   - Remova arestas antigas cujo `source` ou `target` referencie um nó removido
+   - Adicione nós e arestas novas a partir da análise atualizada
+   - Deduplique nós por ID (mantenha o mais recente), arestas por `source + target + type`
+   - Remova qualquer aresta com referência pendente em `source` ou `target`
 
 ---
 
-## Phase 3 — Conditional Architecture/Tour + Save
+## Fase 3 — Arquitetura/Tour Condicional + Salvar
 
-### 3a. Architecture update (only if `rerunArchitecture === true`)
+### 3a. Atualização de arquitetura (apenas se `rerunArchitecture === true`)
 
-If the change analysis flagged `ARCHITECTURE_UPDATE`:
+Se a análise de mudanças sinalizou `ARCHITECTURE_UPDATE`:
 
-1. Dispatch a subagent using the `architecture-analyzer` agent definition (at `agents/architecture-analyzer.md`), passing the full merged node set and import edges. Include previous layer definitions for naming consistency:
+1. Despache um subagente usando a definição de agente `architecture-analyzer` (em `agents/architecture-analyzer.md`), passando o conjunto completo de nós mesclados e as arestas de import. Inclua as definições anteriores de camada para consistência de nomes:
 
    > Previous layer definitions (for naming consistency):
    > ```json
@@ -208,29 +208,29 @@ If the change analysis flagged `ARCHITECTURE_UPDATE`:
    > ```
    > Maintain the same layer names and IDs where possible. Only add/remove layers if the file structure has materially changed.
 
-2. After completion, read and normalize layers (same normalization as `/understand` Phase 4).
+2. Após a conclusão, leia e normalize as camadas (mesma normalização da Fase 4 de `/understand`).
 
-3. Optionally re-run tour builder if layers changed significantly.
+3. Opcionalmente, re-execute o tour builder se as camadas mudaram significativamente.
 
-### 3b. Lite layer update (if `rerunArchitecture === false`)
+### 3b. Atualização leve de camada (se `rerunArchitecture === false`)
 
-If only a partial update:
-1. For **new files**: assign them to the most likely existing layer based on directory path matching
-2. For **deleted files**: remove their IDs from layer `nodeIds` arrays
-3. Remove any layer that ends up with zero nodeIds
+Se for apenas uma atualização parcial:
+1. Para **arquivos novos**: atribua-os à camada existente mais provável com base no casamento de caminho de diretório
+2. Para **arquivos deletados**: remova seus IDs dos arrays `nodeIds` das camadas
+3. Remova qualquer camada que termine com zero nodeIds
 
-### 3c. Lite validation
+### 3c. Validação leve
 
-Perform lightweight validation (no graph-reviewer agent):
-1. Remove any edge with dangling `source` or `target`
-2. Remove any layer `nodeIds` entry that doesn't exist in the node set
-3. Ensure every file node appears in exactly one layer (add to a catch-all layer if missing)
+Realize validação leve (sem o agente graph-reviewer):
+1. Remova qualquer aresta com `source` ou `target` pendente
+2. Remova qualquer entrada de `nodeIds` em camada que não exista no conjunto de nós
+3. Garanta que todo nó de arquivo apareça em exatamente uma camada (adicione a uma camada catch-all se faltar)
 
-### 3d. Save
+### 3d. Salvar
 
-1. Write the final knowledge graph to `$PROJECT_ROOT/.understand-anything/knowledge-graph.json`.
+1. Grave o knowledge graph final em `$PROJECT_ROOT/.understand-anything/knowledge-graph.json`.
 
-2. Write updated metadata to `$PROJECT_ROOT/.understand-anything/meta.json`:
+2. Grave os metadados atualizados em `$PROJECT_ROOT/.understand-anything/meta.json`:
    ```json
    {
      "lastAnalyzedAt": "<ISO 8601 timestamp>",
@@ -240,11 +240,11 @@ Perform lightweight validation (no graph-reviewer agent):
    }
    ```
 
-3. **Update fingerprints (LOAD-PATCH-SAVE, not OVERWRITE).**
+3. **Atualize fingerprints (LOAD-PATCH-SAVE, não OVERWRITE).**
 
-   The most common failure mode here: writing only the freshly-computed batch entries to `fingerprints.json`, discarding every other file's fingerprint. The next auto-update then sees all those files as new (no stored fingerprint), classifies them as STRUCTURAL, and escalates to FULL_UPDATE permanently (issue #152). The script must LOAD ALL existing entries, PATCH only the re-analyzed ones, and SAVE the full dict back.
+   O modo de falha mais comum aqui: gravar somente as entradas de batch recém-computadas em `fingerprints.json`, descartando o fingerprint de todo o restante. A próxima auto-update então enxerga todos esses arquivos como novos (sem fingerprint armazenado), classifica-os como STRUCTURAL e escala para FULL_UPDATE permanentemente (issue #152). O script precisa CARREGAR todas as entradas existentes, APLICAR PATCH apenas nas reanalisadas e SALVAR o dict completo de volta.
 
-   Write and execute a Node.js script in this exact ordering:
+   Escreva e execute um script Node.js exatamente nesta ordem:
 
    ```javascript
    import { readFileSync, writeFileSync, existsSync } from 'node:fs';
@@ -287,34 +287,34 @@ Perform lightweight validation (no graph-reviewer agent):
    console.log(`Fingerprints: ${before} → ${Object.keys(all).length}`);
    ```
 
-   The `existedAndNonEmpty && before === 0` guard catches the silent-load-failure case before it corrupts the store. If the count shrinks from N to a small number that matches the batch size, the LOAD step was skipped — abort the write rather than persist the wrong dict.
+   O guard `existedAndNonEmpty && before === 0` captura o caso de falha silenciosa de carregamento antes que ele corrompa o store. Se a contagem encolher de N para um número pequeno que coincide com o tamanho do batch, o passo de LOAD foi pulado — aborte a gravação em vez de persistir o dict errado.
 
-4. Clean up intermediate files:
+4. Limpe os arquivos intermediários:
    ```bash
    rm -rf $PROJECT_ROOT/.understand-anything/intermediate
    ```
 
-5. Report a summary:
-   - Files checked: N (total changed)
-   - Structural changes found: N files
-   - Cosmetic-only changes: N files (skipped)
-   - Nodes updated: N
-   - Action taken: PARTIAL_UPDATE / ARCHITECTURE_UPDATE
-   - Path to output: `$PROJECT_ROOT/.understand-anything/knowledge-graph.json`
+5. Reporte um resumo:
+   - Arquivos verificados: N (total alterados)
+   - Mudanças estruturais encontradas: N arquivos
+   - Mudanças apenas cosméticas: N arquivos (puladas)
+   - Nós atualizados: N
+   - Ação tomada: PARTIAL_UPDATE / ARCHITECTURE_UPDATE
+   - Caminho de saída: `$PROJECT_ROOT/.understand-anything/knowledge-graph.json`
 
 ---
 
-## Error Handling
+## Tratamento de Erros
 
-- If the fingerprint check script fails: fall back to treating all changed files as STRUCTURAL (conservative approach).
-- If `fingerprints.json` doesn't exist: treat all changed files as STRUCTURAL and regenerate fingerprints after the update.
-- If a subagent dispatch fails: retry once. If it fails again, save partial results and report the error.
-- ALWAYS save partial results — a partially updated graph is better than no update.
+- Se o script de verificação de fingerprint falhar: faça fallback tratando todos os arquivos alterados como STRUCTURAL (abordagem conservadora).
+- Se `fingerprints.json` não existir: trate todos os arquivos alterados como STRUCTURAL e regenere os fingerprints após a atualização.
+- Se o despacho de um subagente falhar: tente novamente uma vez. Se falhar de novo, salve resultados parciais e reporte o erro.
+- SEMPRE salve resultados parciais — um grafo parcialmente atualizado é melhor do que nenhuma atualização.
 
 ---
 
-## Notes
+## Notas
 
-- This skill reuses the same `file-analyzer` and `architecture-analyzer` agent definitions as `/understand` — no separate agent prompts needed.
-- The fingerprint comparison in Phase 1 uses regex-based extraction (not tree-sitter) because it runs as a temporary Node.js script and doesn't need full AST accuracy — just signature-level detection.
-- The authoritative fingerprints stored in `fingerprints.json` are generated by `/understand` Phase 7 using the core `fingerprint.ts` module (which uses tree-sitter for precise extraction).
+- Esta skill reusa as mesmas definições de agente `file-analyzer` e `architecture-analyzer` que `/understand` — não são necessários prompts de agente separados.
+- A comparação de fingerprint na Fase 1 usa extração baseada em regex (não tree-sitter) porque é executada como script Node.js temporário e não precisa de precisão de AST completa — apenas detecção em nível de assinatura.
+- Os fingerprints autoritativos armazenados em `fingerprints.json` são gerados pela Fase 7 de `/understand` usando o módulo core `fingerprint.ts` (que usa tree-sitter para extração precisa).

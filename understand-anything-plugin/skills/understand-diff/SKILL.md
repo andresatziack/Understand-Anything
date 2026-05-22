@@ -5,58 +5,58 @@ description: Use when you need to analyze git diffs or pull requests to understa
 
 # /understand-diff
 
-Analyze the current code changes against the knowledge graph at `.understand-anything/knowledge-graph.json`.
+Analise as alterações de código atuais contra o knowledge graph em `.understand-anything/knowledge-graph.json`.
 
-## Graph Structure Reference
+## Referência da Estrutura do Grafo
 
-The knowledge graph JSON has this structure:
+O JSON do knowledge graph tem esta estrutura:
 - `project` — {name, description, languages, frameworks, analyzedAt, gitCommitHash}
-- `nodes[]` — each has {id, type, name, filePath, summary, tags[], complexity, languageNotes?}
-  - Node types: file, function, class, module, concept
+- `nodes[]` — cada um tem {id, type, name, filePath, summary, tags[], complexity, languageNotes?}
+  - Tipos de nó: file, function, class, module, concept
   - IDs: `file:path`, `function:path:name`, `class:path:name`
-- `edges[]` — each has {source, target, type, direction, weight}
-  - Key types: imports, contains, calls, depends_on
-- `layers[]` — each has {id, name, description, nodeIds[]}
-- `tour[]` — each has {order, title, description, nodeIds[]}
+- `edges[]` — cada uma tem {source, target, type, direction, weight}
+  - Tipos-chave: imports, contains, calls, depends_on
+- `layers[]` — cada uma tem {id, name, description, nodeIds[]}
+- `tour[]` — cada um tem {order, title, description, nodeIds[]}
 
-## How to Read Efficiently
+## Como Ler com Eficiência
 
-1. Use Grep to search within the JSON for relevant entries BEFORE reading the full file
-2. Only read sections you need — don't dump the entire graph into context
-3. Node names and summaries are the most useful fields for understanding
-4. Edges tell you how components connect — follow imports and calls for dependency chains
+1. Use Grep para buscar dentro do JSON pelas entradas relevantes ANTES de ler o arquivo inteiro
+2. Leia apenas as seções que você precisa — não despeje o grafo inteiro no contexto
+3. Os campos mais úteis para compreensão são `name` e `summary` dos nós
+4. As arestas dizem como os componentes se conectam — siga imports e calls para cadeias de dependência
 
-## Instructions
+## Instruções
 
-1. Check that `.understand-anything/knowledge-graph.json` exists. If not, tell the user to run `/understand` first.
+1. Verifique se `.understand-anything/knowledge-graph.json` existe. Se não existir, peça ao usuário para rodar `/understand` primeiro.
 
-2. **Get the changed files list** (do NOT read the graph yet):
-   - If on a branch with uncommitted changes: `git diff --name-only`
-   - If on a feature branch: `git diff main...HEAD --name-only` (or the base branch)
-   - If the user specifies a PR number: get the diff from that PR
+2. **Obtenha a lista de arquivos alterados** (NÃO leia o grafo ainda):
+   - Se estiver em um branch com mudanças não commitadas: `git diff --name-only`
+   - Se estiver em um branch de feature: `git diff main...HEAD --name-only` (ou o branch base)
+   - Se o usuário especifica um número de PR: pegue o diff daquele PR
 
-3. **Read project metadata only** — use Grep or Read with a line limit to extract just the `"project"` section for context.
+3. **Leia apenas os metadados do projeto** — use Grep ou Read com limite de linhas para extrair somente a seção `"project"` para contexto.
 
-4. **Find nodes for changed files** — for each changed file path, use Grep to search the knowledge graph for:
-   - Nodes with matching `"filePath"` values (e.g., `grep "changed/file/path"`)
-   - This finds file nodes AND function/class nodes defined in those files
-   - Note the `id` values of all matched nodes
+4. **Encontre nós para os arquivos alterados** — para cada caminho de arquivo alterado, use Grep para procurar no knowledge graph por:
+   - Nós com valores `"filePath"` correspondentes (ex.: `grep "changed/file/path"`)
+   - Isso encontra nós de arquivo E nós de função/classe definidos nesses arquivos
+   - Anote os valores de `id` de todos os nós casados
 
-5. **Find connected edges (1-hop)** — for each matched node ID, Grep for that ID in the edges to find:
-   - What imports or depends on the changed nodes (upstream callers)
-   - What the changed nodes import or call (downstream dependencies)
-   - These are the "affected components" — things that might break or need updating
+5. **Encontre arestas conectadas (1-hop)** — para cada ID de nó casado, faça Grep por esse ID nas arestas para encontrar:
+   - O que importa ou depende dos nós alterados (chamadores upstream)
+   - O que os nós alterados importam ou chamam (dependências downstream)
+   - Esses são os "componentes afetados" — coisas que podem quebrar ou precisar ser atualizadas
 
-6. **Identify affected layers** — Grep for the matched node IDs in the `"layers"` section to determine which architectural layers are touched.
+6. **Identifique camadas afetadas** — Grep pelos IDs de nó casados na seção `"layers"` para determinar quais camadas arquiteturais foram tocadas.
 
-7. **Provide structured analysis**:
-   - **Changed Components**: What was directly modified (with summaries from matched nodes)
-   - **Affected Components**: What might be impacted (from 1-hop edges)
-   - **Affected Layers**: Which architectural layers are touched and cross-layer concerns
-   - **Risk Assessment**: Based on node `complexity` values, number of cross-layer edges, and blast radius (number of affected components)
-   - Suggest what to review carefully and any potential issues
+7. **Forneça uma análise estruturada**:
+   - **Componentes Alterados**: O que foi modificado diretamente (com resumos vindos dos nós casados)
+   - **Componentes Afetados**: O que pode ser impactado (a partir das arestas de 1-hop)
+   - **Camadas Afetadas**: Quais camadas arquiteturais foram tocadas e preocupações cross-layer
+   - **Avaliação de Risco**: Com base nos valores de `complexity` dos nós, número de arestas cross-layer e blast radius (número de componentes afetados)
+   - Sugira o que revisar com atenção e possíveis problemas
 
-8. **Write diff overlay for dashboard** — after producing the analysis, write the diff data to `.understand-anything/diff-overlay.json` so the dashboard can visualize changed and affected components. The file contains:
+8. **Grave o overlay de diff para o dashboard** — após produzir a análise, grave os dados de diff em `.understand-anything/diff-overlay.json` para que o dashboard consiga visualizar componentes alterados e afetados. O arquivo contém:
    ```json
    {
      "version": "1.0.0",
@@ -67,4 +67,4 @@ The knowledge graph JSON has this structure:
      "affectedNodeIds": ["<node IDs from step 5, excluding changedNodeIds>"]
    }
    ```
-   After writing, tell the user they can run `/understand-anything:understand-dashboard` to see the diff overlay visually.
+   Após gravar, diga ao usuário que ele pode rodar `/understand-anything:understand-dashboard` para ver o overlay de diff visualmente.

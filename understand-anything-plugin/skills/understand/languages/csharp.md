@@ -1,46 +1,47 @@
-# C# Language Prompt Snippet
+# Snippet de Prompt da Linguagem C#
 
-## Key Concepts
+## Conceitos-Chave
 
-- **LINQ Queries**: Language-integrated queries using method syntax (`.Where().Select()`) or query syntax
-- **Async/Await with Task**: Asynchronous programming model returning `Task<T>` for non-blocking I/O
-- **Generics and Constraints**: Type parameters with `where T : class, IDisposable` constraint clauses
-- **Properties (get/set)**: First-class property syntax with backing fields, auto-properties, and init-only
-- **Delegates and Events**: Type-safe function pointers; events provide publisher-subscriber pattern
-- **Attributes**: Metadata annotations (`[HttpGet]`, `[Authorize]`) for declarative configuration
-- **Nullable Reference Types**: Compiler-enforced null safety with `?` annotations (C# 8+)
-- **Pattern Matching**: `is`, `switch` expressions with type, property, and relational patterns
-- **Records and Init-Only Setters**: Immutable reference types with value equality semantics (C# 9+)
-- **Dependency Injection (Built-in)**: First-class DI container in ASP.NET Core (`IServiceCollection`)
+- **Queries LINQ**: queries integradas à linguagem usando sintaxe de método (`.Where().Select()`) ou sintaxe de query
+- **Async/Await com Task**: modelo de programação assíncrona retornando `Task<T>` para I/O não bloqueante
+- **Generics e Constraints**: parâmetros de tipo com cláusulas de constraint `where T : class, IDisposable`
+- **Properties (get/set)**: sintaxe de property de primeira classe com backing fields, auto-properties e init-only
+- **Delegates e Events**: ponteiros de função type-safe; events fornecem o padrão publisher-subscriber
+- **Attributes**: anotações de metadados (`[HttpGet]`, `[Authorize]`) para configuração declarativa
+- **Nullable Reference Types**: null safety imposta pelo compilador com anotações `?` (C# 8+)
+- **Pattern Matching**: expressões `is` e `switch` com padrões de tipo, propriedade e relacionais
+- **Records e Init-Only Setters**: tipos de referência imutáveis com semântica de igualdade por valor (C# 9+)
+- **Dependency Injection (Built-in)**: container de DI de primeira classe no ASP.NET Core (`IServiceCollection`)
 
-## Import Patterns
+## Padrões de Importação
 
-- `using System.Collections.Generic` — import a namespace for unqualified type access
-- `using static System.Math` — import static members for direct method access
-- `global using` — file-scoped usings applied to the entire project (C# 10)
-- `using Alias = Namespace.Type` — type alias for disambiguation
+- `using System.Collections.Generic` — importa um namespace para acesso a tipos sem qualificação
+- `using static System.Math` — importa membros estáticos para acesso direto aos métodos
+- `global using` — usings com escopo de arquivo aplicados ao projeto inteiro (C# 10)
+- `using Alias = Namespace.Type` — alias de tipo para desambiguação
 
-## File Patterns
+## Padrões de Arquivos
 
-- `*.csproj` — MSBuild project file defining targets, packages, and build properties
-- `*.sln` — Visual Studio solution file grouping multiple projects
-- `Program.cs` — application entry point (top-level statements in .NET 6+)
-- `Startup.cs` — service and middleware configuration (older ASP.NET Core pattern)
-- `appsettings.json` — hierarchical application configuration
+- `*.csproj` — arquivo de projeto MSBuild definindo targets, pacotes e propriedades de build
+- `*.sln` — arquivo de solução do Visual Studio agrupando múltiplos projetos
+- `Program.cs` — ponto de entrada da aplicação (top-level statements no .NET 6+)
+- `Startup.cs` — configuração de serviços e middleware (padrão antigo do ASP.NET Core)
+- `appsettings.json` — configuração hierárquica da aplicação
 
-## Common Frameworks
+## Frameworks Comuns
 
-- **ASP.NET Core** — Cross-platform web framework for APIs, MVC, and Razor Pages
-- **Entity Framework** — ORM with LINQ-to-SQL, migrations, and change tracking
-- **Blazor** — Component-based UI framework using C# instead of JavaScript
-- **MAUI** — Cross-platform native UI for mobile and desktop applications
-- **xUnit** — Modern testing framework with theories, facts, and dependency injection
+- **ASP.NET Core** — framework web cross-platform para APIs, MVC e Razor Pages
+- **Entity Framework** — ORM com LINQ-to-SQL, migrations e change tracking
+- **Blazor** — framework de UI baseado em componentes usando C# em vez de JavaScript
+- **MAUI** — UI nativa cross-platform para aplicações mobile e desktop
+- **xUnit** — framework de testes moderno com theories, facts e injeção de dependências
 
-## Example Language Notes
+## Exemplo de Notas da Linguagem
 
-> Uses LINQ method syntax `.Where().Select()` to compose a query pipeline over the
-> collection. LINQ operations are lazily evaluated — the query only executes when
-> results are enumerated, allowing efficient composition without intermediate allocations.
+> Usa a sintaxe de método LINQ `.Where().Select()` para compor uma pipeline de query
+> sobre a coleção. Operações LINQ são avaliadas de forma preguiçosa — a query só executa
+> quando os resultados são enumerados, permitindo composição eficiente sem alocações
+> intermediárias.
 >
-> The built-in DI container in ASP.NET Core registers services in `Program.cs` and
-> resolves them via constructor injection, following the composition root pattern.
+> O container de DI integrado do ASP.NET Core registra serviços em `Program.cs` e os
+> resolve via injeção de construtor, seguindo o padrão composition root.

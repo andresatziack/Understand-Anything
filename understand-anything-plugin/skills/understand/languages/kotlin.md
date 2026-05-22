@@ -1,45 +1,47 @@
-# Kotlin Language Prompt Snippet
+# Snippet de Prompt da Linguagem Kotlin
 
-## Key Concepts
+## Conceitos-Chave
 
-- **Coroutines and Flow**: Structured concurrency with suspending functions; Flow for reactive streams
-- **Data Classes**: Auto-generated `equals`, `hashCode`, `toString`, `copy`, and destructuring
-- **Sealed Classes/Interfaces**: Restricted hierarchies enabling exhaustive `when` expressions
-- **Extension Functions**: Add methods to existing classes without inheritance or wrappers
-- **Null Safety**: `?.` safe call, `!!` non-null assertion, `?:` Elvis operator for default values
-- **Delegation (by keyword)**: Delegate interface implementation or property access to another object
-- **DSL Builders**: Lambda-with-receiver syntax enabling type-safe builder patterns
-- **Inline Functions and Reified Types**: Inline for zero-overhead lambdas; reified for runtime type access
-- **Companion Objects**: Named or anonymous singleton associated with a class (replaces static members)
-- **Scope Functions**: `let`, `run`, `apply`, `also`, `with` for concise object configuration and transformation
+- **Coroutines e Flow**: concorrência estruturada com funções suspensas; Flow para streams reativos
+- **Data Classes**: `equals`, `hashCode`, `toString`, `copy` e destructuring auto-gerados
+- **Sealed Classes/Interfaces**: hierarquias restritas que habilitam expressões `when` exaustivas
+- **Extension Functions**: adicionam métodos a classes existentes sem herança ou wrappers
+- **Null Safety**: chamada segura `?.`, asserção não-nula `!!`, operador Elvis `?:` para valores padrão
+- **Delegation (palavra-chave by)**: delega implementação de interface ou acesso a property para outro objeto
+- **DSL Builders**: sintaxe lambda-with-receiver que habilita padrões de builder type-safe
+- **Inline Functions e Reified Types**: inline para lambdas com overhead zero; reified para acesso a tipo em runtime
+- **Companion Objects**: singleton nomeado ou anônimo associado a uma classe (substitui membros estáticos)
+- **Scope Functions**: `let`, `run`, `apply`, `also`, `with` para configuração e transformação concisas de objetos
 
-## Import Patterns
+## Padrões de Importação
 
-- `import package.ClassName` — import a specific class
-- `import package.*` — wildcard import of all declarations in a package
-- `import package.function as alias` — import with alias to resolve naming conflicts
+- `import package.ClassName` — importa uma classe específica
+- `import package.*` — import wildcard de todas as declarações em um package
+- `import package.function as alias` — import com alias para resolver conflitos de nomenclatura
 
-## File Patterns
+## Padrões de Arquivos
 
-- `build.gradle.kts` — Gradle build script using Kotlin DSL
-- `Application.kt` — application entry point (Spring Boot or Ktor)
-- `src/main/kotlin/` — main source root following Gradle conventions
-- `src/test/kotlin/` — test source root with matching package structure
-- `settings.gradle.kts` — multi-module project configuration
+- `build.gradle.kts` — script de build do Gradle usando a DSL Kotlin
+- `Application.kt` — ponto de entrada da aplicação (Spring Boot ou Ktor)
+- `src/main/kotlin/` — raiz dos fontes principais seguindo as convenções do Gradle
+- `src/test/kotlin/` — raiz dos fontes de teste com estrutura de package equivalente
+- `settings.gradle.kts` — configuração de projeto multi-módulo
 
-## Common Frameworks
+## Frameworks Comuns
 
-- **Spring Boot (Kotlin)** — Kotlin-first support with coroutines and DSL extensions
-- **Ktor** — Kotlin-native async web framework from JetBrains
-- **Jetpack Compose** — Declarative UI toolkit for Android using composable functions
-- **Exposed** — Lightweight SQL framework with type-safe DSL and DAO patterns
-- **Koin** — Pragmatic dependency injection framework using Kotlin DSL
+- **Spring Boot (Kotlin)** — suporte Kotlin-first com coroutines e extensões DSL
+- **Ktor** — framework web async Kotlin-native da JetBrains
+- **Jetpack Compose** — toolkit declarativo de UI para Android usando funções composable
+- **Exposed** — framework SQL leve com DSL type-safe e padrões DAO
+- **Koin** — framework pragmático de injeção de dependências usando DSL Kotlin
 
-## Example Language Notes
+## Exemplo de Notas da Linguagem
 
-> Uses sealed class hierarchy with `when` exhaustive matching to handle all possible
-> API response states. The compiler enforces that every variant is covered, eliminating
-> the need for a fallback `else` branch and catching missing cases at compile time.
+> Usa hierarquia sealed class com casamento exaustivo via `when` para tratar todos os
+> estados possíveis de resposta da API. O compilador impõe que toda variante seja
+> coberta, eliminando a necessidade de um branch `else` de fallback e capturando casos
+> ausentes em tempo de compilação.
 >
-> Extension functions allow adding utilities like `String.toSlug()` without modifying
-> the original class — keeping the extension discoverable through IDE auto-complete.
+> Extension functions permitem adicionar utilitários como `String.toSlug()` sem
+> modificar a classe original — mantendo a extensão descobrível via auto-complete da
+> IDE.

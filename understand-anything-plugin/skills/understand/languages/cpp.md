@@ -1,47 +1,48 @@
-# C++ Language Prompt Snippet
+# Snippet de Prompt da Linguagem C++
 
-## Key Concepts
+## Conceitos-Chave
 
-- **Templates**: Function, class, and variadic templates for generic compile-time polymorphism
-- **RAII**: Resource Acquisition Is Initialization — tie resource lifetime to object scope
-- **Smart Pointers**: `unique_ptr` (exclusive), `shared_ptr` (reference-counted), `weak_ptr` (non-owning)
-- **Move Semantics**: Rvalue references (`&&`) and `std::move` for efficient resource transfer
-- **Operator Overloading**: Define custom behavior for operators on user-defined types
-- **Virtual Functions and Vtable**: Runtime polymorphism through virtual method dispatch tables
-- **Namespaces**: Organize symbols and prevent name collisions across translation units
-- **Constexpr**: Compile-time evaluation of functions and variables for zero-runtime-cost computation
-- **Lambda Expressions**: Anonymous functions with capture lists for closures
-- **STL Containers and Algorithms**: Standard containers (vector, map, set) and generic algorithms
-- **Concepts (C++20)**: Named constraints on template parameters replacing SFINAE patterns
+- **Templates**: templates de função, classe e variádicos para polimorfismo genérico em tempo de compilação
+- **RAII**: Resource Acquisition Is Initialization — vincula o tempo de vida do recurso ao escopo do objeto
+- **Smart Pointers**: `unique_ptr` (exclusivo), `shared_ptr` (com contagem de referências), `weak_ptr` (não proprietário)
+- **Move Semantics**: rvalue references (`&&`) e `std::move` para transferência eficiente de recursos
+- **Operator Overloading**: define comportamento customizado de operadores em tipos definidos pelo usuário
+- **Funções Virtuais e Vtable**: polimorfismo em runtime via tabelas de despacho de métodos virtuais
+- **Namespaces**: organizam símbolos e evitam colisões de nomes entre translation units
+- **Constexpr**: avaliação em tempo de compilação de funções e variáveis para computação de custo zero em runtime
+- **Lambda Expressions**: funções anônimas com listas de captura para closures
+- **STL Containers e Algoritmos**: containers padrão (vector, map, set) e algoritmos genéricos
+- **Concepts (C++20)**: restrições nomeadas em parâmetros de template, substituindo padrões SFINAE
 
-## Import Patterns
+## Padrões de Importação
 
-- `#include <system_header>` — include standard library or system headers
-- `#include "local_header.h"` — include project-local header files
-- `using namespace std` — bring all names from std into scope (avoid in headers)
-- `using std::vector` — selectively bring specific names into scope
+- `#include <system_header>` — inclui headers da biblioteca padrão ou do sistema
+- `#include "local_header.h"` — inclui arquivos de header locais ao projeto
+- `using namespace std` — traz todos os nomes de std para o escopo (evite em headers)
+- `using std::vector` — traz seletivamente nomes específicos para o escopo
 
-## File Patterns
+## Padrões de Arquivos
 
-- `.h` / `.hpp` — header files containing declarations, templates, and inline definitions
-- `.cpp` / `.cc` — implementation files with function definitions and static data
-- `CMakeLists.txt` — CMake build system configuration
-- `Makefile` — Make-based build rules and targets
-- `main.cpp` — program entry point containing `int main()`
+- `.h` / `.hpp` — arquivos de header contendo declarações, templates e definições inline
+- `.cpp` / `.cc` — arquivos de implementação com definições de função e dados estáticos
+- `CMakeLists.txt` — configuração do sistema de build CMake
+- `Makefile` — regras e targets de build baseados em Make
+- `main.cpp` — ponto de entrada do programa contendo `int main()`
 
-## Common Frameworks
+## Frameworks Comuns
 
-- **Qt** — Cross-platform application framework with signal/slot mechanism
-- **Boost** — Extensive collection of peer-reviewed portable libraries
-- **Catch2** — Header-only testing framework with BDD-style syntax
-- **Google Test** — Testing framework with fixtures, assertions, and mocking
-- **gRPC** — High-performance RPC framework for service communication
+- **Qt** — framework cross-platform de aplicações com mecanismo de signal/slot
+- **Boost** — coleção extensa de bibliotecas portáveis revisadas por pares
+- **Catch2** — framework de testes header-only com sintaxe estilo BDD
+- **Google Test** — framework de testes com fixtures, asserções e mocking
+- **gRPC** — framework RPC de alta performance para comunicação entre serviços
 
-## Example Language Notes
+## Exemplo de Notas da Linguagem
 
-> Uses `std::unique_ptr<T>` for RAII-based ownership, ensuring deterministic cleanup
-> when scope exits. The unique pointer cannot be copied, only moved, making ownership
-> transfer explicit and preventing accidental double-free errors.
+> Usa `std::unique_ptr<T>` para posse baseada em RAII, garantindo limpeza determinística
+> ao sair do escopo. O unique pointer não pode ser copiado, apenas movido, tornando a
+> transferência de posse explícita e prevenindo erros acidentais de double-free.
 >
-> Header/implementation separation (`.h`/`.cpp`) controls compilation boundaries —
-> changes to a `.cpp` file only recompile that translation unit, not all includers.
+> A separação entre header e implementação (`.h`/`.cpp`) controla as fronteiras de
+> compilação — alterações em um arquivo `.cpp` recompilam apenas aquela translation
+> unit, não todos os includers.

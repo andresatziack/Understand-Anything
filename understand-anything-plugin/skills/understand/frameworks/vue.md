@@ -1,59 +1,59 @@
-# Vue Framework Addendum
+# Adendo do Framework Vue
 
-> Injected into file-analyzer and architecture-analyzer prompts when Vue is detected.
-> Do NOT use as a standalone prompt — always appended to the base prompt template.
+> Injetado nos prompts do file-analyzer e do architecture-analyzer quando Vue é detectado.
+> NÃO use como prompt independente — sempre anexado ao template de prompt base.
 
-## Vue Project Structure
+## Estrutura de Projeto Vue
 
-When analyzing a Vue project, apply these additional conventions on top of the base analysis rules.
+Ao analisar um projeto Vue, aplique estas convenções adicionais sobre as regras base de análise.
 
-### Canonical File Roles
+### Funções Canônicas de Arquivos
 
-| File / Pattern | Role | Tags |
+| Arquivo / Padrão | Função | Tags |
 |---|---|---|
-| `src/App.vue` | Root application component — mounts the top-level layout and router view | `entry-point`, `ui` |
-| `src/main.ts`, `src/main.js` | Application bootstrap — creates Vue app instance, registers plugins, mounts to DOM | `entry-point`, `config` |
-| `components/*.vue`, `components/**/*.vue` | Reusable UI components | `ui` |
-| `views/*.vue`, `pages/*.vue` | Page-level components mapped to routes | `ui`, `routing` |
-| `composables/*.ts`, `composables/*.js` | Composable functions — reusable stateful logic using Composition API | `service`, `utility` |
-| `store/*.ts`, `stores/*.ts` | State management modules (Pinia stores or Vuex modules) | `service`, `state` |
-| `router/*.ts`, `router/index.ts` | Vue Router configuration — route definitions, navigation guards | `config`, `routing` |
-| `plugins/*.ts`, `plugins/*.js` | Vue plugin registrations — extend app functionality (i18n, auth, etc.) | `config` |
-| `utils/*.ts`, `helpers/*.ts` | Pure utility functions | `utility` |
-| `types/*.ts`, `types/*.d.ts` | TypeScript type definitions and interfaces | `type-definition` |
-| `api/*.ts`, `services/*.ts` | API client functions and data-fetching logic | `service` |
-| `directives/*.ts` | Custom Vue directives | `utility` |
-| `tests/*.spec.ts`, `__tests__/*.spec.ts` | Unit and integration tests | `test` |
+| `src/App.vue` | Componente raiz da aplicação — monta o layout de nível superior e a router view | `entry-point`, `ui` |
+| `src/main.ts`, `src/main.js` | Bootstrap da aplicação — cria a instância do app Vue, registra plugins e monta no DOM | `entry-point`, `config` |
+| `components/*.vue`, `components/**/*.vue` | Componentes de UI reutilizáveis | `ui` |
+| `views/*.vue`, `pages/*.vue` | Componentes de página mapeados para rotas | `ui`, `routing` |
+| `composables/*.ts`, `composables/*.js` | Funções composables — lógica stateful reutilizável usando a Composition API | `service`, `utility` |
+| `store/*.ts`, `stores/*.ts` | Módulos de gerenciamento de estado (stores do Pinia ou módulos do Vuex) | `service`, `state` |
+| `router/*.ts`, `router/index.ts` | Configuração do Vue Router — definições de rota, navigation guards | `config`, `routing` |
+| `plugins/*.ts`, `plugins/*.js` | Registros de plugins do Vue — estendem a funcionalidade do app (i18n, auth, etc.) | `config` |
+| `utils/*.ts`, `helpers/*.ts` | Funções utilitárias puras | `utility` |
+| `types/*.ts`, `types/*.d.ts` | Definições de tipos e interfaces TypeScript | `type-definition` |
+| `api/*.ts`, `services/*.ts` | Funções cliente de API e lógica de data fetching | `service` |
+| `directives/*.ts` | Diretivas Vue customizadas | `utility` |
+| `tests/*.spec.ts`, `__tests__/*.spec.ts` | Testes unitários e de integração | `test` |
 
-### Edge Patterns to Look For
+### Padrões de Aresta a Procurar
 
-**Component parent-child** — When a parent component uses a child component in its `<template>`, create `contains` edges from the parent to the child. Template refs and slot usage further indicate composition relationships.
+**Pai-filho de componentes** — Quando um componente pai usa um componente filho em seu `<template>`, crie arestas `contains` do pai para o filho. Refs de template e uso de slots indicam ainda mais relações de composição.
 
-**Composable usage** — When a component or composable imports and calls a `useX` function, create `depends_on` edges from the consumer to the composable module. Composables are the primary mechanism for shared stateful logic.
+**Uso de composables** — Quando um componente ou composable importa e chama uma função `useX`, crie arestas `depends_on` do consumidor para o módulo do composable. Composables são o principal mecanismo de lógica stateful compartilhada.
 
-**Store actions/getters** — When components or composables import and use a Pinia store (`useXStore()`), create `depends_on` edges from the consumer to the store. Store-to-store dependencies should also be captured.
+**Actions/getters de stores** — Quando componentes ou composables importam e usam uma store do Pinia (`useXStore()`), crie arestas `depends_on` do consumidor para a store. Dependências entre stores também devem ser capturadas.
 
-**Router view mapping** — When `router/index.ts` maps paths to view components, create `configures` edges from the router to each view component. Navigation guards add middleware-like edges.
+**Mapeamento da router view** — Quando `router/index.ts` mapeia paths para componentes de view, crie arestas `configures` do router para cada componente de view. Navigation guards adicionam arestas semelhantes a middleware.
 
-**Plugin registration** — When `main.ts` calls `app.use(plugin)`, create `configures` edges from the bootstrap file to each plugin.
+**Registro de plugins** — Quando `main.ts` chama `app.use(plugin)`, crie arestas `configures` do arquivo de bootstrap para cada plugin.
 
-### Architectural Layers for Vue
+### Camadas Arquiteturais para Vue
 
-Assign nodes to these layers when detected:
+Atribua nós a estas camadas quando detectadas:
 
-| Layer ID | Layer Name | What Goes Here |
+| ID da Camada | Nome da Camada | O Que Vai Aqui |
 |---|---|---|
-| `layer:ui` | UI Layer | `components/`, `views/`, `pages/`, layout components |
+| `layer:ui` | UI Layer | `components/`, `views/`, `pages/`, componentes de layout |
 | `layer:service` | Service Layer | `composables/`, `store/`, `stores/`, `api/`, `services/` |
-| `layer:config` | Config Layer | `router/`, `plugins/`, `main.ts`, `App.vue`, configuration files |
-| `layer:utility` | Utility Layer | `utils/`, `helpers/`, `directives/`, pure functions |
+| `layer:config` | Config Layer | `router/`, `plugins/`, `main.ts`, `App.vue`, arquivos de configuração |
+| `layer:utility` | Utility Layer | `utils/`, `helpers/`, `directives/`, funções puras |
 | `layer:test` | Test Layer | `tests/`, `__tests__/`, `*.spec.ts` |
 
-### Notable Patterns to Capture in languageLesson
+### Padrões Notáveis a Capturar em languageLesson
 
-- **Composition API over Options API**: Modern Vue favors `setup()` and `<script setup>` with composables, replacing the Options API's data/methods/computed separation
-- **Pinia for state management**: Pinia stores provide type-safe, modular state with actions and getters — each store is independently defined and can depend on other stores
-- **Vue Router with navigation guards**: `beforeEach`, `beforeEnter`, and `afterEach` guards act as middleware for route transitions — used for authentication and data prefetching
-- **Single-file components (.vue)**: Each `.vue` file encapsulates template, script, and style in a single file — the `<script setup>` syntax is the recommended concise form
-- **Reactive refs and computed properties**: `ref()` and `reactive()` create reactive state; `computed()` derives values that auto-update — understanding reactivity is key to tracing data flow
-- **Provide/inject for deep dependency passing**: `provide()` and `inject()` pass values down the component tree without prop drilling — creates implicit dependencies that should be captured as edges
+- **Composition API em vez da Options API**: o Vue moderno favorece `setup()` e `<script setup>` com composables, substituindo a separação data/methods/computed da Options API
+- **Pinia para gerenciamento de estado**: stores do Pinia oferecem estado modular e type-safe com actions e getters — cada store é definida de forma independente e pode depender de outras stores
+- **Vue Router com navigation guards**: guards `beforeEach`, `beforeEnter` e `afterEach` atuam como middleware para transições de rota — usados para autenticação e prefetching de dados
+- **Single-file components (.vue)**: cada arquivo `.vue` encapsula template, script e style em um único arquivo — a sintaxe `<script setup>` é a forma concisa recomendada
+- **Refs reativos e computed properties**: `ref()` e `reactive()` criam estado reativo; `computed()` deriva valores que se atualizam automaticamente — entender a reatividade é fundamental para rastrear o fluxo de dados
+- **Provide/inject para passagem profunda de dependências**: `provide()` e `inject()` passam valores árvore abaixo sem props drilling — criam dependências implícitas que devem ser capturadas como arestas

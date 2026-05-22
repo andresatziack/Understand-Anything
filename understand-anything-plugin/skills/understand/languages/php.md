@@ -1,46 +1,47 @@
-# PHP Language Prompt Snippet
+# Snippet de Prompt da Linguagem PHP
 
-## Key Concepts
+## Conceitos-Chave
 
-- **Namespaces**: Organize code and prevent naming collisions using backslash-delimited paths
-- **Traits**: Horizontal code reuse mechanism for sharing methods across unrelated classes
-- **Type Declarations**: Parameter, return, and property types (scalar, union, intersection types)
-- **Attributes (PHP 8+)**: Native metadata annotations replacing docblock-based configuration
-- **Enums (PHP 8.1+)**: First-class enumeration types with methods and interface implementation
-- **Fibers**: Lightweight cooperative concurrency primitives for non-blocking I/O
-- **Closures/Anonymous Functions**: First-class functions with explicit `use` for variable capture
-- **Magic Methods**: Special methods like `__construct`, `__get`, `__set`, `__call` for object behavior
-- **Dependency Injection**: Constructor injection managed by PSR-11 compatible containers
-- **Middleware**: Request/response pipeline pattern central to modern PHP frameworks
+- **Namespaces**: organizam o código e evitam colisões de nomenclatura usando caminhos delimitados por backslash
+- **Traits**: mecanismo de reuso horizontal de código para compartilhar métodos entre classes não relacionadas
+- **Type Declarations**: tipos de parâmetro, retorno e propriedade (tipos scalar, union, intersection)
+- **Attributes (PHP 8+)**: anotações de metadados nativas que substituem configurações baseadas em docblocks
+- **Enums (PHP 8.1+)**: tipos de enumeração de primeira classe com métodos e implementação de interface
+- **Fibers**: primitivas leves de concorrência cooperativa para I/O não bloqueante
+- **Closures/Funções Anônimas**: funções de primeira classe com `use` explícito para captura de variáveis
+- **Magic Methods**: métodos especiais como `__construct`, `__get`, `__set`, `__call` para comportamento de objeto
+- **Dependency Injection**: injeção via construtor gerenciada por containers compatíveis com PSR-11
+- **Middleware**: padrão de pipeline de request/response central em frameworks PHP modernos
 
-## Import Patterns
+## Padrões de Importação
 
-- `use Namespace\ClassName` — import a class by its fully qualified name
-- `use Namespace\ClassName as Alias` — import with an alias to avoid conflicts
-- `namespace App\Http\Controllers` — declare the current file's namespace
-- `use function Namespace\functionName` — import a namespaced function
+- `use Namespace\ClassName` — importa uma classe pelo seu nome totalmente qualificado
+- `use Namespace\ClassName as Alias` — importa com um alias para evitar conflitos
+- `namespace App\Http\Controllers` — declara o namespace do arquivo atual
+- `use function Namespace\functionName` — importa uma função com namespace
 
-## File Patterns
+## Padrões de Arquivos
 
-- `composer.json` — dependency management and PSR-4 autoloading configuration
-- `index.php` — web application entry point (front controller)
-- `artisan` — Laravel CLI entry point for commands and migrations
-- `routes/` — route definition files (web.php, api.php in Laravel)
-- PSR-4 autoloading maps namespace prefixes to directory paths
+- `composer.json` — gerenciamento de dependências e configuração de autoloading PSR-4
+- `index.php` — ponto de entrada da aplicação web (front controller)
+- `artisan` — ponto de entrada CLI do Laravel para comandos e migrations
+- `routes/` — arquivos de definição de rotas (web.php, api.php no Laravel)
+- O autoloading PSR-4 mapeia prefixos de namespace para caminhos de diretório
 
-## Common Frameworks
+## Frameworks Comuns
 
-- **Laravel** — Full-featured framework with Eloquent ORM, Blade templates, and queues
-- **Symfony** — Component-based framework powering many PHP projects and libraries
-- **WordPress** — CMS platform with hook-based plugin architecture
-- **Slim** — Micro-framework for APIs and small applications
-- **CodeIgniter** — Lightweight MVC framework with minimal configuration
+- **Laravel** — framework completo com ORM Eloquent, templates Blade e queues
+- **Symfony** — framework baseado em componentes que sustenta muitos projetos e bibliotecas PHP
+- **WordPress** — plataforma CMS com arquitetura de plugins baseada em hooks
+- **Slim** — micro-framework para APIs e pequenas aplicações
+- **CodeIgniter** — framework MVC leve com configuração mínima
 
-## Example Language Notes
+## Exemplo de Notas da Linguagem
 
-> Uses PHP 8 attributes `#[Route('/api/users')]` for declarative route mapping on
-> controller methods. Attributes replace the older docblock annotation pattern,
-> providing native language support for metadata that tools can reflect upon.
+> Usa attributes do PHP 8 `#[Route('/api/users')]` para mapeamento declarativo de
+> rotas em métodos de controller. Attributes substituem o padrão antigo de anotações
+> em docblock, fornecendo suporte nativo da linguagem para metadados que ferramentas
+> podem inspecionar via reflection.
 >
-> PSR-4 autoloading in `composer.json` maps `App\` to `src/`, so the class
-> `App\Http\Controllers\UserController` loads from `src/Http/Controllers/UserController.php`.
+> O autoloading PSR-4 em `composer.json` mapeia `App\` para `src/`, então a classe
+> `App\Http\Controllers\UserController` é carregada de `src/Http/Controllers/UserController.php`.

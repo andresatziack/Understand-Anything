@@ -1,44 +1,44 @@
-# Dashboard Graph Layout Scaling — Design
+# Escalonamento do Layout do Grafo do Dashboard — Design
 
-## Problem
+## Problema
 
-When a structural-graph layer contains many nodes, the current `applyDagreLayout` (TB direction) places same-rank nodes in a single horizontal row. With 50+ nodes per rank, the row stretches into thousands of pixels and the view becomes unreadable: nodes shrink, labels disappear, edges tangle, and there are no visual anchors to orient the reader.
+Quando uma camada de grafo estrutural contém muitos nós, o `applyDagreLayout` atual (direção TB) posiciona nós de mesmo rank em uma única linha horizontal. Com 50+ nós por rank, a linha se estende por milhares de pixels e a visualização se torna ilegível: nós encolhem, rótulos desaparecem, arestas se enroscam e não há âncoras visuais para orientar o leitor.
 
-This design replaces dagre with ELK across all structural-style views, introduces folder/community-based **containers** for the layer-detail view, and computes layout in **two lazy stages** — a single-pass over containers, then per-container child layout on demand.
+Este design substitui o dagre pelo ELK em todas as views de estilo estrutural, introduz **containers** baseados em pasta/comunidade para a view layer-detail e calcula o layout em **dois estágios lazy** — uma única passada sobre os containers, depois layout dos filhos por container sob demanda.
 
-The graph schema and pipeline output (`graph.json`) are unchanged. All improvements derive from existing data.
+O schema do grafo e a saída do pipeline (`graph.json`) permanecem inalterados. Todas as melhorias derivam dos dados existentes.
 
-## Goals
+## Objetivos
 
-- Eliminate horizontal sprawl in layer-detail views at ≤100 nodes per layer (current target), and remain workable up to 1000+ nodes (future scaling).
-- Give each layer-detail view explicit visual anchors so structure is readable at a glance.
-- Aggregate cross-cluster edges by default; surface individual edges on demand.
-- Keep visual style continuous with the existing layer-cluster (overview-level) presentation.
-- Treat layout failures with the same `GraphIssue` model already used for schema validation.
+- Eliminar o sprawl horizontal nas views layer-detail em ≤100 nós por camada (alvo atual) e permanecer utilizável em até 1000+ nós (escala futura).
+- Dar a cada view layer-detail âncoras visuais explícitas para que a estrutura seja legível à primeira vista.
+- Agregar arestas cross-cluster por padrão; expor arestas individuais sob demanda.
+- Manter o estilo visual contínuo com a apresentação existente das layer-clusters (nível de overview).
+- Tratar falhas de layout com o mesmo modelo `GraphIssue` já usado para validação de schema.
 
-## Non-Goals
+## Não-Objetivos
 
-- No regeneration of `graph.json`. All grouping is derived client-side.
-- No change to KnowledgeGraphView (already force-directed; out of scope).
-- No multi-level container nesting (single depth only in v1).
-- No remote error reporting (Sentry-style) — open-source plugin, no default telemetry.
-- No persona-specific grouping behavior beyond the existing node-type filter.
+- Sem regeneração de `graph.json`. Todo o agrupamento é derivado no client-side.
+- Sem mudança na KnowledgeGraphView (já é force-directed; fora do escopo).
+- Sem aninhamento de containers em múltiplos níveis (apenas profundidade única na v1).
+- Sem reporte remoto de erros (estilo Sentry) — plugin open-source, sem telemetria por padrão.
+- Sem comportamento de agrupamento específico por persona além do filtro de tipo de nó existente.
 
-## Scope
+## Escopo
 
-Three views are affected:
+Três views são afetadas:
 
-| View | Change |
+| View | Mudança |
 |---|---|
-| Overview (layer clusters) | Replace dagre → ELK. No new grouping (layers are already groups). |
-| DomainGraphView | Replace dagre → ELK with domain-as-parent of flow/step. |
-| Layer-detail | Replace dagre → ELK + new folder/community containers + edge aggregation + lazy two-stage layout. |
+| Overview (layer clusters) | Substituir dagre → ELK. Sem novo agrupamento (camadas já são grupos). |
+| DomainGraphView | Substituir dagre → ELK com domínio como pai de flow/step. |
+| Layer-detail | Substituir dagre → ELK + novos containers de pasta/comunidade + agregação de arestas + layout lazy em dois estágios. |
 
-KnowledgeGraphView remains on `applyForceLayout` and is not touched.
+A KnowledgeGraphView permanece em `applyForceLayout` e não é tocada.
 
 ---
 
-## §1. Architecture
+## §1. Arquitetura
 
 ```
 existing graph (immutable)
@@ -65,49 +65,49 @@ runStage2Layout(container)               // §6 — ELK on one container's child
 React Flow render (parentId for parent-child) + visual overlay (selection/diff/search/tour)
 ```
 
-Two invariants preserved from current code:
+Duas invariantes preservadas do código atual:
 
-1. **Layout computation is pure and memoized.** It only re-runs when graph topology / persona / diff / focus / nodeTypeFilters change.
-2. **Visual state is a separate O(n) overlay pass.** Selection, search highlight, tour highlight, hover do not trigger relayout.
+1. **A computação de layout é pura e memoizada.** Só re-roda quando topologia do grafo / persona / diff / focus / nodeTypeFilters mudam.
+2. **Estado visual é uma passada de overlay O(n) separada.** Seleção, destaque de busca, destaque de tour e hover não disparam relayout.
 
-This matches the existing `useLayerDetailTopology` / `useLayerDetailGraph` split in `GraphView.tsx`.
+Isso combina com a divisão `useLayerDetailTopology` / `useLayerDetailGraph` existente em `GraphView.tsx`.
 
 ---
 
-## §2. Container Derivation (Layer-Detail Only)
+## §2. Derivação de Container (Apenas Layer-Detail)
 
-### 2.1 Folder strategy (default)
+### 2.1 Estratégia de pastas (padrão)
 
-1. Collect every node's `filePath` in the layer.
-2. Compute longest common prefix (LCP) across all paths and strip it.
-3. Group by the **first path segment after the LCP**.
+1. Coletar o `filePath` de cada nó na camada.
+2. Calcular o longest common prefix (LCP) entre todos os caminhos e removê-lo.
+3. Agrupar pelo **primeiro segmento de caminho após o LCP**.
    - `auth/login.go` → container `auth`
    - `auth/handlers/oauth.go` → container `auth`
    - `cart/cart.go` → container `cart`
-4. Single-depth grouping only; no recursive nesting in v1.
-5. Nodes with no `filePath` (e.g. `concept` type) → container `~` (rendered as `(root)`, dimmed).
+4. Apenas agrupamento de profundidade única; sem aninhamento recursivo na v1.
+5. Nós sem `filePath` (ex: tipo `concept`) → container `~` (renderizado como `(root)`, esmaecido).
 
-### 2.2 Community fallback (Louvain)
+### 2.2 Fallback de comunidade (Louvain)
 
-Triggered when **any** of:
+Disparado quando **qualquer** uma das condições abaixo:
 
-- All nodes share the same single folder after LCP stripping.
-- Bucket count (folders + rooted) `< 2`.
-- Any single bucket (folder or rooted) holds `> 70%` of nodes.
+- Todos os nós compartilham a mesma pasta única após remoção do LCP.
+- Contagem de buckets (pastas + rooted) `< 2`.
+- Algum bucket único (pasta ou rooted) detém `> 70%` dos nós.
 
-Run Louvain modularity-based community detection on the layer's internal edges. Each community becomes a container. Names are placeholders (`Cluster A`, `Cluster B`, ...) since no semantic name is available.
+Roda detecção de comunidades baseada em modularidade Louvain sobre as arestas internas da camada. Cada comunidade vira um container. Nomes são placeholders (`Cluster A`, `Cluster B`, ...) já que não há nome semântico disponível.
 
-Implementation: use `graphology` + `graphology-communities-louvain` (~30KB total). Pure JS, no native deps, runs on main thread synchronously for layer-internal edges.
+Implementação: usar `graphology` + `graphology-communities-louvain` (~30KB no total). JS puro, sem deps nativas, roda na main thread sincronamente para arestas internas da camada.
 
-### 2.3 Edge cases
+### 2.3 Casos de borda
 
-| Case | Behavior |
+| Caso | Comportamento |
 |---|---|
-| Container has 1 child (only when layer total ≥ 3) | No container box rendered; child becomes a top-level node in Stage 1 layout |
-| Container has 2 children | Container rendered; label dimmed |
-| All nodes lack `filePath` | All go to `~` container; if it would become single-child, fall back to flat |
+| Container tem 1 filho (apenas quando o total da camada é ≥ 3) | Sem caixa de container renderizada; o filho vira um nó top-level no layout do Estágio 1 |
+| Container tem 2 filhos | Container renderizado; rótulo esmaecido |
+| Todos os nós sem `filePath` | Todos vão para o container `~`; se ele virasse single-child, fallback para flat |
 
-### 2.4 Function signature
+### 2.4 Assinatura da função
 
 ```ts
 function deriveContainers(
@@ -124,18 +124,18 @@ function deriveContainers(
 };
 ```
 
-The `strategy` field is exposed in the UI ("Grouped by folder" vs "Grouped by edge density") so the user knows how a particular layer was organized.
+O campo `strategy` é exposto na UI ("Grouped by folder" vs "Grouped by edge density") para que o usuário saiba como uma camada específica foi organizada.
 
 ---
 
-## §3. ELK Integration
+## §3. Integração ELK
 
-### 3.1 Package
+### 3.1 Pacote
 
-- `elkjs` ^0.9 (~250KB gzipped). Use `elk.bundled.js`, not the worker variant.
-- Promise-based API. Runs on main thread for graphs ≤500 nodes; <100ms typical.
+- `elkjs` ^0.9 (~250KB gzipped). Use `elk.bundled.js`, não a variante worker.
+- API baseada em Promise. Roda na main thread para grafos ≤500 nós; <100ms típico.
 
-### 3.2 Configuration
+### 3.2 Configuração
 
 ```ts
 {
@@ -150,30 +150,30 @@ The `strategy` field is exposed in the UI ("Grouped by folder" vs "Grouped by ed
 }
 ```
 
-`hierarchyHandling: INCLUDE_CHILDREN` is **not** used — the two-stage approach (§6) issues separate ELK calls for top-level containers and per-container children, so a single compound graph is never assembled.
+`hierarchyHandling: INCLUDE_CHILDREN` **não** é usado — a abordagem de dois estágios (§6) emite chamadas separadas ao ELK para containers top-level e para filhos por container, então um único compound graph nunca é montado.
 
-### 3.3 Per-view input shaping
+### 3.3 Modelagem de entrada por view
 
-| View | ELK input |
+| View | Entrada do ELK |
 |---|---|
-| Overview | Flat. Children = layer-cluster nodes. |
-| DomainGraphView | Flat in v1 (domain stays as the only grouping; flow/step nodes positioned within). |
-| Layer-detail Stage 1 | Flat. Children = containers (treated as opaque atoms). |
-| Layer-detail Stage 2 | Flat per container. Children = files within. |
+| Overview | Flat. Filhos = nós layer-cluster. |
+| DomainGraphView | Flat na v1 (domínio fica como o único agrupamento; nós flow/step posicionados internamente). |
+| Layer-detail Estágio 1 | Flat. Filhos = containers (tratados como átomos opacos). |
+| Layer-detail Estágio 2 | Flat por container. Filhos = arquivos dentro dele. |
 
-A single `runElk(input): Promise<positioned>` function services all four cases.
+Uma única função `runElk(input): Promise<positioned>` atende aos quatro casos.
 
-### 3.4 Boundaries with existing `utils/layout.ts`
+### 3.4 Fronteiras com o `utils/layout.ts` existente
 
-| Function | Status |
+| Função | Status |
 |---|---|
-| `applyDagreLayout` | Kept temporarily; removed in the version after layout migration is verified stable |
-| `applyForceLayout` | Untouched (KnowledgeGraphView only) |
-| `applyElkLayout` (new) | Wrapper that handles repair → ELK → result coercion |
+| `applyDagreLayout` | Mantida temporariamente; removida na versão após a migração de layout ser verificada como estável |
+| `applyForceLayout` | Não tocada (apenas KnowledgeGraphView) |
+| `applyElkLayout` (nova) | Wrapper que lida com repair → ELK → coerção de resultado |
 
-### 3.5 Async + loading state
+### 3.5 Async + estado de carregamento
 
-Stage 1 runs in a `useEffect` with cancellation on dependency change:
+O Estágio 1 roda em um `useEffect` com cancelamento ao mudar a dependência:
 
 ```ts
 useEffect(() => {
@@ -189,33 +189,33 @@ useEffect(() => {
 }, [graph, activeLayerId, persona, diffMode, nodeTypeFilters]);
 ```
 
-While `layoutStatus === "computing"`, render a `"Computing layout…"` overlay (semi-transparent, centered). Stale layout from the previous state is kept underneath so the viewport doesn't blink.
+Enquanto `layoutStatus === "computing"`, renderizar um overlay `"Computing layout…"` (semitransparente, centralizado). O layout antigo do estado anterior é mantido por baixo para que o viewport não pisque.
 
-### 3.6 Failure handling — reuses existing GraphIssue model
+### 3.6 Tratamento de falhas — reusa o modelo GraphIssue existente
 
-Before invoking ELK, run `repairElkInput()` over the assembled input. Each repair emits a `GraphIssue` consumed by the existing `WarningBanner`.
+Antes de invocar o ELK, rodar `repairElkInput()` sobre a entrada montada. Cada repair emite um `GraphIssue` consumido pelo `WarningBanner` existente.
 
-| Repair function | Triggered by | Issue level |
+| Função de repair | Disparada por | Nível do issue |
 |---|---|---|
-| `ensureNodeDimensions` | Node missing width/height | `auto-corrected` |
-| `dedupeNodeIds` | Duplicate child id under same parent | `auto-corrected` |
-| `dropOrphanEdges` | Edge source/target not in node set | `dropped` |
-| `dropOrphanChildren` | Child references a non-existent parent | `dropped` |
-| `dropCircularContainment` | Container containment cycle | `dropped` |
+| `ensureNodeDimensions` | Nó sem width/height | `auto-corrected` |
+| `dedupeNodeIds` | Id de filho duplicado sob o mesmo pai | `auto-corrected` |
+| `dropOrphanEdges` | Aresta com source/target fora do conjunto de nós | `dropped` |
+| `dropOrphanChildren` | Filho referencia um pai inexistente | `dropped` |
+| `dropCircularContainment` | Ciclo de containment de container | `dropped` |
 
-If ELK still rejects after repair → emit a `fatal` `GraphIssue`, render an empty graph + the existing fatal banner. The fatal copy text is augmented with "this looks like a dashboard rendering bug — please file an issue with the copied error" so the user knows to direct the report at the dashboard, not the graph data.
+Se o ELK ainda rejeitar após o repair → emitir um `GraphIssue` `fatal`, renderizar um grafo vazio + o banner fatal existente. O texto do copy fatal é aumentado com "this looks like a dashboard rendering bug — please file an issue with the copied error" para que o usuário saiba direcionar o report ao dashboard, não aos dados do grafo.
 
-### 3.7 Dev mode strict failures
+### 3.7 Falhas estritas em modo dev
 
-Both `repairElkInput` and `runElk` accept a `strict: boolean`. In `import.meta.env.DEV`, strict is on — repairs and ELK errors throw immediately rather than producing graceful issues. This catches input-construction bugs during development before they ship as silent fallbacks.
+Tanto `repairElkInput` quanto `runElk` aceitam um `strict: boolean`. Em `import.meta.env.DEV`, strict está ativo — repairs e erros do ELK são lançados imediatamente em vez de produzirem issues graciosos. Isso captura bugs de construção de entrada durante o desenvolvimento antes que sejam shippados como fallbacks silenciosos.
 
 ---
 
-## §4. Edge Aggregation
+## §4. Agregação de Arestas
 
-### 4.1 Algorithm
+### 4.1 Algoritmo
 
-Performed inside `buildCompoundGraph()`, before either ELK stage.
+Executado dentro de `buildCompoundGraph()`, antes de qualquer estágio do ELK.
 
 ```ts
 function aggregateContainerEdges(
@@ -228,101 +228,101 @@ function aggregateContainerEdges(
 };
 ```
 
-Rules:
+Regras:
 
-- For each edge, look up source/target containers.
-- Same container → intra (unchanged).
-- Different containers → bucket by `(sourceContainer, targetContainer)`. Direction matters: A→B and B→A are independent.
-- Each aggregated edge carries `count` and `types` (set of edge types appearing in the bucket).
+- Para cada aresta, consultar os containers de source/target.
+- Mesmo container → intra (inalterado).
+- Containers diferentes → bucket por `(sourceContainer, targetContainer)`. Direção importa: A→B e B→A são independentes.
+- Cada aresta agregada carrega `count` e `types` (conjunto de tipos de aresta que aparecem no bucket).
 
 ### 4.2 Visual
 
-Reuse the styling pattern already in overview-level edge aggregation (`GraphView.tsx` line ~186):
+Reusar o padrão de estilo já presente na agregação de arestas no nível de overview (`GraphView.tsx` linha ~186):
 
 - `strokeWidth: Math.min(1 + Math.log2(count + 1), 5)`
-- Label: count number
-- Color: existing `rgba(212,165,116,0.4)`
+- Rótulo: número de count
+- Cor: o `rgba(212,165,116,0.4)` existente
 
-### 4.3 Expand / collapse
+### 4.3 Expandir / colapsar
 
-State (zustand store):
+Estado (zustand store):
 
 ```ts
 expandedContainers: Set<string>;   // currently expanded container ids
 ```
 
-Triggers:
+Gatilhos:
 
-- **Click container** → toggle membership.
-- **Click empty canvas** or `Esc` → clear all.
-- **Multi-container expansion is allowed** (user comparing two folders' relationships).
+- **Clique no container** → alterna a participação.
+- **Clique no canvas vazio** ou `Esc` → limpa todos.
+- **Expansão de múltiplos containers é permitida** (usuário comparando relacionamentos entre duas pastas).
 
-When a container is expanded:
+Quando um container é expandido:
 
-- Its inter-container aggregated edges (both directions) are replaced with the underlying file→file individual edges.
-- Other containers' aggregated edges remain aggregated.
-- Position re-layout is **not** triggered. Only React Flow's edge array changes.
+- Suas arestas inter-container agregadas (em ambas direções) são substituídas pelas arestas individuais arquivo→arquivo subjacentes.
+- As arestas agregadas dos outros containers permanecem agregadas.
+- O re-layout de posição **não** é disparado. Apenas o array de arestas do React Flow muda.
 
-### 4.4 Interactions with persona / diff
+### 4.4 Interações com persona / diff
 
-- **Persona filter** changes `count` (post-filter edges only). Aggregated edge re-derived in the memoized pipeline.
-- **Diff mode**: aggregated edge containing any changed node → red stroke + animated; on expand, individual edges follow normal diff styling.
+- **Filtro de persona** muda o `count` (apenas arestas pós-filtro). A aresta agregada é re-derivada no pipeline memoizado.
+- **Modo diff**: aresta agregada contendo qualquer nó alterado → stroke vermelho + animado; ao expandir, as arestas individuais seguem o estilo normal de diff.
 
 ---
 
-## §5. Container Visual
+## §5. Visual do Container
 
-### 5.1 New component: `ContainerNode`
+### 5.1 Novo componente: `ContainerNode`
 
-A new React Flow node type `"container"` registered alongside the existing `custom` / `layer-cluster` / `portal`.
+Um novo tipo de nó do React Flow `"container"` registrado ao lado do `custom` / `layer-cluster` / `portal` existentes.
 
-It does **not** reuse `LayerClusterNode` because:
+Ele **não** reusa o `LayerClusterNode` porque:
 
-- Click semantics differ (`LayerClusterNode` drills into a layer; `ContainerNode` toggles edge expansion).
-- Metadata differs (`ContainerNode` does not carry `aggregateComplexity`).
+- A semântica do clique difere (`LayerClusterNode` faz drill-in em uma camada; `ContainerNode` alterna a expansão de arestas).
+- Os metadados diferem (`ContainerNode` não carrega `aggregateComplexity`).
 
-Visual language is shared: rounded translucent box, gold border, DM Serif title.
+A linguagem visual é compartilhada: caixa translúcida com cantos arredondados, borda dourada, título DM Serif.
 
-### 5.2 Spec
+### 5.2 Especificação
 
-| Element | Style |
+| Elemento | Estilo |
 |---|---|
-| Border (default) | `1px solid rgba(212,165,116,0.25)` |
-| Border (hover / expanded) | `1.5px rgba(212,165,116,0.6)`, expanded adds chevron `▾` |
+| Borda (padrão) | `1px solid rgba(212,165,116,0.25)` |
+| Borda (hover / expandido) | `1.5px rgba(212,165,116,0.6)`, expandido adiciona chevron `▾` |
 | Background | `rgba(255,255,255,0.02)` |
-| Corner radius | `12px` |
-| Title | DM Serif, 14px, `#d4a574`, top-left padding `12px 16px` |
-| Child-count badge | top-right chip, `#a39787`, 11px |
-| Internal padding (around children) | `40px top / 20px L,R,B` |
+| Raio do canto | `12px` |
+| Título | DM Serif, 14px, `#d4a574`, padding top-left `12px 16px` |
+| Badge de contagem de filhos | chip top-right, `#a39787`, 11px |
+| Padding interno (ao redor dos filhos) | `40px top / 20px L,R,B` |
 
-### 5.3 Color coding
+### 5.3 Codificação por cores
 
-Container index modulo 12-color palette (same palette used for `layerColorIndex` in `LayerClusterNode`). Hue is applied at low saturation to border + title only — never to the body fill — so the palette doesn't overpower individual nodes inside.
+Índice do container módulo paleta de 12 cores (mesma paleta usada para `layerColorIndex` em `LayerClusterNode`). A matiz é aplicada com baixa saturação apenas na borda + título — nunca no preenchimento do corpo — para que a paleta não sobrecarregue os nós individuais por dentro.
 
-### 5.4 State styles
+### 5.4 Estilos de estado
 
-| State | Visual |
+| Estado | Visual |
 |---|---|
-| `default` | Base spec |
-| `hover` | Brighter border, title underline |
-| `expanded` | 1.5px gold border + chevron `▾` |
-| `search-hit-inside` | Search badge in title row showing match count |
-| `diff-affected` | Border swaps to `rgba(224,82,82,0.5)` |
-| `focused-via-child` | Same as expanded plus brightness boost |
+| `default` | Especificação base |
+| `hover` | Borda mais brilhante, sublinhado no título |
+| `expanded` | Borda dourada de 1.5px + chevron `▾` |
+| `search-hit-inside` | Badge de busca na linha do título mostrando contagem de matches |
+| `diff-affected` | Borda muda para `rgba(224,82,82,0.5)` |
+| `focused-via-child` | Igual ao expanded mais aumento de brilho |
 
-### 5.5 Label source
+### 5.5 Fonte do rótulo
 
-| Strategy | Label |
+| Estratégia | Rótulo |
 |---|---|
-| `folder` | First path segment after LCP (e.g. `auth`) |
-| `community` | `Cluster A`, `Cluster B`, ... ordered by community id |
-| `~` (root) | `(root)` in dimmed style |
+| `folder` | Primeiro segmento de caminho após o LCP (ex: `auth`) |
+| `community` | `Cluster A`, `Cluster B`, ... ordenado por id da comunidade |
+| `~` (root) | `(root)` em estilo esmaecido |
 
 ---
 
-## §6. Lazy Two-Stage Layout
+## §6. Layout Lazy em Dois Estágios
 
-### 6.1 State machine
+### 6.1 Máquina de estados
 
 ```
 [layer entered]
@@ -341,7 +341,7 @@ Container index modulo 12-color palette (same palette used for `layerColorIndex`
                        [container expanded, children laid out + rendered]
 ```
 
-### 6.2 Store extensions
+### 6.2 Extensões do store
 
 ```ts
 expandedContainers: Set<string>;
@@ -352,10 +352,10 @@ containerLayoutCache: Map<string, {
 containerSizeMemory: Map<string, { width: number; height: number }>;
 ```
 
-- `containerLayoutCache` invalidated by `(graphHash, containerId)`.
-- `containerSizeMemory` persists across container collapses to prevent jitter on next expand.
+- `containerLayoutCache` invalidado por `(graphHash, containerId)`.
+- `containerSizeMemory` persiste entre colapsos do container para evitar jitter na próxima expansão.
 
-### 6.3 Stage 1
+### 6.3 Estágio 1
 
 ```ts
 async function runStage1Layout(containers, aggregatedInterEdges, sizeMemory) {
@@ -374,9 +374,9 @@ async function runStage1Layout(containers, aggregatedInterEdges, sizeMemory) {
 }
 ```
 
-Container size is estimated from `sqrt(childCount)` so it grows sub-linearly with content. If memory has the actual size from a previous run, that wins.
+O tamanho do container é estimado a partir de `sqrt(childCount)` para que cresça sub-linearmente com o conteúdo. Se a memória tiver o tamanho real de uma execução anterior, ele vence.
 
-### 6.4 Stage 2
+### 6.4 Estágio 2
 
 ```ts
 async function runStage2Layout(container, intraEdges) {
@@ -395,48 +395,48 @@ async function runStage2Layout(container, intraEdges) {
 }
 ```
 
-If `result.actualSize` differs from the Stage 1 estimate by **> 20%** in either dimension, trigger a Stage 1 re-layout (full re-run; <100ms at this scale, so the user perceives a small reflow rather than two distinct layouts).
+Se `result.actualSize` diferir da estimativa do Estágio 1 em **> 20%** em qualquer dimensão, dispara um re-layout do Estágio 1 (re-execução completa; <100ms nesta escala, então o usuário percebe um pequeno reflow em vez de dois layouts distintos).
 
-### 6.5 Auto-expand triggers
+### 6.5 Gatilhos de auto-expansão
 
-| Trigger | Implementation |
+| Gatilho | Implementação |
 |---|---|
-| Click | `onClick` toggles `expandedContainers` |
-| Zoom | React Flow `onMove` listener (200ms debounce). When viewport zoom > 1.0, all containers in viewport added to `expandedContainers`. Hysteresis: containers don't auto-collapse until zoom < 0.6, preventing flapping. |
-| Search / focus / tour | `useEffect` watches `searchResults` / `focusNodeId` / `tourHighlightedNodeIds`; finds the parent container of any matched leaf node and adds to `expandedContainers` |
+| Clique | `onClick` alterna `expandedContainers` |
+| Zoom | Listener `onMove` do React Flow (debounce de 200ms). Quando o zoom do viewport > 1.0, todos os containers no viewport são adicionados a `expandedContainers`. Histerese: containers não auto-colapsam até zoom < 0.6, evitando flapping. |
+| Busca / focus / tour | `useEffect` observa `searchResults` / `focusNodeId` / `tourHighlightedNodeIds`; encontra o container pai de qualquer nó folha correspondente e adiciona a `expandedContainers` |
 
-### 6.6 Performance budget
+### 6.6 Orçamento de performance
 
-| Operation | Target |
+| Operação | Alvo |
 |---|---|
-| Stage 1 (any layer) | < 100ms |
-| Stage 2 (first expand of a container) | < 100ms |
-| Stage 2 (cache hit) | < 5ms |
-| Zoom-driven auto-expand | 200ms debounce |
-| Stage 1 re-layout after >20% deviation | < 100ms (re-uses Stage 1 path) |
+| Estágio 1 (qualquer camada) | < 100ms |
+| Estágio 2 (primeira expansão de um container) | < 100ms |
+| Estágio 2 (cache hit) | < 5ms |
+| Auto-expansão dirigida por zoom | debounce de 200ms |
+| Re-layout do Estágio 1 após desvio >20% | < 100ms (reusa o caminho do Estágio 1) |
 
 ---
 
-## §7. Interaction Matrix
+## §7. Matriz de Interação
 
-| Existing feature | Behavior with new layout |
+| Feature existente | Comportamento com o novo layout |
 |---|---|
-| Persona filter | Drives `nodeTypeFilters` dependency in Stage 1 memo. Filtered-out nodes don't enter container derivation; containers with all-filtered children disappear. |
-| Diff mode | Container with a changed child gets red border (§5.4); aggregated edges containing a changed node animate red; on expand, individual diff styling applies. |
-| Focus mode (1-hop) | Focus node's container auto-expands. Non-neighbor containers fade to opacity 0.2; their children remain unrendered. |
-| Search | Container with a hit gets search badge in title; container does **not** auto-expand to avoid expanding many at once. Clicking the badge expands and `fitView`s. |
-| Tour | Tour-highlighted child auto-expands its container. `TourFitView` fits to the highlighted leaf positions (cached after expand). |
-| Drill-in (`overview → layer-detail`) | Unchanged. After drill-in, Stage 1 runs on the new layer's containers. |
-| Breadcrumb | Containers do not enter the breadcrumb. Path remains `Project > LAYER`. |
-| Code viewer | Unchanged. Click a file node inside a container → existing slide-up viewer. |
-| WarningBanner | Layout repair issues feed the same banner. Fatal copy text augmented to differentiate render bugs from data bugs. |
-| Export (PNG/SVG) | Captures current state including expanded containers. Filename includes layer name. |
+| Filtro de persona | Dirige a dependência `nodeTypeFilters` no memo do Estágio 1. Nós filtrados não entram na derivação de container; containers com todos os filhos filtrados desaparecem. |
+| Modo diff | Container com um filho alterado recebe borda vermelha (§5.4); arestas agregadas contendo um nó alterado animam em vermelho; ao expandir, o estilo individual de diff se aplica. |
+| Modo focus (1-hop) | O container do nó em foco auto-expande. Containers não-vizinhos esmaecem para opacidade 0.2; seus filhos permanecem não renderizados. |
+| Busca | Container com um hit recebe um badge de busca no título; o container **não** auto-expande para evitar expandir muitos de uma vez. Clicar no badge expande e faz `fitView`. |
+| Tour | Filho destacado pelo tour auto-expande seu container. `TourFitView` ajusta para as posições de folha destacadas (cacheadas após a expansão). |
+| Drill-in (`overview → layer-detail`) | Inalterado. Após o drill-in, o Estágio 1 roda nos containers da nova camada. |
+| Breadcrumb | Containers não entram no breadcrumb. O caminho continua `Project > LAYER`. |
+| Visualizador de código | Inalterado. Clicar em um nó de arquivo dentro de um container → visualizador slide-up existente. |
+| WarningBanner | Issues de repair de layout alimentam o mesmo banner. O texto do copy fatal é aumentado para diferenciar bugs de render de bugs de dados. |
+| Export (PNG/SVG) | Captura o estado atual incluindo containers expandidos. O nome do arquivo inclui o nome da camada. |
 
 ---
 
-## §8. Files & Test Plan
+## §8. Arquivos e Plano de Teste
 
-### 8.1 Files
+### 8.1 Arquivos
 
 ```
 packages/dashboard/src/
@@ -454,35 +454,35 @@ packages/dashboard/src/
 └── package.json               [modify] add elkjs ^0.9, graphology, graphology-communities-louvain
 ```
 
-### 8.2 Test matrix
+### 8.2 Matriz de testes
 
-| Type | Target | Cases |
+| Tipo | Alvo | Casos |
 |---|---|---|
-| Unit | `deriveContainers` | folder grouping happy path; all-in-root fallback; <2 buckets fallback; >70% concentration fallback; no-`filePath` nodes; single-child container suppression (gated by layer ≥ 3) |
-| Unit | `aggregateContainerEdges` | empty edges; multiple same-direction edges merge; bidirectional edges split; intra + inter mix; types deduped |
-| Unit | `repairElkInput` | each repair function in isolation; validates correct `GraphIssue` level emitted |
-| Unit | `runElk` | minimal valid input; dev-mode strict throw; production graceful fatal; cancellation on dependency change |
-| Integration | Stage 1 + Stage 2 flow | 50-node fixture; click → cache miss; second click → cache hit; size-deviation >20% → re-layout |
-| Integration | Persona / focus / search interactions | switching persona reruns Stage 1; focusing a child auto-expands its container; search hit adds badge without auto-expanding |
-| Visual regression (optional) | Playwright + microservices-demo fixture | baseline screenshots for overview, layer-detail, domain views |
+| Unit | `deriveContainers` | happy path do agrupamento por pasta; fallback all-in-root; fallback <2 buckets; fallback de concentração >70%; nós sem `filePath`; supressão de container single-child (gated por camada ≥ 3) |
+| Unit | `aggregateContainerEdges` | edges vazios; múltiplas arestas na mesma direção fundem; arestas bidirecionais separam; mistura intra + inter; types deduplicados |
+| Unit | `repairElkInput` | cada função de repair em isolamento; valida o nível de `GraphIssue` correto emitido |
+| Unit | `runElk` | entrada mínima válida; throw estrito em modo dev; fatal gracioso em produção; cancelamento ao mudar dependência |
+| Integration | Fluxo Estágio 1 + Estágio 2 | fixture de 50 nós; clique → cache miss; segundo clique → cache hit; desvio de tamanho >20% → re-layout |
+| Integration | Interações persona / focus / search | trocar persona re-roda o Estágio 1; focar um filho auto-expande seu container; hit de busca adiciona badge sem auto-expandir |
+| Visual regression (opcional) | Playwright + fixture microservices-demo | screenshots de baseline para overview, layer-detail, domain views |
 
-### 8.3 Performance benchmarks
+### 8.3 Benchmarks de performance
 
-Generate fixtures with `scripts/generate-large-graph.mjs` at 500 / 1000 / 3000 nodes. Verify:
+Gerar fixtures com `scripts/generate-large-graph.mjs` em 500 / 1000 / 3000 nós. Verificar:
 
-- Stage 1 < 200ms at 500 nodes; < 500ms at 3000 nodes.
-- Stage 2 any container < 100ms.
+- Estágio 1 < 200ms em 500 nós; < 500ms em 3000 nós.
+- Estágio 2 em qualquer container < 100ms.
 
-If 3000-node Stage 1 misses the budget, revisit container size estimation or ELK config — do not lower the budget.
+Se o Estágio 1 com 3000 nós perder o orçamento, revisitar a estimativa de tamanho do container ou a configuração do ELK — não baixar o orçamento.
 
 ---
 
-## Open Questions
+## Questões em Aberto
 
-None at this point. All decisions made during brainstorming are captured above.
+Nenhuma neste ponto. Todas as decisões tomadas durante o brainstorming estão capturadas acima.
 
-## Migration Notes
+## Notas de Migração
 
-- `applyDagreLayout` is kept in the codebase for one release after this lands, then removed in the next. This gives a fallback path during the rollout and a clean uninstall once stable.
-- No graph data migration needed.
-- New dependencies (elkjs, graphology, graphology-communities-louvain) are pure JS, no native bindings — safe across the supported platform matrix.
+- `applyDagreLayout` é mantida no codebase por uma release após esta entrar, depois removida na próxima. Isso dá um caminho de fallback durante o rollout e uma desinstalação limpa uma vez estável.
+- Sem migração de dados de grafo necessária.
+- Novas dependências (elkjs, graphology, graphology-communities-louvain) são JS puro, sem bindings nativos — seguras na matriz de plataformas suportadas.

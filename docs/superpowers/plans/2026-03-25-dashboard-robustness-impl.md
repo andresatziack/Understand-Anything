@@ -1,22 +1,22 @@
-# Dashboard Robustness Implementation Plan
+# Plano de Implementação de Robustez do Dashboard
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **Para o Claude:** SUB-SKILL OBRIGATÓRIA: Use superpowers:executing-plans para implementar este plano tarefa por tarefa.
 
-**Goal:** Make the dashboard resilient to imperfect LLM-generated knowledge graphs by auto-fixing recoverable issues, dropping broken items, and showing user-friendly amber warnings with copy-paste-friendly error reports.
+**Objetivo:** Tornar o dashboard resiliente a knowledge graphs imperfeitos gerados por LLM, fazendo auto-fix de problemas recuperáveis, descartando itens quebrados e mostrando avisos âmbar amigáveis ao usuário com relatórios de erro copy-paste-friendly.
 
-**Architecture:** Three-layer pipeline in `schema.ts`: sanitize (Tier 1 silent) → auto-fix (Tier 2 tracked) → per-item validate (Tier 3 drop) → fatal gate (Tier 4). New `WarningBanner` component in dashboard displays categorized issues with copy button.
+**Arquitetura:** Pipeline em três camadas em `schema.ts`: sanitize (Tier 1 silencioso) → auto-fix (Tier 2 rastreado) → validate por item (Tier 3 drop) → fatal gate (Tier 4). Novo componente `WarningBanner` no dashboard exibe issues categorizadas com botão de copy.
 
-**Tech Stack:** Zod (validation), React + TailwindCSS (dashboard UI), Vitest (testing)
+**Stack Tecnológica:** Zod (validação), React + TailwindCSS (UI do dashboard), Vitest (testes)
 
 ---
 
-### Task 1: Add GraphIssue type and sanitizeGraph (Tier 1)
+### Tarefa 1: Adicionar o tipo GraphIssue e sanitizeGraph (Tier 1)
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/core/src/schema.ts:95-99`
-- Test: `understand-anything-plugin/packages/core/src/__tests__/schema.test.ts`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/core/src/schema.ts:95-99`
+- Teste: `understand-anything-plugin/packages/core/src/__tests__/schema.test.ts`
 
-**Step 1: Write the failing tests for sanitizeGraph**
+**Step 1: Escrever os testes que vão falhar para sanitizeGraph**
 
 Add to the end of `schema.test.ts`, before the closing `});`:
 
@@ -86,12 +86,12 @@ describe("sanitizeGraph", () => {
 });
 ```
 
-**Step 2: Run tests to verify they fail**
+**Step 2: Executar os testes para verificar que falham**
 
-Run: `pnpm --filter @understand-anything/core test`
-Expected: FAIL — `sanitizeGraph` is not exported
+Execute: `pnpm --filter @understand-anything/core test`
+Esperado: FAIL — `sanitizeGraph` is not exported
 
-**Step 3: Add GraphIssue type and update ValidationResult**
+**Step 3: Adicionar tipo GraphIssue e atualizar ValidationResult**
 
 In `schema.ts`, replace the `ValidationResult` interface (lines 95-99) with:
 
@@ -113,7 +113,7 @@ export interface ValidationResult {
 }
 ```
 
-**Step 4: Implement sanitizeGraph**
+**Step 4: Implementar sanitizeGraph**
 
 Add after the alias maps (after line 39), before `GraphNodeSchema`:
 
@@ -167,7 +167,7 @@ export function sanitizeGraph(data: Record<string, unknown>): Record<string, unk
 }
 ```
 
-**Step 5: Update imports in test file**
+**Step 5: Atualizar imports no arquivo de teste**
 
 Update the import line in `schema.test.ts`:
 
@@ -181,10 +181,10 @@ import {
 } from "../schema.js";
 ```
 
-**Step 6: Run tests to verify they pass**
+**Step 6: Executar os testes para verificar que passam**
 
-Run: `pnpm --filter @understand-anything/core test`
-Expected: All sanitizeGraph tests PASS. Existing tests still PASS.
+Execute: `pnpm --filter @understand-anything/core test`
+Esperado: All sanitizeGraph tests PASS. Existing tests still PASS.
 
 **Step 7: Commit**
 
@@ -195,13 +195,13 @@ git commit -m "feat(core): add GraphIssue type and sanitizeGraph (Tier 1 silent 
 
 ---
 
-### Task 2: Add auto-fix maps and autoFixGraph (Tier 2)
+### Tarefa 2: Adicionar maps de auto-fix e autoFixGraph (Tier 2)
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/core/src/schema.ts`
-- Test: `understand-anything-plugin/packages/core/src/__tests__/schema.test.ts`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/core/src/schema.ts`
+- Teste: `understand-anything-plugin/packages/core/src/__tests__/schema.test.ts`
 
-**Step 1: Write the failing tests**
+**Step 1: Escrever os testes que vão falhar**
 
 Add to `schema.test.ts`, before the closing `});`:
 
@@ -351,12 +351,12 @@ describe("autoFixGraph", () => {
 });
 ```
 
-**Step 2: Run tests to verify they fail**
+**Step 2: Executar os testes para verificar que falham**
 
-Run: `pnpm --filter @understand-anything/core test`
-Expected: FAIL — `autoFixGraph` is not exported
+Execute: `pnpm --filter @understand-anything/core test`
+Esperado: FAIL — `autoFixGraph` is not exported
 
-**Step 3: Implement alias maps and autoFixGraph**
+**Step 3: Implementar maps de alias e autoFixGraph**
 
 Add to `schema.ts` after the existing `EDGE_TYPE_ALIASES` map (after line 39):
 
@@ -546,10 +546,10 @@ import {
 } from "../schema.js";
 ```
 
-**Step 5: Run tests to verify they pass**
+**Step 5: Executar os testes para verificar que passam**
 
-Run: `pnpm --filter @understand-anything/core test`
-Expected: All new autoFixGraph tests PASS. Existing tests still PASS.
+Execute: `pnpm --filter @understand-anything/core test`
+Esperado: All new autoFixGraph tests PASS. Existing tests still PASS.
 
 **Step 6: Commit**
 
@@ -560,13 +560,13 @@ git commit -m "feat(core): add autoFixGraph with complexity/direction aliases an
 
 ---
 
-### Task 3: Rewrite validateGraph to be permissive (Tier 3 + 4)
+### Tarefa 3: Reescrever validateGraph para ser permissivo (Tier 3 + 4)
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/core/src/schema.ts:138-151`
-- Test: `understand-anything-plugin/packages/core/src/__tests__/schema.test.ts`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/core/src/schema.ts:138-151`
+- Teste: `understand-anything-plugin/packages/core/src/__tests__/schema.test.ts`
 
-**Step 1: Write the failing tests for permissive validation**
+**Step 1: Escrever os testes que vão falhar para validação permissiva**
 
 Add to `schema.test.ts`:
 
@@ -696,12 +696,12 @@ describe("permissive validation", () => {
 });
 ```
 
-**Step 2: Run tests to verify they fail**
+**Step 2: Executar os testes para verificar que falham**
 
-Run: `pnpm --filter @understand-anything/core test`
-Expected: FAIL — `validateGraph` doesn't return `issues` or `fatal`
+Execute: `pnpm --filter @understand-anything/core test`
+Esperado: FAIL — `validateGraph` doesn't return `issues` or `fatal`
 
-**Step 3: Rewrite validateGraph**
+**Step 3: Reescrever validateGraph**
 
 Replace the existing `validateGraph` function in `schema.ts` (lines 138-151) with:
 
@@ -857,10 +857,10 @@ export function validateGraph(data: unknown): ValidationResult {
 }
 ```
 
-**Step 4: Run tests to verify new tests pass**
+**Step 4: Executar os testes para verificar que os novos passam**
 
-Run: `pnpm --filter @understand-anything/core test`
-Expected: New permissive tests PASS. Some old tests may now fail (expected — handled in Task 4).
+Execute: `pnpm --filter @understand-anything/core test`
+Esperado: New permissive tests PASS. Some old tests may now fail (expected — handled in Task 4).
 
 **Step 5: Commit**
 
@@ -871,10 +871,10 @@ git commit -m "feat(core): rewrite validateGraph for permissive per-item validat
 
 ---
 
-### Task 4: Update existing tests for new permissive behavior
+### Tarefa 4: Atualizar testes existentes para o novo comportamento permissivo
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/core/src/__tests__/schema.test.ts`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/core/src/__tests__/schema.test.ts`
 
 The new permissive validation changes behavior for several existing tests. Here's what changes:
 
@@ -889,7 +889,7 @@ The new permissive validation changes behavior for several existing tests. Here'
 | "rejects 'tests' edge type" | `success: false` | `success: true` (edge dropped) |
 | "rejects truly invalid edge types" | `success: false` | `success: true` (edge dropped) |
 
-**Step 1: Update the affected tests**
+**Step 1: Atualizar os testes afetados**
 
 Replace the following tests in the `"schema validation"` describe block:
 
@@ -984,10 +984,10 @@ it("drops truly invalid edge types after normalization", () => {
 });
 ```
 
-**Step 2: Run all tests**
+**Step 2: Executar todos os testes**
 
-Run: `pnpm --filter @understand-anything/core test`
-Expected: ALL tests PASS
+Execute: `pnpm --filter @understand-anything/core test`
+Esperado: ALL tests PASS
 
 **Step 3: Commit**
 
@@ -998,17 +998,17 @@ git commit -m "test(core): update existing tests for permissive validation behav
 
 ---
 
-### Task 5: Create WarningBanner dashboard component
+### Tarefa 5: Criar o componente WarningBanner do dashboard
 
-**Files:**
-- Create: `understand-anything-plugin/packages/dashboard/src/components/WarningBanner.tsx`
+**Arquivos:**
+- Criar: `understand-anything-plugin/packages/dashboard/src/components/WarningBanner.tsx`
 
-**Step 1: Build core package for dashboard import**
+**Step 1: Buildar pacote core para import do dashboard**
 
-Run: `pnpm --filter @understand-anything/core build`
-Expected: Build succeeds with new exports
+Execute: `pnpm --filter @understand-anything/core build`
+Esperado: Build succeeds with new exports
 
-**Step 2: Create WarningBanner component**
+**Step 2: Criar o componente WarningBanner**
 
 Create `understand-anything-plugin/packages/dashboard/src/components/WarningBanner.tsx`:
 
@@ -1155,10 +1155,10 @@ export default function WarningBanner({ issues }: WarningBannerProps) {
 }
 ```
 
-**Step 3: Verify dashboard builds**
+**Step 3: Verificar que o dashboard builda**
 
-Run: `pnpm --filter @understand-anything/dashboard build`
-Expected: Build succeeds (component not yet wired, but should compile)
+Execute: `pnpm --filter @understand-anything/dashboard build`
+Esperado: Build succeeds (component not yet wired, but should compile)
 
 **Step 4: Commit**
 
@@ -1169,12 +1169,12 @@ git commit -m "feat(dashboard): add WarningBanner component for graph validation
 
 ---
 
-### Task 6: Wire WarningBanner into App.tsx
+### Tarefa 6: Conectar o WarningBanner ao App.tsx
 
-**Files:**
-- Modify: `understand-anything-plugin/packages/dashboard/src/App.tsx`
+**Arquivos:**
+- Modificar: `understand-anything-plugin/packages/dashboard/src/App.tsx`
 
-**Step 1: Update App.tsx**
+**Step 1: Atualizar App.tsx**
 
 Add import at top of file (after other component imports):
 
@@ -1238,10 +1238,10 @@ Replace the error banner section (lines 213-218) with:
 )}
 ```
 
-**Step 2: Build and verify**
+**Step 2: Buildar e verificar**
 
-Run: `pnpm --filter @understand-anything/core build && pnpm --filter @understand-anything/dashboard build`
-Expected: Both builds succeed
+Execute: `pnpm --filter @understand-anything/core build && pnpm --filter @understand-anything/dashboard build`
+Esperado: Both builds succeed
 
 **Step 3: Commit**
 
@@ -1252,24 +1252,24 @@ git commit -m "feat(dashboard): wire WarningBanner to display graph validation i
 
 ---
 
-### Task 7: Final verification
+### Tarefa 7: Verificação Final
 
-**Step 1: Run all core tests**
+**Step 1: Executar todos os testes do core**
 
-Run: `pnpm --filter @understand-anything/core test`
-Expected: ALL tests pass
+Execute: `pnpm --filter @understand-anything/core test`
+Esperado: ALL tests pass
 
-**Step 2: Build full pipeline**
+**Step 2: Buildar pipeline completa**
 
-Run: `pnpm --filter @understand-anything/core build && pnpm --filter @understand-anything/dashboard build`
-Expected: Both builds succeed with no errors
+Execute: `pnpm --filter @understand-anything/core build && pnpm --filter @understand-anything/dashboard build`
+Esperado: Both builds succeed with no errors
 
 **Step 3: Lint**
 
-Run: `pnpm lint`
-Expected: No lint errors in changed files
+Execute: `pnpm lint`
+Esperado: No lint errors in changed files
 
-**Step 4: Final commit (if any lint fixes needed)**
+**Step 4: Commit final (se houver correções de lint necessárias)**
 
 ```bash
 git add -A

@@ -1,34 +1,34 @@
-# Language-Agnostic Support Design
+# Design de Suporte Agnóstico de Linguagem
 
-**Date:** 2026-03-21
-**Status:** Approved
-**Issue:** Make Understand-Anything codebase-aware and language-agnostic instead of TypeScript-heavy
+**Data:** 2026-03-21
+**Status:** Aprovado
+**Issue:** Tornar o Understand-Anything ciente do codebase e agnóstico de linguagem em vez de pesado em TypeScript
 
-## Problem
+## Problema
 
-The tool's agent prompts, tree-sitter plugin, and language lesson system are heavily biased toward TypeScript/JavaScript. Non-TS codebases get degraded analysis because:
+Os prompts de agente, o plugin tree-sitter e o sistema de language lesson da ferramenta são fortemente enviesados para TypeScript/JavaScript. Codebases não-TS recebem análise degradada porque:
 
-1. Agent prompts use TS-specific examples and concepts (e.g., "barrel files", "type guards", "generics")
-2. Tree-sitter plugin only ships TS/JS grammar support — structural analysis silently fails for other languages
-3. Language lesson detection hardcodes TS-specific concept patterns and display names
+1. Os prompts de agente usam exemplos e conceitos específicos de TS (ex: "barrel files", "type guards", "generics")
+2. O plugin tree-sitter só envia suporte a grammar de TS/JS — a análise estrutural falha silenciosamente para outras linguagens
+3. A detecção de language lesson hardcoda padrões de conceitos específicos de TS e display names
 
-The architecture (PluginRegistry, GraphBuilder, dashboard, search) is already language-neutral. The bias is in shipped content, not the framework.
+A arquitetura (PluginRegistry, GraphBuilder, dashboard, busca) já é neutra em relação à linguagem. O viés está no conteúdo enviado, não no framework.
 
-## Decisions
+## Decisões
 
-- **Scope:** All three layers — prompts, tree-sitter plugins, language framework
-- **Languages (v1):** TypeScript, JavaScript, Python, Go, Java, Rust, C/C++, C#, Ruby, PHP, Swift, Kotlin
-- **Architecture:** Config-first with code escape hatch (hybrid)
-- **Prompt strategy:** Base prompt + per-language markdown snippet files in a `languages/` folder
-- **Config location:** Prompt snippets in `skills/understand/languages/`, tree-sitter configs in `packages/core/src/languages/`
-- **Multi-language projects:** Per-file language analysis + project-level multi-language summary
-- **Language detection:** Auto-detect from file extensions only (no manual override for v1)
+- **Escopo:** Todas as três camadas — prompts, plugins tree-sitter e o framework de linguagem
+- **Linguagens (v1):** TypeScript, JavaScript, Python, Go, Java, Rust, C/C++, C#, Ruby, PHP, Swift, Kotlin
+- **Arquitetura:** Config-first com escape hatch de código (híbrido)
+- **Estratégia de prompt:** Prompt base + arquivos markdown de snippets por linguagem em uma pasta `languages/`
+- **Localização da config:** Snippets de prompt em `skills/understand/languages/`, configs do tree-sitter em `packages/core/src/languages/`
+- **Projetos multi-linguagem:** Análise de linguagem por arquivo + resumo multi-linguagem em nível de projeto
+- **Detecção de linguagem:** Auto-detecção apenas a partir de extensões de arquivo (sem override manual na v1)
 
 ## Design
 
-### 1. LanguageConfig Type & Registry
+### 1. Tipo LanguageConfig e Registry
 
-#### LanguageConfig Interface
+#### Interface LanguageConfig
 
 ```typescript
 // packages/core/src/languages/types.ts
@@ -66,7 +66,7 @@ class LanguageRegistry {
 }
 ```
 
-#### File Structure
+#### Estrutura de Arquivos
 
 ```
 packages/core/src/languages/
@@ -88,11 +88,11 @@ packages/core/src/languages/
 │   └── kotlin.ts
 ```
 
-All built-in configs auto-registered on import.
+Todas as configs built-in são auto-registradas no import.
 
 ### 2. GenericTreeSitterPlugin
 
-Replaces the current TS-only `TreeSitterPlugin` with a config-driven version.
+Substitui o atual `TreeSitterPlugin` somente-TS por uma versão dirigida por config.
 
 ```typescript
 // packages/core/src/plugins/generic-tree-sitter-plugin.ts
@@ -125,20 +125,20 @@ class GenericTreeSitterPlugin implements AnalyzerPlugin {
 }
 ```
 
-#### Migration
+#### Migração
 
-- Current `TreeSitterPlugin` deleted, replaced by `GenericTreeSitterPlugin` + TS/JS configs
-- `PluginRegistry` unchanged
-- Existing tests updated to use new plugin
+- O `TreeSitterPlugin` atual é deletado, substituído por `GenericTreeSitterPlugin` + configs de TS/JS
+- `PluginRegistry` inalterado
+- Testes existentes atualizados para usar o novo plugin
 
-#### WASM Grammar Loading
+#### Carregamento de WASM Grammar
 
-- Each grammar loaded lazily on first use and cached
-- WASM files bundled in `packages/core/src/languages/grammars/` or fetched from tree-sitter's official WASM builds
+- Cada grammar é carregado de forma lazy no primeiro uso e cacheado
+- Arquivos WASM empacotados em `packages/core/src/languages/grammars/` ou buscados das builds WASM oficiais do tree-sitter
 
-### 3. Language-Aware Prompts
+### 3. Prompts Cientes da Linguagem
 
-#### File Structure
+#### Estrutura de Arquivos
 
 ```
 skills/understand/
@@ -160,9 +160,9 @@ skills/understand/
 │   └── kotlin.md
 ```
 
-#### Base Prompt Changes
+#### Mudanças no Prompt Base
 
-All TS-specific examples removed from base prompts. Replaced with injection point:
+Todos os exemplos específicos de TS são removidos dos prompts base. Substituídos por um injection point:
 
 ```markdown
 ## Language-Specific Guidance
@@ -170,9 +170,9 @@ All TS-specific examples removed from base prompts. Replaced with injection poin
 {{LANGUAGE_CONTEXT}}
 ```
 
-#### Language Markdown Format
+#### Formato Markdown da Linguagem
 
-Each language file contains:
+Cada arquivo de linguagem contém:
 
 ```markdown
 # Python
@@ -190,60 +190,60 @@ Each language file contains:
 > "FastAPI route handler that accepts a Pydantic model, validates input..."
 ```
 
-#### Injection Logic
+#### Lógica de Injeção
 
-1. Project scanner detects languages present in the codebase
-2. File-analyzer: inject matching language `.md` for that file's language
-3. Tour-builder: inject all detected languages' `.md` files
-4. Project-scanner: inject all detected languages' key concepts for project-level summary
+1. O project scanner detecta as linguagens presentes no codebase
+2. File-analyzer: injeta o `.md` da linguagem correspondente para a linguagem daquele arquivo
+3. Tour-builder: injeta os arquivos `.md` de todas as linguagens detectadas
+4. Project-scanner: injeta os key concepts de todas as linguagens detectadas para o resumo em nível de projeto
 
-#### Multi-Language Projects
+#### Projetos Multi-Linguagem
 
-Project-scanner prompt gets a combined section listing all detected languages with their key concepts.
+O prompt do project-scanner ganha uma seção combinada listando todas as linguagens detectadas com seus key concepts.
 
-### 4. Language Lesson Updates
+### 4. Atualizações de Language Lesson
 
-- Delete `LANGUAGE_DISPLAY_NAMES` — use `LanguageRegistry.getById(id).displayName`
-- Delete hardcoded concept patterns — use `LanguageConfig.concepts` from registry
-- Language lesson generation becomes config-driven
+- Deletar `LANGUAGE_DISPLAY_NAMES` — usar `LanguageRegistry.getById(id).displayName`
+- Deletar padrões de conceito hardcoded — usar `LanguageConfig.concepts` do registry
+- A geração de language lesson se torna dirigida por config
 
-### 5. Testing Strategy
+### 5. Estratégia de Testes
 
-#### Unit Tests
+#### Testes Unitários
 
-1. **LanguageConfig validation** — Each config has all required fields, non-empty nodeTypes
-2. **LanguageRegistry** — Registration, lookup by extension/id, duplicate handling
-3. **GenericTreeSitterPlugin per language** — Small fixture file per language verifying function/class/import extraction
-4. **Language lesson generation** — Concepts sourced from config
+1. **Validação de LanguageConfig** — Cada config tem todos os campos obrigatórios, nodeTypes não vazios
+2. **LanguageRegistry** — Registration, lookup por extensão/id, tratamento de duplicatas
+3. **GenericTreeSitterPlugin por linguagem** — Pequeno arquivo fixture por linguagem verificando extração de função/classe/import
+4. **Geração de language lesson** — Conceitos vindos da config
 
-#### Integration Tests
+#### Testes de Integração
 
-5. **Multi-language project** — Mixed TS + Python fixture, verify graph contains nodes from both languages
-6. **Prompt injection** — Correct language `.md` injected based on detected language
+5. **Projeto multi-linguagem** — Fixture mista TS + Python, verificar que o grafo contém nós de ambas as linguagens
+6. **Injeção de prompt** — `.md` da linguagem correta injetado com base na linguagem detectada
 
-#### Migration Tests
+#### Testes de Migração
 
-- Current tree-sitter-plugin tests rewritten for GenericTreeSitterPlugin with TS config
-- Must produce identical results to validate non-breaking migration
+- Os testes atuais do tree-sitter-plugin são reescritos para o GenericTreeSitterPlugin com a config de TS
+- Devem produzir resultados idênticos para validar a migração não-breaking
 
-### 6. Error Handling & Graceful Degradation
+### 6. Tratamento de Erros e Degradação Graciosa
 
-#### Key Principle
+#### Princípio Chave
 
-**Every file always gets analyzed.** Tree-sitter is an enhancement, not a gate. The LLM is the primary analyzer; structural analysis enriches it.
+**Todo arquivo sempre é analisado.** Tree-sitter é uma melhoria, não um gate. O LLM é o analisador primário; a análise estrutural o enriquece.
 
-#### Unknown Language
+#### Linguagem Desconhecida
 
-- Tree-sitter skipped (returns `null`)
-- LLM analysis still runs — file gets summary, tags, graph node
-- Debug log: `"No language config for .xyz, skipping structural analysis"`
+- Tree-sitter pulado (retorna `null`)
+- A análise por LLM ainda roda — o arquivo recebe resumo, tags, nó no grafo
+- Log de debug: `"No language config for .xyz, skipping structural analysis"`
 
-#### Missing WASM Grammar
+#### WASM Grammar Ausente
 
-- Warning logged, that language degrades to LLM-only
-- Other languages unaffected
+- Warning logado, aquela linguagem degrada para somente-LLM
+- Outras linguagens não são afetadas
 
-#### Malformed Language Config
+#### LanguageConfig Malformada
 
-- Validated at registration time via Zod schema
-- Invalid config throws at startup — fail fast
+- Validada no momento do registro via schema Zod
+- Config inválida lança exceção no startup — fail fast

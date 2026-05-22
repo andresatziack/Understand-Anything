@@ -1,67 +1,67 @@
-# Django Framework Addendum
+# Adendo do Framework Django
 
-> Injected into file-analyzer and architecture-analyzer prompts when Django is detected.
-> Do NOT use as a standalone prompt — always appended to the base prompt template.
+> Injetado nos prompts do file-analyzer e do architecture-analyzer quando Django é detectado.
+> NÃO use como prompt independente — sempre anexado ao template de prompt base.
 
-## Django Project Structure
+## Estrutura de Projeto Django
 
-When analyzing a Django project, apply these additional conventions on top of the base analysis rules.
+Ao analisar um projeto Django, aplique estas convenções adicionais sobre as regras base de análise.
 
-### Canonical File Roles
+### Funções Canônicas de Arquivos
 
-| File / Pattern | Role | Tags |
+| Arquivo / Padrão | Função | Tags |
 |---|---|---|
-| `manage.py` | CLI entry point for dev server, migrations, management commands | `entry-point`, `config` |
-| `*/settings.py`, `*/settings/*.py` | Project-wide configuration (DB, installed apps, middleware) | `config` |
-| `*/urls.py` | URL routing — maps URL patterns to views | `api-handler`, `routing` |
-| `*/views.py`, `*/views/*.py` | Request handlers (function-based or class-based views) | `api-handler`, `controller` |
-| `*/models.py`, `*/models/*.py` | ORM models — map to database tables | `data-model` |
-| `*/serializers.py` | DRF serializers — convert models to/from JSON | `serialization`, `api-handler` |
-| `*/forms.py` | Django forms — validation and rendering logic | `validation`, `ui` |
-| `*/admin.py` | Admin site registrations — exposes models in Django admin | `config` |
-| `*/signals.py` | Signal handlers — cross-cutting side effects on model events | `event-handler` |
-| `*/tasks.py` | Celery async task definitions | `service`, `event-handler` |
-| `*/middleware.py`, `*/middleware/*.py` | Request/response middleware classes | `middleware` |
-| `*/permissions.py` | DRF permission classes | `middleware`, `validation` |
-| `*/filters.py` | DRF filter backends | `utility` |
-| `*/migrations/*.py` | Auto-generated schema migrations — do not summarize individually | `config` |
-| `*/templates/**/*.html` | Django HTML templates | `ui` |
-| `*/templatetags/*.py` | Custom template filters and tags | `utility` |
-| `*/management/commands/*.py` | Custom management commands (`./manage.py mycommand`) | `config`, `entry-point` |
-| `wsgi.py`, `asgi.py` | WSGI/ASGI server adapter — production entry point | `config`, `entry-point` |
-| `*/apps.py` | App configuration and startup hooks (`AppConfig`) | `config` |
-| `*/tests.py`, `*/tests/*.py` | Unit and integration tests | `test` |
+| `manage.py` | Ponto de entrada CLI para servidor de desenvolvimento, migrations e comandos de gerenciamento | `entry-point`, `config` |
+| `*/settings.py`, `*/settings/*.py` | Configuração do projeto (banco, apps instalados, middleware) | `config` |
+| `*/urls.py` | Roteamento de URLs — mapeia padrões de URL para views | `api-handler`, `routing` |
+| `*/views.py`, `*/views/*.py` | Tratadores de requisição (function-based ou class-based views) | `api-handler`, `controller` |
+| `*/models.py`, `*/models/*.py` | Modelos do ORM — mapeiam para tabelas do banco | `data-model` |
+| `*/serializers.py` | Serializers do DRF — convertem modelos de/para JSON | `serialization`, `api-handler` |
+| `*/forms.py` | Forms do Django — lógica de validação e renderização | `validation`, `ui` |
+| `*/admin.py` | Registros no admin — expõem modelos no admin do Django | `config` |
+| `*/signals.py` | Tratadores de signals — efeitos colaterais transversais em eventos de modelo | `event-handler` |
+| `*/tasks.py` | Definições de tasks assíncronas do Celery | `service`, `event-handler` |
+| `*/middleware.py`, `*/middleware/*.py` | Classes de middleware de request/response | `middleware` |
+| `*/permissions.py` | Classes de permissão do DRF | `middleware`, `validation` |
+| `*/filters.py` | Backends de filtro do DRF | `utility` |
+| `*/migrations/*.py` | Migrations de schema geradas automaticamente — não devem ser resumidas individualmente | `config` |
+| `*/templates/**/*.html` | Templates HTML do Django | `ui` |
+| `*/templatetags/*.py` | Filtros e tags de template customizados | `utility` |
+| `*/management/commands/*.py` | Comandos de gerenciamento customizados (`./manage.py mycommand`) | `config`, `entry-point` |
+| `wsgi.py`, `asgi.py` | Adaptador de servidor WSGI/ASGI — ponto de entrada de produção | `config`, `entry-point` |
+| `*/apps.py` | Configuração do app e hooks de inicialização (`AppConfig`) | `config` |
+| `*/tests.py`, `*/tests/*.py` | Testes unitários e de integração | `test` |
 
-### Edge Patterns to Look For
+### Padrões de Aresta a Procurar
 
-**URL routing graph** — Create `calls` edges from `urls.py` nodes to their corresponding view nodes when `path()` or `re_path()` maps a URL pattern to a view function or class. These edges represent the HTTP routing chain.
+**Grafo de roteamento de URLs** — Crie arestas `calls` dos nós de `urls.py` para os nós de view correspondentes quando `path()` ou `re_path()` mapeia um padrão de URL para uma função ou classe de view. Essas arestas representam a cadeia de roteamento HTTP.
 
-**Signal wiring** — When `signals.py` uses `post_save.connect(handler, sender=Model)` or `@receiver(post_save, sender=Model)`, create `subscribes` edges from the signal handler function to the model class. Create `publishes` edges from the model to the signal handler to show the trigger direction.
+**Conexão de signals** — Quando `signals.py` usa `post_save.connect(handler, sender=Model)` ou `@receiver(post_save, sender=Model)`, crie arestas `subscribes` da função tratadora do signal para a classe do modelo. Crie arestas `publishes` do modelo para o tratador do signal para mostrar a direção do disparo.
 
-**ORM relationships** — When `models.py` defines `ForeignKey`, `OneToOneField`, or `ManyToManyField`, create `depends_on` edges between the model classes with a description indicating the relationship type and cardinality.
+**Relacionamentos do ORM** — Quando `models.py` define `ForeignKey`, `OneToOneField` ou `ManyToManyField`, crie arestas `depends_on` entre as classes de modelo com uma descrição indicando o tipo e a cardinalidade do relacionamento.
 
-**Serializer-to-model binding** — When a DRF serializer has `model = MyModel` in its `Meta` class, create a `depends_on` edge from the serializer to the model.
+**Ligação serializer-modelo** — Quando um serializer do DRF tem `model = MyModel` em sua classe `Meta`, crie uma aresta `depends_on` do serializer para o modelo.
 
-**View-to-serializer binding** — When a DRF ViewSet or APIView references a serializer class, create a `depends_on` edge from the view to the serializer.
+**Ligação view-serializer** — Quando um ViewSet ou APIView do DRF referencia uma classe de serializer, crie uma aresta `depends_on` da view para o serializer.
 
-### Architectural Layers for Django
+### Camadas Arquiteturais para Django
 
-Assign nodes to these layers when detected:
+Atribua nós a estas camadas quando detectadas:
 
-| Layer ID | Layer Name | What Goes Here |
+| ID da Camada | Nome da Camada | O Que Vai Aqui |
 |---|---|---|
-| `layer:api` | API Layer | `views.py`, `serializers.py`, `urls.py`, DRF ViewSets and APIViews |
-| `layer:data` | Data Layer | `models.py`, `migrations/`, database utility files |
-| `layer:service` | Service Layer | `signals.py`, `tasks.py`, custom managers, service modules |
+| `layer:api` | API Layer | `views.py`, `serializers.py`, `urls.py`, ViewSets e APIViews do DRF |
+| `layer:data` | Data Layer | `models.py`, `migrations/`, arquivos utilitários de banco |
+| `layer:service` | Service Layer | `signals.py`, `tasks.py`, managers customizados, módulos de serviço |
 | `layer:ui` | UI Layer | `templates/`, `forms.py`, `templatetags/` |
-| `layer:middleware` | Middleware Layer | `middleware.py`, `permissions.py`, authentication backends |
-| `layer:config` | Config Layer | `settings.py`, `urls.py` (root), `wsgi.py`, `asgi.py`, `apps.py`, `manage.py` |
-| `layer:test` | Test Layer | `tests.py`, `tests/` directory, `conftest.py` |
+| `layer:middleware` | Middleware Layer | `middleware.py`, `permissions.py`, backends de autenticação |
+| `layer:config` | Config Layer | `settings.py`, `urls.py` (raiz), `wsgi.py`, `asgi.py`, `apps.py`, `manage.py` |
+| `layer:test` | Test Layer | `tests.py`, diretório `tests/`, `conftest.py` |
 
-### Notable Patterns to Capture in languageLesson
+### Padrões Notáveis a Capturar em languageLesson
 
-- **Fat models vs. thin views**: Django encourages business logic in model methods, keeping views thin HTTP adapters
-- **Django ORM lazy evaluation**: QuerySets are not evaluated until iterated — chain filters without DB hits
-- **Class-based views (CBVs)**: Mixins like `LoginRequiredMixin`, `PermissionRequiredMixin` compose behavior through multiple inheritance
-- **Signal anti-patterns**: Signals create invisible coupling; a signal in `signals.py` may be triggered by a `save()` call anywhere in the codebase
-- **App isolation**: Each Django app (`INSTALLED_APPS`) should be self-contained with its own models, views, urls, and migrations
+- **Fat models vs. thin views**: Django incentiva colocar a lógica de negócio em métodos do modelo, mantendo as views como adaptadores HTTP enxutos
+- **Avaliação preguiçosa do ORM do Django**: QuerySets não são avaliados até serem iterados — encadeie filtros sem acessar o banco
+- **Class-based views (CBVs)**: Mixins como `LoginRequiredMixin` e `PermissionRequiredMixin` compõem comportamento via herança múltipla
+- **Anti-padrões de signals**: Signals criam acoplamento invisível; um signal em `signals.py` pode ser disparado por uma chamada `save()` em qualquer ponto do codebase
+- **Isolamento de apps**: Cada app do Django (`INSTALLED_APPS`) deve ser autocontido com seus próprios models, views, urls e migrations

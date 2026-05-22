@@ -39,6 +39,7 @@ vscode|$HOME/.copilot/skills|per-skill
 hermes|$HOME/.hermes/skills|folder
 cline|$HOME/.cline/skills|folder
 kimi|$HOME/.kimi/skills|folder
+kiro|$HOME/.kiro/skills|per-skill
 EOF
 }
 
@@ -175,6 +176,29 @@ link_plugin_root() {
   fi
 }
 
+# Kiro reads ~/.kiro/steering/*.md as persistent guidance. We copy (not symlink)
+# the steering file so global Kiro config keeps working even if the clone is removed.
+link_kiro_steering() {
+  local src="$REPO_DIR/understand-anything-plugin/.kiro/steering/understand-anything.md"
+  local dst_dir="$HOME/.kiro/steering"
+  local dst="$dst_dir/understand-anything.md"
+  if [[ ! -f "$src" ]]; then
+    printf '  • Steering file not found at %s, skipping\n' "$src"
+    return 0
+  fi
+  mkdir -p "$dst_dir"
+  cp -f "$src" "$dst"
+  printf '  ✓ %s → %s (copied)\n' "$dst" "$src"
+}
+
+unlink_kiro_steering() {
+  local dst="$HOME/.kiro/steering/understand-anything.md"
+  if [[ -f "$dst" ]]; then
+    rm -f "$dst"
+    printf '  ✓ removed %s\n' "$dst"
+  fi
+}
+
 cmd_install() {
   local id="$1"
   local row target style
@@ -187,12 +211,19 @@ cmd_install() {
   link_skills "$target" "$style"
   printf -- '→ Linking universal plugin root\n'
   link_plugin_root
+  if [[ "$id" == "kiro" ]]; then
+    printf -- '→ Installing Kiro steering file\n'
+    link_kiro_steering
+  fi
 
   printf '\n✓ Installed Understand-Anything for %s\n' "$id"
   printf '  Restart your CLI or IDE to pick up the skills.\n'
   if [[ "$id" == "vscode" ]]; then
     printf '\n  Tip: VS Code can also auto-discover the plugin by opening this repo\n'
     printf '       directly (it reads .copilot-plugin/plugin.json), no symlinks needed.\n'
+  fi
+  if [[ "$id" == "kiro" ]]; then
+    printf '\n  Tip: open this repo in Kiro to also pick up .kiro-plugin/plugin.json automatically.\n'
   fi
 }
 
@@ -205,6 +236,10 @@ cmd_uninstall() {
 
   printf -- '→ Removing skill links for %s\n' "$id"
   unlink_skills "$target" "$style"
+  if [[ "$id" == "kiro" ]]; then
+    printf -- '→ Removing Kiro steering file\n'
+    unlink_kiro_steering
+  fi
   if [[ -L "$PLUGIN_LINK" ]]; then
     rm -f "$PLUGIN_LINK"
     printf '  ✓ removed %s\n' "$PLUGIN_LINK"
@@ -221,6 +256,10 @@ cmd_update() {
     exit 1
   fi
   git -C "$REPO_DIR" pull --ff-only
+  if [[ -f "$HOME/.kiro/steering/understand-anything.md" ]]; then
+    printf -- '→ Refreshing Kiro steering file\n'
+    link_kiro_steering
+  fi
   printf '✓ Updated.\n'
 }
 

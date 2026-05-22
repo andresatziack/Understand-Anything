@@ -38,6 +38,7 @@ $Platforms = [ordered]@{
     hermes      = @{ Target = (Join-Path $HOME '.hermes\skills');             Style = 'folder' }
     cline       = @{ Target = (Join-Path $HOME '.cline\skills');              Style = 'folder' }
     kimi        = @{ Target = (Join-Path $HOME '.kimi\skills');               Style = 'folder' }
+    kiro        = @{ Target = (Join-Path $HOME '.kiro\skills');               Style = 'per-skill' }
 }
 
 function Show-Usage {
@@ -190,6 +191,29 @@ function Link-Plugin-Root {
     }
 }
 
+# Kiro reads ~/.kiro/steering/*.md as persistent guidance. We copy (not junction)
+# the steering file so global Kiro config keeps working even if the clone is removed.
+function Copy-KiroSteering {
+    $src    = Join-Path $RepoDir 'understand-anything-plugin\.kiro\steering\understand-anything.md'
+    $dstDir = Join-Path $HOME '.kiro\steering'
+    $dst    = Join-Path $dstDir 'understand-anything.md'
+    if (-not (Test-Path $src)) {
+        Write-Host "  • Steering file not found at $src, skipping"
+        return
+    }
+    if (-not (Test-Path $dstDir)) { New-Item -ItemType Directory -Path $dstDir | Out-Null }
+    Copy-Item -Path $src -Destination $dst -Force
+    Write-Host "  ✓ $dst → $src (copied)"
+}
+
+function Remove-KiroSteering {
+    $dst = Join-Path $HOME '.kiro\steering\understand-anything.md'
+    if (Test-Path $dst) {
+        Remove-Item -LiteralPath $dst -Force
+        Write-Host "  ✓ removed $dst"
+    }
+}
+
 function Cmd-Install([string]$Id) {
     $cfg = Resolve-Platform $Id
     Clone-Or-Update
@@ -197,6 +221,10 @@ function Cmd-Install([string]$Id) {
     Link-Skills $cfg.Target $cfg.Style
     Write-Host '→ Linking universal plugin root'
     Link-Plugin-Root
+    if ($Id -eq 'kiro') {
+        Write-Host '→ Installing Kiro steering file'
+        Copy-KiroSteering
+    }
 
     Write-Host "`n✓ Installed Understand-Anything for $Id"
     Write-Host '  Restart your CLI or IDE to pick up the skills.'
@@ -204,12 +232,19 @@ function Cmd-Install([string]$Id) {
         Write-Host "`n  Tip: VS Code can also auto-discover the plugin by opening this repo"
         Write-Host '       directly (it reads .copilot-plugin/plugin.json), no symlinks needed.'
     }
+    if ($Id -eq 'kiro') {
+        Write-Host "`n  Tip: open this repo in Kiro to also pick up .kiro-plugin/plugin.json automatically."
+    }
 }
 
 function Cmd-Uninstall([string]$Id) {
     $cfg = Resolve-Platform $Id
     Write-Host "→ Removing skill links for $Id"
     Unlink-Skills $cfg.Target $cfg.Style
+    if ($Id -eq 'kiro') {
+        Write-Host '→ Removing Kiro steering file'
+        Remove-KiroSteering
+    }
     if (Remove-Reparse $PluginLink) {
         Write-Host "  ✓ removed $PluginLink"
     }
@@ -224,6 +259,11 @@ function Cmd-Update {
         Write-Error "No installation found at $RepoDir. Run install first."
     }
     git -C $RepoDir pull --ff-only
+    $kiroSteering = Join-Path $HOME '.kiro\steering\understand-anything.md'
+    if (Test-Path $kiroSteering) {
+        Write-Host '→ Refreshing Kiro steering file'
+        Copy-KiroSteering
+    }
     Write-Host '✓ Updated.'
 }
 

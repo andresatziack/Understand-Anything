@@ -1,34 +1,34 @@
-# JSON Language Prompt Snippet
+# Snippet de Prompt da Linguagem JSON
 
-## Key Concepts
+## Conceitos-Chave
 
-- **Strict Syntax**: No trailing commas, no comments (unlike JSONC or JSON5), double-quoted strings only
-- **Data Types**: Objects, arrays, strings, numbers, booleans, and null — no undefined or date types
-- **Nested Structure**: Arbitrary nesting depth for hierarchical configuration or data
-- **Schema Validation**: JSON Schema (`$schema` keyword) for validating structure and types
-- **JSONC**: JSON with Comments variant used by VS Code, tsconfig.json, and other tooling
-- **JSON5**: Extended JSON allowing comments, trailing commas, unquoted keys, and more
-- **JSON Lines** (`.jsonl`): One JSON object per line for streaming data processing
+- **Sintaxe Estrita**: sem trailing commas, sem comentários (diferente de JSONC ou JSON5), apenas strings entre aspas duplas
+- **Tipos de Dados**: objects, arrays, strings, numbers, booleans e null — sem undefined ou tipos de data
+- **Estrutura Aninhada**: profundidade arbitrária de aninhamento para configuração ou dados hierárquicos
+- **Validação por Schema**: JSON Schema (palavra-chave `$schema`) para validar estrutura e tipos
+- **JSONC**: variante JSON with Comments usada pelo VS Code, tsconfig.json e outras ferramentas
+- **JSON5**: JSON estendido permitindo comentários, trailing commas, chaves sem aspas e mais
+- **JSON Lines** (`.jsonl`): um objeto JSON por linha para processamento de dados em streaming
 
-## Notable File Patterns
+## Padrões de Arquivo Notáveis
 
-- `package.json` — Node.js project manifest with dependencies, scripts, and metadata
-- `tsconfig.json` — TypeScript compiler configuration (actually JSONC)
-- `.eslintrc.json` — ESLint linting rules and configuration
-- `*.schema.json` — JSON Schema definitions for validation
-- `composer.json` — PHP Composer project manifest
-- `appsettings.json` — .NET application configuration
-- `manifest.json` — Browser extension or PWA manifest
+- `package.json` — manifesto de projeto Node.js com dependências, scripts e metadados
+- `tsconfig.json` — configuração do compilador TypeScript (na verdade é JSONC)
+- `.eslintrc.json` — regras e configuração de linting do ESLint
+- `*.schema.json` — definições de JSON Schema para validação
+- `composer.json` — manifesto de projeto do Composer (PHP)
+- `appsettings.json` — configuração de aplicação .NET
+- `manifest.json` — manifesto de extensão de browser ou de PWA
 
-## Edge Patterns
+## Padrões de Aresta
 
-- `package.json` `configures` the build toolchain and defines project dependencies
-- `tsconfig.json` `configures` TypeScript compilation for all `.ts` files
-- JSON Schema files `defines_schema` for API request/response validation
-- Config JSON files `configures` the runtime behavior of the application
+- `package.json` `configures` a toolchain de build e define as dependências do projeto
+- `tsconfig.json` `configures` a compilação TypeScript para todos os arquivos `.ts`
+- Arquivos JSON Schema `defines_schema` para validação de request/response de APIs
+- Arquivos JSON de configuração `configures` o comportamento da aplicação em runtime
 
-## Summary Style
+## Estilo de Resumo
 
-> "Node.js project manifest defining N dependencies, build scripts, and project metadata."
-> "TypeScript compiler configuration enabling strict mode with path aliases for monorepo packages."
-> "JSON Schema defining the request/response structure for the user API endpoint."
+> "Manifesto de projeto Node.js definindo N dependências, scripts de build e metadados do projeto."
+> "Configuração do compilador TypeScript habilitando strict mode com path aliases para packages do monorepo."
+> "JSON Schema definindo a estrutura de request/response do endpoint da API de usuários."

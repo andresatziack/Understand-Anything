@@ -1,46 +1,47 @@
-# Ruby Language Prompt Snippet
+# Snippet de Prompt da Linguagem Ruby
 
-## Key Concepts
+## Conceitos-Chave
 
-- **Blocks/Procs/Lambdas**: First-class callable objects; blocks are implicit, procs and lambdas are explicit
-- **Mixins (include/extend)**: Share behavior across classes via modules without inheritance
-- **Metaprogramming**: Dynamic method definition (`define_method`), interception (`method_missing`)
-- **Duck Typing**: Objects are defined by what they can do, not what class they are
-- **DSLs**: Domain-specific languages built using blocks and metaprogramming (e.g., Rails routes)
-- **Monkey Patching**: Reopening existing classes to add or modify methods at runtime
-- **Symbols**: Immutable, interned strings (`:name`) used as identifiers and hash keys
-- **Open Classes**: Any class can be reopened and extended at any point in the program
-- **Enumerable Module**: Mixin providing collection methods (map, select, reduce) to any class with `each`
+- **Blocks/Procs/Lambdas**: objetos invocáveis de primeira classe; blocks são implícitos, procs e lambdas são explícitos
+- **Mixins (include/extend)**: compartilham comportamento entre classes via módulos sem herança
+- **Metaprogramação**: definição dinâmica de métodos (`define_method`), interceptação (`method_missing`)
+- **Duck Typing**: objetos são definidos pelo que podem fazer, não pela classe que são
+- **DSLs**: linguagens específicas de domínio construídas usando blocks e metaprogramação (por exemplo, rotas do Rails)
+- **Monkey Patching**: reabertura de classes existentes para adicionar ou modificar métodos em runtime
+- **Symbols**: strings imutáveis e internadas (`:name`) usadas como identificadores e chaves de hash
+- **Open Classes**: qualquer classe pode ser reaberta e estendida em qualquer ponto do programa
+- **Módulo Enumerable**: mixin que fornece métodos de coleção (map, select, reduce) a qualquer classe com `each`
 
-## Import Patterns
+## Padrões de Importação
 
-- `require 'gem_name'` — load a gem or standard library module
-- `require_relative './file'` — load a file relative to the current file's directory
-- `load 'file.rb'` — load and re-execute a file (unlike require, does not cache)
-- `autoload :ClassName, 'path'` — lazy loading of constants on first reference
+- `require 'gem_name'` — carrega um gem ou módulo da biblioteca padrão
+- `require_relative './file'` — carrega um arquivo relativo ao diretório do arquivo atual
+- `load 'file.rb'` — carrega e reexecuta um arquivo (diferente do require, não cacheia)
+- `autoload :ClassName, 'path'` — carregamento preguiçoso de constantes na primeira referência
 
-## File Patterns
+## Padrões de Arquivos
 
-- `Gemfile` — dependency declarations managed by Bundler
-- `Rakefile` — task definitions (Ruby's make equivalent)
-- `spec/` — RSpec test directory with `*_spec.rb` convention
-- `test/` — Minitest directory with `test_*.rb` or `*_test.rb` convention
-- `config.ru` — Rack application entry point for web servers
-- `lib/` — main source code directory by convention
+- `Gemfile` — declarações de dependências gerenciadas pelo Bundler
+- `Rakefile` — definições de tasks (equivalente do make em Ruby)
+- `spec/` — diretório de testes RSpec com convenção `*_spec.rb`
+- `test/` — diretório de Minitest com convenção `test_*.rb` ou `*_test.rb`
+- `config.ru` — ponto de entrada da aplicação Rack para web servers
+- `lib/` — diretório principal de código-fonte por convenção
 
-## Common Frameworks
+## Frameworks Comuns
 
-- **Rails** — Full-stack web framework following convention over configuration
-- **Sinatra** — Minimal DSL for creating web applications quickly
-- **RSpec** — Behavior-driven testing framework with expressive DSL
-- **Sidekiq** — Background job processing using Redis-backed queues
-- **Grape** — REST API micro-framework for Ruby
+- **Rails** — framework web full-stack seguindo convenção sobre configuração
+- **Sinatra** — DSL minimalista para criar aplicações web rapidamente
+- **RSpec** — framework de testes orientado a comportamento com DSL expressiva
+- **Sidekiq** — processamento de jobs em background usando filas baseadas em Redis
+- **Grape** — micro-framework de APIs REST para Ruby
 
-## Example Language Notes
+## Exemplo de Notas da Linguagem
 
-> Uses `method_missing` to dynamically delegate attribute access to the wrapped model
-> object. When a method is not found on the decorator, it falls through to the model,
-> providing transparent delegation without explicit forwarding methods.
+> Usa `method_missing` para delegar dinamicamente o acesso a atributos para o objeto
+> de modelo envolvido. Quando um método não é encontrado no decorator, ele cai para o
+> modelo, fornecendo delegação transparente sem métodos de forwarding explícitos.
 >
-> Rails relies heavily on convention over configuration — file placement in `app/models/`,
-> `app/controllers/`, etc. determines behavior without explicit registration.
+> O Rails depende fortemente de convenção sobre configuração — a localização dos
+> arquivos em `app/models/`, `app/controllers/`, etc. determina o comportamento sem
+> registro explícito.

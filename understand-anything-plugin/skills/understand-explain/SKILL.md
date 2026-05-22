@@ -6,51 +6,51 @@ argument-hint: [file-path]
 
 # /understand-explain
 
-Provide a thorough, in-depth explanation of a specific code component.
+Forneça uma explicação aprofundada e detalhada de um componente de código específico.
 
-## Graph Structure Reference
+## Referência da Estrutura do Grafo
 
-The knowledge graph JSON has this structure:
+O JSON do knowledge graph tem esta estrutura:
 - `project` — {name, description, languages, frameworks, analyzedAt, gitCommitHash}
-- `nodes[]` — each has {id, type, name, filePath, summary, tags[], complexity, languageNotes?}
-  - Node types: file, function, class, module, concept
+- `nodes[]` — cada um tem {id, type, name, filePath, summary, tags[], complexity, languageNotes?}
+  - Tipos de nó: file, function, class, module, concept
   - IDs: `file:path`, `function:path:name`, `class:path:name`
-- `edges[]` — each has {source, target, type, direction, weight}
-  - Key types: imports, contains, calls, depends_on
-- `layers[]` — each has {id, name, description, nodeIds[]}
-- `tour[]` — each has {order, title, description, nodeIds[]}
+- `edges[]` — cada uma tem {source, target, type, direction, weight}
+  - Tipos-chave: imports, contains, calls, depends_on
+- `layers[]` — cada uma tem {id, name, description, nodeIds[]}
+- `tour[]` — cada um tem {order, title, description, nodeIds[]}
 
-## How to Read Efficiently
+## Como Ler com Eficiência
 
-1. Use Grep to search within the JSON for relevant entries BEFORE reading the full file
-2. Only read sections you need — don't dump the entire graph into context
-3. Node names and summaries are the most useful fields for understanding
-4. Edges tell you how components connect — follow imports and calls for dependency chains
+1. Use Grep para buscar dentro do JSON pelas entradas relevantes ANTES de ler o arquivo inteiro
+2. Leia apenas as seções que você precisa — não despeje o grafo inteiro no contexto
+3. Os campos mais úteis para compreensão são `name` e `summary` dos nós
+4. As arestas dizem como os componentes se conectam — siga imports e calls para cadeias de dependência
 
-## Instructions
+## Instruções
 
-1. Check that `.understand-anything/knowledge-graph.json` exists. If not, tell the user to run `/understand` first.
+1. Verifique se `.understand-anything/knowledge-graph.json` existe. Se não existir, peça ao usuário para rodar `/understand` primeiro.
 
-2. **Find the target node** — use Grep to search the knowledge graph for the component: "$ARGUMENTS"
-   - For file paths (e.g., `src/auth/login.ts`): search for `"filePath"` matches
-   - For function notation (e.g., `src/auth/login.ts:verifyToken`): search for the function name in `"name"` fields filtered by the file path
-   - Note the exact node `id`, `type`, `summary`, `tags`, and `complexity`
+2. **Encontre o nó alvo** — use Grep para buscar no knowledge graph pelo componente: "$ARGUMENTS"
+   - Para caminhos de arquivo (ex.: `src/auth/login.ts`): busque por matches em `"filePath"`
+   - Para notação de função (ex.: `src/auth/login.ts:verifyToken`): busque pelo nome da função em campos `"name"` filtrados pelo caminho do arquivo
+   - Anote o `id`, `type`, `summary`, `tags` e `complexity` exatos do nó
 
-3. **Find all connected edges** — Grep for the target node's ID in the edges section:
-   - `"source"` matches → things this node calls/imports/depends on (outgoing)
-   - `"target"` matches → things that call/import/depend on this node (incoming)
-   - Note the connected node IDs and edge types
+3. **Encontre todas as arestas conectadas** — Grep pelo ID do nó alvo na seção de arestas:
+   - Matches em `"source"` → coisas que este nó chama/importa/depende (saída)
+   - Matches em `"target"` → coisas que chamam/importam/dependem deste nó (entrada)
+   - Anote os IDs de nó conectados e os tipos de aresta
 
-4. **Read connected nodes** — for each connected node ID from step 3, Grep for those IDs in the nodes section to get their `name`, `summary`, and `type`. This builds the component's neighborhood.
+4. **Leia os nós conectados** — para cada ID de nó conectado do passo 3, faça Grep por esses IDs na seção de nós para obter `name`, `summary` e `type`. Isso constrói a vizinhança do componente.
 
-5. **Identify the layer** — Grep for the target node's ID in the `"layers"` section to find which architectural layer it belongs to and that layer's description.
+5. **Identifique a camada** — Grep pelo ID do nó alvo na seção `"layers"` para descobrir a qual camada arquitetural ele pertence e a descrição daquela camada.
 
-6. **Read the actual source file** — Read the source file at the node's `filePath` for the deep-dive analysis.
+6. **Leia o arquivo-fonte real** — leia o arquivo-fonte no `filePath` do nó para a análise aprofundada.
 
-7. **Explain the component in context**:
-   - Its role in the architecture (which layer, why it exists)
-   - Internal structure (functions, classes it contains — from `contains` edges)
-   - External connections (what it imports, what calls it, what it depends on — from edges)
-   - Data flow (inputs → processing → outputs — from source code)
-   - Explain clearly, assuming the reader may not know the programming language
-   - Highlight any patterns, idioms, or complexity worth understanding
+7. **Explique o componente em contexto**:
+   - Seu papel na arquitetura (qual camada, por que existe)
+   - Estrutura interna (funções, classes que ele contém — vindas das arestas `contains`)
+   - Conexões externas (o que importa, o que o chama, do que depende — vindas das arestas)
+   - Fluxo de dados (entradas → processamento → saídas — vindo do código-fonte)
+   - Explique de forma clara, supondo que o leitor pode não conhecer a linguagem de programação
+   - Destaque quaisquer padrões, idiomas ou complexidades que valha a pena entender

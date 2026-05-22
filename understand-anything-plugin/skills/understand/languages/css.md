@@ -1,37 +1,37 @@
-# CSS Language Prompt Snippet
+# Snippet de Prompt da Linguagem CSS
 
-## Key Concepts
+## Conceitos-Chave
 
-- **Selectors**: Element, class (`.name`), ID (`#name`), attribute (`[attr]`), and pseudo-class (`:hover`) targeting
-- **Specificity**: Inline > ID > Class > Element cascade priority determining which rules win
-- **Box Model**: `margin`, `border`, `padding`, `content` dimensions controlling element sizing
-- **Flexbox**: `display: flex` with `justify-content`, `align-items` for one-dimensional layouts
-- **Grid**: `display: grid` with `grid-template-columns/rows` for two-dimensional layouts
-- **Custom Properties (Variables)**: `--name: value` with `var(--name)` for reusable design tokens
-- **Media Queries**: `@media (max-width: ...)` for responsive design breakpoints
-- **SCSS/Sass Features**: Nesting, `$variables`, `@mixin`, `@include`, `@extend`, `@use`, `@forward`
-- **CSS Modules**: Scoped class names (`.module.css`) preventing global style collisions
-- **Cascade Layers**: `@layer` for explicit control over cascade ordering
+- **Seletores**: alvejam por elemento, classe (`.name`), ID (`#name`), atributo (`[attr]`) e pseudo-classe (`:hover`)
+- **Especificidade**: prioridade da cascade Inline > ID > Classe > Elemento determinando quais regras vencem
+- **Box Model**: dimensões `margin`, `border`, `padding`, `content` controlando o tamanho do elemento
+- **Flexbox**: `display: flex` com `justify-content`, `align-items` para layouts unidimensionais
+- **Grid**: `display: grid` com `grid-template-columns/rows` para layouts bidimensionais
+- **Custom Properties (Variáveis)**: `--name: value` com `var(--name)` para design tokens reutilizáveis
+- **Media Queries**: `@media (max-width: ...)` para breakpoints de design responsivo
+- **Recursos do SCSS/Sass**: nesting, `$variables`, `@mixin`, `@include`, `@extend`, `@use`, `@forward`
+- **CSS Modules**: nomes de classe com escopo (`.module.css`) que evitam colisões globais de estilo
+- **Cascade Layers**: `@layer` para controle explícito da ordem da cascade
 
-## Notable File Patterns
+## Padrões de Arquivo Notáveis
 
-- `*.css` — Standard CSS stylesheets
-- `*.scss` / `*.sass` — Sass/SCSS preprocessor files
-- `*.less` — Less preprocessor files
-- `*.module.css` / `*.module.scss` — CSS Modules (scoped styles)
-- `globals.css` / `reset.css` / `normalize.css` — Global base styles
-- `tailwind.config.js` — Tailwind CSS configuration (though a JS file)
-- `variables.scss` / `_variables.scss` — Design token definitions
+- `*.css` — folhas de estilo CSS padrão
+- `*.scss` / `*.sass` — arquivos do pré-processador Sass/SCSS
+- `*.less` — arquivos do pré-processador Less
+- `*.module.css` / `*.module.scss` — CSS Modules (estilos com escopo)
+- `globals.css` / `reset.css` / `normalize.css` — estilos base globais
+- `tailwind.config.js` — configuração do Tailwind CSS (embora seja um arquivo JS)
+- `variables.scss` / `_variables.scss` — definições de design tokens
 
-## Edge Patterns
+## Padrões de Aresta
 
-- CSS files are `related` to the HTML or component files that import them for styling
-- SCSS partial files (`_*.scss`) are `depends_on` by the main stylesheet that `@use`s them
-- CSS variable definition files are `related` to all stylesheets that reference those variables
-- CSS Modules are `related` to the component files that import them
+- Arquivos CSS são `related` aos arquivos HTML ou de componente que os importam para estilização
+- Arquivos parciais SCSS (`_*.scss`) são `depends_on` da folha de estilo principal que os importa via `@use`
+- Arquivos de definição de variáveis CSS são `related` a todas as folhas de estilo que referenciam essas variáveis
+- CSS Modules são `related` aos arquivos de componente que os importam
 
-## Summary Style
+## Estilo de Resumo
 
-> "Global stylesheet defining CSS custom properties for the design system color palette and typography."
-> "Responsive layout styles with flexbox and grid for the dashboard page across 3 breakpoints."
-> "SCSS partial defining shared mixins for spacing, shadows, and media query breakpoints."
+> "Folha de estilo global definindo CSS custom properties para a paleta de cores e tipografia do design system."
+> "Estilos de layout responsivo com flexbox e grid para a página de dashboard em 3 breakpoints."
+> "Parcial SCSS definindo mixins compartilhados para espaçamento, sombras e breakpoints de media query."

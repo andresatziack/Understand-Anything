@@ -1,28 +1,28 @@
-# Homepage Implementation Plan
+# Plano de Implementação da Homepage
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **Para o Claude:** SUB-SKILL OBRIGATÓRIA: Use superpowers:executing-plans para implementar este plano tarefa por tarefa.
 
-**Goal:** Build a cinematic, scroll-driven project homepage for Understand Anything using Astro, deployed to GitHub Pages via `gh-pages` branch.
+**Objetivo:** Construir uma homepage cinematográfica e orientada por scroll para o Understand Anything usando Astro, deployada para o GitHub Pages via branch `gh-pages`.
 
-**Architecture:** Astro SSG project in `homepage/` on main. Self-hosted fonts (DM Serif Display, Inter, JetBrains Mono) with robust fallbacks. Pure CSS animations triggered by `IntersectionObserver`. GitHub Actions workflow builds and deploys to `gh-pages` on push.
+**Arquitetura:** Projeto Astro SSG em `homepage/` na main. Fontes self-hosted (DM Serif Display, Inter, JetBrains Mono) com fallbacks robustos. Animações CSS puras disparadas por `IntersectionObserver`. Workflow do GitHub Actions faz build e deploy para `gh-pages` no push.
 
-**Tech Stack:** Astro 5, CSS custom properties, vanilla JS, GitHub Actions
+**Stack Tecnológica:** Astro 5, CSS custom properties, vanilla JS, GitHub Actions
 
 **Design doc:** `docs/plans/2026-03-15-homepage-design.md`
 
 ---
 
-### Task 1: Scaffold Astro Project
+### Tarefa 1: Scaffold do Projeto Astro
 
-**Files:**
-- Create: `homepage/package.json`
-- Create: `homepage/astro.config.mjs`
-- Create: `homepage/tsconfig.json`
-- Create: `homepage/src/pages/index.astro` (placeholder)
-- Create: `homepage/src/layouts/Layout.astro` (placeholder)
-- Create: `homepage/public/.gitkeep`
+**Arquivos:**
+- Criar: `homepage/package.json`
+- Criar: `homepage/astro.config.mjs`
+- Criar: `homepage/tsconfig.json`
+- Criar: `homepage/src/pages/index.astro` (placeholder)
+- Criar: `homepage/src/layouts/Layout.astro` (placeholder)
+- Criar: `homepage/public/.gitkeep`
 
-**Step 1: Initialize Astro project**
+**Step 1: Inicializar projeto Astro**
 
 ```bash
 cd /Users/yuxianglin/Desktop/opensource/Understand-Anything
@@ -31,11 +31,11 @@ cd homepage
 pnpm create astro@latest . -- --template minimal --no-install --no-git --typescript strict
 ```
 
-If the interactive prompt blocks, create files manually instead.
+Se o prompt interativo travar, crie os arquivos manualmente.
 
-**Step 2: Configure Astro for GitHub Pages**
+**Step 2: Configurar o Astro para o GitHub Pages**
 
-Edit `homepage/astro.config.mjs`:
+Edite `homepage/astro.config.mjs`:
 
 ```js
 import { defineConfig } from 'astro/config';
@@ -46,7 +46,7 @@ export default defineConfig({
 });
 ```
 
-**Step 3: Verify the project builds**
+**Step 3: Verificar que o projeto faz build**
 
 ```bash
 cd /Users/yuxianglin/Desktop/opensource/Understand-Anything/homepage
@@ -54,7 +54,7 @@ pnpm install
 pnpm build
 ```
 
-Expected: Build succeeds, `dist/` directory created.
+Esperado: Build é bem-sucedido, diretório `dist/` criado.
 
 **Step 4: Commit**
 
@@ -65,23 +65,23 @@ git commit -m "feat(homepage): scaffold Astro project with GitHub Pages config"
 
 ---
 
-### Task 2: Self-Host Fonts & Base CSS
+### Tarefa 2: Self-Host das Fontes & CSS Base
 
-**Files:**
-- Create: `homepage/public/fonts/DMSerifDisplay-Regular.woff2`
-- Create: `homepage/public/fonts/Inter-Regular.woff2`
-- Create: `homepage/public/fonts/Inter-SemiBold.woff2`
-- Create: `homepage/public/fonts/JetBrainsMono-Regular.woff2`
-- Create: `homepage/src/styles/global.css`
+**Arquivos:**
+- Criar: `homepage/public/fonts/DMSerifDisplay-Regular.woff2`
+- Criar: `homepage/public/fonts/Inter-Regular.woff2`
+- Criar: `homepage/public/fonts/Inter-SemiBold.woff2`
+- Criar: `homepage/public/fonts/JetBrainsMono-Regular.woff2`
+- Criar: `homepage/src/styles/global.css`
 
-**Step 1: Download font files**
+**Step 1: Baixar arquivos de fonte**
 
-Download the WOFF2 files from Google Fonts API (or fontsource). Place them in `homepage/public/fonts/`. Required files:
+Baixe os arquivos WOFF2 da API do Google Fonts (ou do fontsource). Coloque-os em `homepage/public/fonts/`. Arquivos necessários:
 - DM Serif Display Regular (woff2)
 - Inter Regular + SemiBold (woff2)
 - JetBrains Mono Regular (woff2)
 
-Use curl to download from fontsource CDN or Google Fonts CSS API. Example:
+Use curl para baixar do CDN do fontsource ou da API CSS do Google Fonts. Exemplo:
 
 ```bash
 mkdir -p homepage/public/fonts
@@ -92,11 +92,11 @@ curl -L "https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-600-normal
 curl -L "https://cdn.jsdelivr.net/fontsource/fonts/jetbrains-mono@latest/latin-400-normal.woff2" -o homepage/public/fonts/JetBrainsMono-Regular.woff2
 ```
 
-If download fails, try alternative URLs or use `npx fontsource` to install locally.
+Se o download falhar, tente URLs alternativas ou use `npx fontsource` para instalar localmente.
 
-**Step 2: Create global CSS with design tokens and font-face declarations**
+**Step 2: Criar CSS global com design tokens e declarações font-face**
 
-Create `homepage/src/styles/global.css`:
+Crie `homepage/src/styles/global.css`:
 
 ```css
 /* Font declarations — self-hosted, no external CDN dependency */
@@ -213,9 +213,9 @@ a:hover {
 }
 ```
 
-**Step 3: Import global CSS in Layout**
+**Step 3: Importar CSS global no Layout**
 
-Update `homepage/src/layouts/Layout.astro`:
+Atualize `homepage/src/layouts/Layout.astro`:
 
 ```astro
 ---
@@ -245,14 +245,14 @@ const { title } = Astro.props;
 </style>
 ```
 
-**Step 4: Build and verify fonts load**
+**Step 4: Fazer build e verificar que as fontes carregam**
 
 ```bash
 cd /Users/yuxianglin/Desktop/opensource/Understand-Anything/homepage
 pnpm build
 ```
 
-Expected: Build succeeds. Check `dist/fonts/` contains the woff2 files.
+Esperado: Build é bem-sucedido. Verifique se `dist/fonts/` contém os arquivos woff2.
 
 **Step 5: Commit**
 
@@ -263,14 +263,14 @@ git commit -m "feat(homepage): add self-hosted fonts and design token CSS"
 
 ---
 
-### Task 3: Nav Bar Component
+### Tarefa 3: Componente da Nav Bar
 
-**Files:**
-- Create: `homepage/src/components/Nav.astro`
+**Arquivos:**
+- Criar: `homepage/src/components/Nav.astro`
 
-**Step 1: Create the nav component**
+**Step 1: Criar o componente nav**
 
-Create `homepage/src/components/Nav.astro`:
+Crie `homepage/src/components/Nav.astro`:
 
 ```astro
 ---
@@ -382,9 +382,9 @@ const githubUrl = 'https://github.com/Lum1104/Understand-Anything';
 </style>
 ```
 
-**Step 2: Add Nav to index.astro (temporary test)**
+**Step 2: Adicionar Nav ao index.astro (teste temporário)**
 
-Update `homepage/src/pages/index.astro`:
+Atualize `homepage/src/pages/index.astro`:
 
 ```astro
 ---
@@ -400,14 +400,14 @@ import Nav from '../components/Nav.astro';
 </Layout>
 ```
 
-**Step 3: Build and verify**
+**Step 3: Fazer build e verificar**
 
 ```bash
 cd /Users/yuxianglin/Desktop/opensource/Understand-Anything/homepage
 pnpm build
 ```
 
-Expected: Build succeeds.
+Esperado: Build é bem-sucedido.
 
 **Step 4: Commit**
 
@@ -418,22 +418,22 @@ git commit -m "feat(homepage): add floating nav bar with scroll effect"
 
 ---
 
-### Task 4: Hero Section Component
+### Tarefa 4: Componente da Seção Hero
 
-**Files:**
-- Create: `homepage/src/components/Hero.astro`
-- Copy: `assets/hero.jpg` → `homepage/public/images/hero.jpg`
+**Arquivos:**
+- Criar: `homepage/src/components/Hero.astro`
+- Copiar: `assets/hero.jpg` → `homepage/public/images/hero.jpg`
 
-**Step 1: Copy hero image**
+**Step 1: Copiar a imagem do hero**
 
 ```bash
 mkdir -p /Users/yuxianglin/Desktop/opensource/Understand-Anything/homepage/public/images
 cp /Users/yuxianglin/Desktop/opensource/Understand-Anything/assets/hero.jpg /Users/yuxianglin/Desktop/opensource/Understand-Anything/homepage/public/images/hero.jpg
 ```
 
-**Step 2: Create Hero component**
+**Step 2: Criar componente Hero**
 
-Create `homepage/src/components/Hero.astro`:
+Crie `homepage/src/components/Hero.astro`:
 
 ```astro
 ---
@@ -563,7 +563,7 @@ const githubUrl = 'https://github.com/Lum1104/Understand-Anything';
 </style>
 ```
 
-**Step 3: Build and verify**
+**Step 3: Fazer build e verificar**
 
 ```bash
 cd /Users/yuxianglin/Desktop/opensource/Understand-Anything/homepage
@@ -579,21 +579,21 @@ git commit -m "feat(homepage): add full-viewport hero section with gradient over
 
 ---
 
-### Task 5: Dashboard Showcase Component
+### Tarefa 5: Componente Showcase do Dashboard
 
-**Files:**
-- Create: `homepage/src/components/Showcase.astro`
-- Copy: `assets/overview.png` → `homepage/public/images/overview.png`
+**Arquivos:**
+- Criar: `homepage/src/components/Showcase.astro`
+- Copiar: `assets/overview.png` → `homepage/public/images/overview.png`
 
-**Step 1: Copy dashboard screenshot**
+**Step 1: Copiar screenshot do dashboard**
 
 ```bash
 cp /Users/yuxianglin/Desktop/opensource/Understand-Anything/assets/overview.png /Users/yuxianglin/Desktop/opensource/Understand-Anything/homepage/public/images/overview.png
 ```
 
-**Step 2: Create Showcase component**
+**Step 2: Criar componente Showcase**
 
-Create `homepage/src/components/Showcase.astro`:
+Crie `homepage/src/components/Showcase.astro`:
 
 ```astro
 <section class="showcase">
@@ -669,7 +669,7 @@ Create `homepage/src/components/Showcase.astro`:
 </style>
 ```
 
-**Step 3: Build and verify**
+**Step 3: Fazer build e verificar**
 
 ```bash
 cd /Users/yuxianglin/Desktop/opensource/Understand-Anything/homepage
@@ -685,14 +685,14 @@ git commit -m "feat(homepage): add dashboard showcase with browser frame and gol
 
 ---
 
-### Task 6: Feature Cards Component
+### Tarefa 6: Componente de Cards de Features
 
-**Files:**
-- Create: `homepage/src/components/Features.astro`
+**Arquivos:**
+- Criar: `homepage/src/components/Features.astro`
 
-**Step 1: Create Features component**
+**Step 1: Criar componente Features**
 
-Create `homepage/src/components/Features.astro`:
+Crie `homepage/src/components/Features.astro`:
 
 ```astro
 ---
@@ -783,7 +783,7 @@ const features = [
 </style>
 ```
 
-**Step 2: Build and verify**
+**Step 2: Fazer build e verificar**
 
 ```bash
 cd /Users/yuxianglin/Desktop/opensource/Understand-Anything/homepage
@@ -799,14 +799,14 @@ git commit -m "feat(homepage): add feature cards with glass-morphism and stagger
 
 ---
 
-### Task 7: Install CTA Component
+### Tarefa 7: Componente do Install CTA
 
-**Files:**
-- Create: `homepage/src/components/Install.astro`
+**Arquivos:**
+- Criar: `homepage/src/components/Install.astro`
 
-**Step 1: Create Install component**
+**Step 1: Criar componente Install**
 
-Create `homepage/src/components/Install.astro`:
+Crie `homepage/src/components/Install.astro`:
 
 ```astro
 <section class="install" id="install">
@@ -901,7 +901,7 @@ Create `homepage/src/components/Install.astro`:
 </style>
 ```
 
-**Step 2: Build and verify**
+**Step 2: Fazer build e verificar**
 
 ```bash
 cd /Users/yuxianglin/Desktop/opensource/Understand-Anything/homepage
@@ -917,14 +917,14 @@ git commit -m "feat(homepage): add install CTA with styled code block"
 
 ---
 
-### Task 8: Footer Component
+### Tarefa 8: Componente Footer
 
-**Files:**
-- Create: `homepage/src/components/Footer.astro`
+**Arquivos:**
+- Criar: `homepage/src/components/Footer.astro`
 
-**Step 1: Create Footer component**
+**Step 1: Criar componente Footer**
 
-Create `homepage/src/components/Footer.astro`:
+Crie `homepage/src/components/Footer.astro`:
 
 ```astro
 ---
@@ -990,7 +990,7 @@ const githubUrl = 'https://github.com/Lum1104/Understand-Anything';
 </style>
 ```
 
-**Step 2: Build and verify**
+**Step 2: Fazer build e verificar**
 
 ```bash
 cd /Users/yuxianglin/Desktop/opensource/Understand-Anything/homepage
@@ -1006,14 +1006,14 @@ git commit -m "feat(homepage): add minimal footer"
 
 ---
 
-### Task 9: Assemble Full Page + Scroll Reveal Script
+### Tarefa 9: Montar Página Completa + Script de Scroll Reveal
 
-**Files:**
-- Modify: `homepage/src/pages/index.astro`
+**Arquivos:**
+- Modificar: `homepage/src/pages/index.astro`
 
-**Step 1: Assemble all components in the index page**
+**Step 1: Montar todos os componentes na página index**
 
-Replace `homepage/src/pages/index.astro` with:
+Substitua `homepage/src/pages/index.astro` por:
 
 ```astro
 ---
@@ -1052,23 +1052,23 @@ import Footer from '../components/Footer.astro';
 </script>
 ```
 
-**Step 2: Build and verify the full page**
+**Step 2: Fazer build e verificar a página completa**
 
 ```bash
 cd /Users/yuxianglin/Desktop/opensource/Understand-Anything/homepage
 pnpm build
 ```
 
-Expected: Build succeeds. `dist/index.html` contains all sections.
+Esperado: Build é bem-sucedido. `dist/index.html` contém todas as seções.
 
-**Step 3: Preview locally**
+**Step 3: Preview local**
 
 ```bash
 cd /Users/yuxianglin/Desktop/opensource/Understand-Anything/homepage
 pnpm preview
 ```
 
-Open in browser and verify: Nav, Hero, Showcase, Features, Install CTA, Footer all render correctly. Scroll animations trigger. Nav becomes solid on scroll.
+Abra no navegador e verifique: Nav, Hero, Showcase, Features, Install CTA, Footer renderizam corretamente. Animações de scroll disparam. Nav fica sólida ao rolar.
 
 **Step 4: Commit**
 
@@ -1079,18 +1079,18 @@ git commit -m "feat(homepage): assemble full page with scroll-reveal observer"
 
 ---
 
-### Task 10: GitHub Actions Deployment Workflow
+### Tarefa 10: Workflow de Deploy do GitHub Actions
 
-**Files:**
-- Create: `.github/workflows/deploy-homepage.yml`
+**Arquivos:**
+- Criar: `.github/workflows/deploy-homepage.yml`
 
-**Step 1: Create the workflow file**
+**Step 1: Criar o arquivo de workflow**
 
 ```bash
 mkdir -p /Users/yuxianglin/Desktop/opensource/Understand-Anything/.github/workflows
 ```
 
-Create `.github/workflows/deploy-homepage.yml`:
+Crie `.github/workflows/deploy-homepage.yml`:
 
 ```yaml
 name: Deploy Homepage
@@ -1159,14 +1159,14 @@ git commit -m "ci: add GitHub Actions workflow for homepage deployment to Pages"
 
 ---
 
-### Task 11: Create Favicon
+### Tarefa 11: Criar Favicon
 
-**Files:**
-- Create: `homepage/public/favicon.svg`
+**Arquivos:**
+- Criar: `homepage/public/favicon.svg`
 
-**Step 1: Create a simple gold-on-black SVG favicon**
+**Step 1: Criar um favicon SVG simples gold-on-black**
 
-Create `homepage/public/favicon.svg`:
+Crie `homepage/public/favicon.svg`:
 
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
@@ -1184,12 +1184,12 @@ git commit -m "feat(homepage): add favicon"
 
 ---
 
-### Task 12: Final Build Verification & README Update
+### Tarefa 12: Verificação Final do Build & Atualização do README
 
-**Files:**
-- Modify: `README.md` (add homepage link)
+**Arquivos:**
+- Modificar: `README.md` (add homepage link)
 
-**Step 1: Full clean build**
+**Step 1: Build limpo completo**
 
 ```bash
 cd /Users/yuxianglin/Desktop/opensource/Understand-Anything/homepage
@@ -1197,42 +1197,42 @@ rm -rf dist node_modules
 pnpm install && pnpm build
 ```
 
-Expected: Build succeeds with no warnings.
+Esperado: Build é bem-sucedido sem warnings.
 
-**Step 2: Local preview and manual check**
+**Step 2: Preview local e checagem manual**
 
 ```bash
 cd /Users/yuxianglin/Desktop/opensource/Understand-Anything/homepage
 pnpm preview
 ```
 
-Verify in browser:
-- [ ] Page loads without errors
-- [ ] Fonts render (or fallback gracefully)
-- [ ] Hero section is full viewport with background image
-- [ ] Dashboard screenshot appears in browser frame with gold glow
-- [ ] Feature cards appear in 3 columns (1 column on mobile)
-- [ ] Install code block shows correct commands
-- [ ] Scroll animations trigger on scroll
-- [ ] Nav becomes solid on scroll
-- [ ] All links work (GitHub, Get Started smooth scroll)
-- [ ] Responsive: test at 480px and 768px
+Verifique no navegador:
+- [ ] Página carrega sem erros
+- [ ] Fontes renderizam (ou caem para o fallback graciosamente)
+- [ ] Seção Hero ocupa o viewport completo com imagem de fundo
+- [ ] Screenshot do dashboard aparece no frame de browser com gold glow
+- [ ] Cards de features aparecem em 3 colunas (1 coluna em mobile)
+- [ ] Bloco de código de install mostra os comandos corretos
+- [ ] Animações de scroll disparam no scroll
+- [ ] Nav fica sólida ao rolar
+- [ ] Todos os links funcionam (GitHub, smooth scroll do Get Started)
+- [ ] Responsivo: teste em 480px e 768px
 
-**Step 3: Add homepage link to README.md**
+**Step 3: Adicionar link da homepage no README.md**
 
-Add a "Homepage" link near the top of the README, after the badges section. Add a single line:
+Adicione um link "Homepage" perto do topo do README, depois da seção de badges. Adicione uma única linha:
 
 ```markdown
 **[Homepage](https://understand-anything.com)** | **[GitHub](https://github.com/Lum1104/Understand-Anything)**
 ```
 
-**Step 4: Final commit**
+**Step 4: Commit final**
 
 ```bash
 git add README.md
 git commit -m "docs: add homepage link to README"
 ```
 
-**Step 5: Configure GitHub Pages**
+**Step 5: Configurar GitHub Pages**
 
-After pushing to main, go to GitHub repo Settings → Pages → Source: select "GitHub Actions". The workflow will auto-deploy on the next push that touches `homepage/`.
+Após fazer push para a main, vá em GitHub repo Settings → Pages → Source: selecione "GitHub Actions". O workflow vai fazer auto-deploy no próximo push que tocar `homepage/`.

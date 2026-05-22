@@ -5,49 +5,49 @@ description: Use when you need to generate an onboarding guide for new team memb
 
 # /understand-onboard
 
-Generate a comprehensive onboarding guide from the project's knowledge graph.
+Gere um guia de onboarding completo a partir do knowledge graph do projeto.
 
-## Graph Structure Reference
+## Referência da Estrutura do Grafo
 
-The knowledge graph JSON has this structure:
+O JSON do knowledge graph tem esta estrutura:
 - `project` — {name, description, languages, frameworks, analyzedAt, gitCommitHash}
-- `nodes[]` — each has {id, type, name, filePath, summary, tags[], complexity, languageNotes?}
-  - Node types: file, function, class, module, concept
+- `nodes[]` — cada um tem {id, type, name, filePath, summary, tags[], complexity, languageNotes?}
+  - Tipos de nó: file, function, class, module, concept
   - IDs: `file:path`, `function:path:name`, `class:path:name`
-- `edges[]` — each has {source, target, type, direction, weight}
-  - Key types: imports, contains, calls, depends_on
-- `layers[]` — each has {id, name, description, nodeIds[]}
-- `tour[]` — each has {order, title, description, nodeIds[]}
+- `edges[]` — cada uma tem {source, target, type, direction, weight}
+  - Tipos-chave: imports, contains, calls, depends_on
+- `layers[]` — cada uma tem {id, name, description, nodeIds[]}
+- `tour[]` — cada um tem {order, title, description, nodeIds[]}
 
-## How to Read Efficiently
+## Como Ler com Eficiência
 
-1. Use Grep to search within the JSON for relevant entries BEFORE reading the full file
-2. Only read sections you need — don't dump the entire graph into context
-3. Node names and summaries are the most useful fields for understanding
-4. Edges tell you how components connect — follow imports and calls for dependency chains
+1. Use Grep para buscar dentro do JSON pelas entradas relevantes ANTES de ler o arquivo inteiro
+2. Leia apenas as seções que você precisa — não despeje o grafo inteiro no contexto
+3. Os campos mais úteis para compreensão são `name` e `summary` dos nós
+4. As arestas dizem como os componentes se conectam — siga imports e calls para cadeias de dependência
 
-## Instructions
+## Instruções
 
-1. Check that `.understand-anything/knowledge-graph.json` exists. If not, tell the user to run `/understand` first.
+1. Verifique se `.understand-anything/knowledge-graph.json` existe. Se não existir, peça ao usuário para rodar `/understand` primeiro.
 
-2. **Read project metadata** — use Grep or Read with a line limit to extract the `"project"` section (name, description, languages, frameworks).
+2. **Leia os metadados do projeto** — use Grep ou Read com limite de linhas para extrair a seção `"project"` (name, description, languages, frameworks).
 
-3. **Read layers** — Grep for `"layers"` to get the full layers array. These define the architecture and will structure the guide.
+3. **Leia as camadas** — Grep por `"layers"` para obter o array completo de camadas. Elas definem a arquitetura e estruturarão o guia.
 
-4. **Read the tour** — Grep for `"tour"` to get the guided walkthrough steps. These provide the recommended learning path.
+4. **Leia o tour** — Grep por `"tour"` para obter os passos do walkthrough guiado. Eles fornecem o trajeto de aprendizado recomendado.
 
-5. **Read file-level nodes only** — use Grep to find nodes with `"type": "file"` in the knowledge graph. Skip function-level and class-level nodes to keep the guide high-level. Extract each file node's `name`, `filePath`, `summary`, and `complexity`.
+5. **Leia somente nós em nível de arquivo** — use Grep para encontrar nós com `"type": "file"` no knowledge graph. Pule nós em nível de função e classe para manter o guia em alto nível. Extraia `name`, `filePath`, `summary` e `complexity` de cada nó de arquivo.
 
-6. **Identify complexity hotspots** — from the file-level nodes, find those with the highest `complexity` values. These are areas new developers should approach carefully.
+6. **Identifique pontos quentes de complexidade** — a partir dos nós em nível de arquivo, encontre os de maior `complexity`. São áreas que novos devs devem abordar com cautela.
 
-7. **Generate the onboarding guide** with these sections:
-   - **Project Overview**: name, languages, frameworks, description (from project metadata)
-   - **Architecture Layers**: each layer's name, description, and key files (from layers + file nodes)
-   - **Key Concepts**: important patterns and design decisions (from node summaries and tags)
-   - **Guided Tour**: step-by-step walkthrough (from the tour section)
-   - **File Map**: what each key file does (from file-level nodes, organized by layer)
-   - **Complexity Hotspots**: areas to approach carefully (from complexity values)
+7. **Gere o guia de onboarding** com estas seções:
+   - **Visão Geral do Projeto**: name, languages, frameworks, description (a partir dos metadados do projeto)
+   - **Camadas da Arquitetura**: nome, descrição e arquivos-chave de cada camada (a partir de layers + nós de arquivo)
+   - **Conceitos-Chave**: padrões importantes e decisões de design (a partir dos resumos e tags dos nós)
+   - **Tour Guiado**: walkthrough passo a passo (a partir da seção tour)
+   - **Mapa de Arquivos**: o que cada arquivo-chave faz (a partir dos nós em nível de arquivo, organizados por camada)
+   - **Pontos Quentes de Complexidade**: áreas para abordar com cautela (a partir dos valores de complexity)
 
-8. Format as clean markdown
-9. Offer to save the guide to `docs/ONBOARDING.md` in the project
-10. Suggest the user commit it to the repo for the team
+8. Formate em markdown limpo
+9. Ofereça-se para salvar o guia em `docs/ONBOARDING.md` no projeto
+10. Sugira ao usuário fazer commit dele no repo para o time

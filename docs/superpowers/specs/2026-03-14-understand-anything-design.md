@@ -1,14 +1,14 @@
-# Understand Anything — Design & Implementation Plan
+# Understand Anything — Plano de Design e Implementação
 
-## Context
+## Contexto
 
-AI coding tools have made writing code easy, but understanding code remains hard. Junior developers, non-programmers (PMs, designers), and even experienced devs working in unfamiliar languages struggle to comprehend codebases they didn't write — or that AI wrote for them. The only entity that "understands" the code is the AI itself.
+Ferramentas de IA para programação tornaram a escrita de código fácil, mas entender código continua difícil. Desenvolvedores juniores, não-programadores (PMs, designers) e até mesmo devs experientes trabalhando em linguagens não familiares têm dificuldade para compreender codebases que não escreveram — ou que a IA escreveu para eles. A única entidade que "entende" o código é a própria IA.
 
-**Understand Anything** bridges this gap: an open-source tool that combines LLM intelligence with static analysis to produce an interactive, multi-persona dashboard for understanding any codebase. It runs as a Claude Code skill (leveraging the active session) and serves a rich web dashboard.
+**Understand Anything** preenche essa lacuna: uma ferramenta open-source que combina inteligência de LLM com análise estática para produzir um dashboard interativo e multi-persona para entender qualquer codebase. Ela roda como uma skill do Claude Code (aproveitando a sessão ativa) e serve um dashboard web rico.
 
 ---
 
-## Architecture: Monorepo with Shared Core
+## Arquitetura: Monorepo com Core Compartilhado
 
 ```
 understand-anything/
@@ -29,14 +29,14 @@ understand-anything/
 └── .gitignore
 ```
 
-**Key decisions:**
-- **Monorepo** (pnpm workspaces) — skill and dashboard share the core analysis engine
-- **JSON interchange** — knowledge graph is a JSON file, readable by both skill and dashboard
-- **Committable + auto-sync** — graph persists in `.understand-anything/`, can be committed to git, auto-detects staleness via git diff
+**Decisões-chave:**
+- **Monorepo** (pnpm workspaces) — skill e dashboard compartilham o engine de análise core
+- **Intercâmbio JSON** — o knowledge graph é um arquivo JSON, legível tanto pela skill quanto pelo dashboard
+- **Commitável + auto-sync** — o grafo persiste em `.understand-anything/`, pode ser commitado no git, auto-detecta staleness via git diff
 
 ---
 
-## Knowledge Graph Schema
+## Schema do Knowledge Graph
 
 ```typescript
 interface KnowledgeGraph {
@@ -108,7 +108,7 @@ interface TourStep {
 
 ---
 
-## Dashboard: Multi-Panel Workspace (React + TypeScript)
+## Dashboard: Workspace Multi-Painel (React + TypeScript)
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -133,43 +133,43 @@ interface TourStep {
 └──────────────────────┴──────────────────────────────────┘
 ```
 
-**Tech stack:**
+**Stack técnica:**
 - React 18 + TypeScript + Vite
-- React Flow — graph visualization (built for node graphs, better than raw D3 for this)
-- Monaco Editor — code viewer with syntax highlighting (same as VS Code)
-- TailwindCSS — styling
-- Zustand — state management (lightweight, no boilerplate)
+- React Flow — visualização de grafo (feito para grafos de nós, melhor que D3 puro para isso)
+- Monaco Editor — code viewer com syntax highlighting (o mesmo do VS Code)
+- TailwindCSS — estilização
+- Zustand — gerenciamento de estado (leve, sem boilerplate)
 
-**Persona modes:**
-- Non-technical: High-level concept nodes, code viewer hidden, learn panel expanded
-- Junior dev: All panels, learn panel prominent, complexity indicators
-- Experienced dev: Code viewer prominent, chat panel for deep dives
+**Modos de persona:**
+- Não-técnico: nós conceituais de alto nível, code viewer escondido, learn panel expandido
+- Junior dev: todos os painéis, learn panel proeminente, indicadores de complexidade
+- Dev experiente: code viewer proeminente, chat panel para deep dives
 
-**Natural language search:**
-- Searches against node `tags`, `summary`, and `name` fields
-- Uses embedding similarity if available, falls back to keyword matching
-- Highlights matching nodes in the graph, filters the list
+**Busca em linguagem natural:**
+- Pesquisa contra os campos `tags`, `summary` e `name` dos nós
+- Usa similaridade por embedding se disponível, com fallback para keyword matching
+- Destaca nós correspondentes no grafo, filtra a lista
 
 ---
 
-## Claude Code Skill Commands
+## Comandos da Skill do Claude Code
 
-| Command | Description |
+| Comando | Descrição |
 |---------|-------------|
-| `/understand` | Full analysis (or incremental update if graph exists) + open dashboard |
-| `/understand-chat "<query>"` | In-terminal Q&A using the knowledge graph |
-| `/understand-diff` | Analyze current PR/diff — explain changes, affected areas, risks |
-| `/understand-explain <path>` | Deep-dive explanation of a specific file or function |
-| `/understand-onboard` | Generate structured onboarding guide for new team members |
+| `/understand` | Análise completa (ou atualização incremental se o grafo já existir) + abre o dashboard |
+| `/understand-chat "<query>"` | Q&A no terminal usando o knowledge graph |
+| `/understand-diff` | Analisa o PR/diff atual — explica mudanças, áreas afetadas, riscos |
+| `/understand-explain <path>` | Explicação aprofundada de um arquivo ou função específica |
+| `/understand-onboard` | Gera um guia estruturado de onboarding para novos membros do time |
 
-**LLM strategy:**
-- Inside Claude Code → uses the active Claude session (zero extra cost)
-- Standalone dashboard → users provide Claude API key for chat features
-- Graph browsing, search, and learn mode work offline (pre-generated data)
+**Estratégia de LLM:**
+- Dentro do Claude Code → usa a sessão ativa do Claude (custo extra zero)
+- Dashboard standalone → usuários fornecem chave da Claude API para recursos de chat
+- Navegação no grafo, busca e modo learn funcionam offline (dados pré-gerados)
 
 ---
 
-## Persistence & Staleness Detection
+## Persistência e Detecção de Staleness
 
 ```
 .understand-anything/
@@ -188,15 +188,15 @@ interface TourStep {
     └── default-tour.json
 ```
 
-**Auto-sync flow:**
-1. Skill starts → reads `meta.json` → gets last analyzed commit hash
-2. Runs `git diff <last-hash>..HEAD --name-only` → gets changed files
-3. If no changes → serves existing graph
-4. If changes → re-analyzes only changed files → merges into existing graph → updates meta
+**Fluxo de auto-sync:**
+1. Skill inicia → lê `meta.json` → obtém o último hash de commit analisado
+2. Roda `git diff <last-hash>..HEAD --name-only` → obtém arquivos alterados
+3. Se nenhuma mudança → serve o grafo existente
+4. Se houver mudanças → re-analisa apenas os arquivos alterados → faz merge no grafo existente → atualiza meta
 
 ---
 
-## Plugin System
+## Sistema de Plugins
 
 ```typescript
 interface AnalyzerPlugin {
@@ -208,61 +208,61 @@ interface AnalyzerPlugin {
 }
 ```
 
-**Day 1: tree-sitter plugin** — uses `node-tree-sitter` with language grammars for:
+**Dia 1: plugin tree-sitter** — usa `node-tree-sitter` com gramáticas de linguagens para:
 - TypeScript/JavaScript, Python, Go, Java, Rust, C/C++
-- Extracts: function/class boundaries, import/export statements, call sites
-- Combined with LLM analysis for semantic understanding
+- Extrai: limites de função/classe, statements de import/export, call sites
+- Combinado com análise de LLM para entendimento semântico
 
-**Future: community plugins** for language-specific deep analysis.
-
----
-
-## Implementation Phases
-
-### Phase 1: Foundation (MVP)
-1. Project scaffolding — monorepo, TypeScript config, build setup
-2. Core: Knowledge graph schema + JSON persistence
-3. Core: LLM analysis engine (file-by-file analysis using prompts)
-4. Core: tree-sitter integration for structural analysis
-5. Skill: `/understand` command — analyze + persist graph
-6. Dashboard: Basic React app that reads and renders the graph
-7. Dashboard: Graph view with React Flow
-8. Dashboard: Code viewer with Monaco Editor
-
-### Phase 2: Intelligence
-9. Natural language search across graph nodes
-10. Skill: `/understand-chat` — terminal Q&A
-11. Dashboard: Chat panel with context-aware Q&A
-12. Staleness detection + incremental updates
-13. Layer auto-detection (group nodes into logical layers)
-
-### Phase 3: Learn Mode
-14. Tour generation — guided project walkthrough
-15. Contextual explanations — click-to-explain
-16. Language-specific lessons in context of the user's code
-17. Persona modes (non-technical / junior / experienced)
-
-### Phase 4: Advanced
-18. Skill: `/understand-diff` — PR/diff analysis
-19. Skill: `/understand-explain` — deep-dive on specific files
-20. Skill: `/understand-onboard` — onboarding guide generation
-21. Community plugin system
-22. Embedding-based semantic search (optional enhancement)
+**Futuro: plugins da comunidade** para análise profunda específica de cada linguagem.
 
 ---
 
-## Verification
+## Fases de Implementação
 
-### How to test end-to-end:
-1. **Skill analysis**: Run `/understand` on a sample project → verify `.understand-anything/knowledge-graph.json` is generated with correct schema
-2. **Incremental update**: Modify a file → run `/understand` again → verify only the changed file is re-analyzed
-3. **Dashboard**: Open `http://localhost:5173` → verify graph renders, nodes are clickable, search works
-4. **Chat**: Ask a question in the chat panel → verify it returns a relevant answer using the knowledge graph
-5. **Learn mode**: Start the tour → verify it walks through the project step by step
-6. **Tree-sitter**: Analyze a TypeScript file → verify function boundaries and import relationships match the actual code
+### Fase 1: Fundação (MVP)
+1. Scaffolding do projeto — monorepo, config TypeScript, setup de build
+2. Core: Schema do knowledge graph + persistência JSON
+3. Core: Engine de análise por LLM (análise arquivo a arquivo usando prompts)
+4. Core: Integração com tree-sitter para análise estrutural
+5. Skill: comando `/understand` — analisa + persiste o grafo
+6. Dashboard: app React básico que lê e renderiza o grafo
+7. Dashboard: graph view com React Flow
+8. Dashboard: code viewer com Monaco Editor
 
-### Test projects to validate against:
-- A small TypeScript project (the tool itself)
-- A Python Flask/Django API
-- A Go microservice
-- A mixed-language monorepo
+### Fase 2: Inteligência
+9. Busca em linguagem natural pelos nós do grafo
+10. Skill: `/understand-chat` — Q&A no terminal
+11. Dashboard: chat panel com Q&A context-aware
+12. Detecção de staleness + atualizações incrementais
+13. Auto-detecção de camadas (agrupar nós em camadas lógicas)
+
+### Fase 3: Modo Learn
+14. Geração de tour — walkthrough guiado do projeto
+15. Explicações contextuais — clique para explicar
+16. Lições específicas de linguagem no contexto do código do usuário
+17. Modos de persona (não-técnico / junior / experiente)
+
+### Fase 4: Avançado
+18. Skill: `/understand-diff` — análise de PR/diff
+19. Skill: `/understand-explain` — deep-dive em arquivos específicos
+20. Skill: `/understand-onboard` — geração de guia de onboarding
+21. Sistema de plugins da comunidade
+22. Busca semântica baseada em embeddings (melhoria opcional)
+
+---
+
+## Verificação
+
+### Como testar end-to-end:
+1. **Análise da skill**: Rode `/understand` em um projeto de exemplo → verifique se `.understand-anything/knowledge-graph.json` é gerado com o schema correto
+2. **Atualização incremental**: Modifique um arquivo → rode `/understand` novamente → verifique que apenas o arquivo alterado é re-analisado
+3. **Dashboard**: Abra `http://localhost:5173` → verifique que o grafo renderiza, os nós são clicáveis, a busca funciona
+4. **Chat**: Faça uma pergunta no chat panel → verifique que retorna uma resposta relevante usando o knowledge graph
+5. **Modo learn**: Inicie o tour → verifique que ele percorre o projeto passo a passo
+6. **Tree-sitter**: Analise um arquivo TypeScript → verifique que limites de função e relações de import batem com o código real
+
+### Projetos de teste para validar:
+- Um projeto pequeno em TypeScript (a própria ferramenta)
+- Uma API Python Flask/Django
+- Um microsserviço em Go
+- Um monorepo com múltiplas linguagens

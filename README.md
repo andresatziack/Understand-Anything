@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="README.md">English</a> | <a href="READMEs/README.zh-CN.md">简体中文</a> | <a href="READMEs/README.zh-TW.md">繁體中文</a> | <a href="READMEs/README.ja-JP.md">日本語</a> | <a href="READMEs/README.ko-KR.md">한국어</a> | <a href="READMEs/README.es-ES.md">Español</a> | <a href="READMEs/README.tr-TR.md">Türkçe</a> | <a href="READMEs/README.ru-RU.md">Русский</a>
+  <a href="README.md">English</a> | <a href="READMEs/README.zh-CN.md">简体中文</a> | <a href="READMEs/README.zh-TW.md">繁體中文</a> | <a href="READMEs/README.ja-JP.md">日本語</a> | <a href="READMEs/README.ko-KR.md">한국어</a> | <a href="READMEs/README.es-ES.md">Español</a> | <a href="READMEs/README.tr-TR.md">Türkçe</a> | <a href="READMEs/README.ru-RU.md">Русский</a> | <a href="READMEs/README.pt-BR.md">Português (Brasil)</a>
 </p>
 
 <p align="center">
@@ -20,6 +20,7 @@
   <a href="#gemini-cli"><img src="https://img.shields.io/badge/Gemini_CLI-4285F4" alt="Gemini CLI" /></a>
   <a href="#opencode"><img src="https://img.shields.io/badge/OpenCode-38bdf8" alt="OpenCode" /></a>
   <a href="#mistral-vibe-cli"><img src="https://img.shields.io/badge/Vibe_CLI-7c3aed" alt="Vibe CLI" /></a>
+  <a href="#kiro"><img src="https://img.shields.io/badge/Kiro-d4a574" alt="Kiro" /></a>
   <a href="https://understand-anything.com"><img src="https://img.shields.io/badge/Homepage-d4a574" alt="Homepage" /></a>
   <a href="https://understand-anything.com/demo/"><img src="https://img.shields.io/badge/Live_Demo-00c853" alt="Live Demo" /></a>
 </p>
@@ -170,7 +171,7 @@ Understand-Anything works across multiple AI coding platforms.
 /plugin install understand-anything
 ```
 
-### One-line install (Codex / OpenCode / OpenClaw / Antigravity / Gemini CLI / Pi Agent / Vibe CLI / VS Code Copilot / Hermes / Cline / KIMI CLI)
+### One-line install (Codex / OpenCode / OpenClaw / Antigravity / Gemini CLI / Pi Agent / Vibe CLI / VS Code Copilot / Hermes / Cline / KIMI CLI / Kiro)
 
 **macOS / Linux:**
 ```bash
@@ -186,7 +187,7 @@ iwr -useb https://raw.githubusercontent.com/Lum1104/Understand-Anything/main/ins
 
 The installer clones the repo to `~/.understand-anything/repo` and creates the right symlinks for the chosen platform. Restart your CLI/IDE afterwards.
 
-- Supported `<platform>` values: `gemini`, `codex`, `opencode`, `pi`, `openclaw`, `antigravity`, `vibe`, `vscode`, `hermes`, `cline`, `kimi`
+- Supported `<platform>` values: `gemini`, `codex`, `opencode`, `pi`, `openclaw`, `antigravity`, `vibe`, `vscode`, `hermes`, `cline`, `kimi`, `kiro`
 - Update later: `./install.sh --update`
 - Uninstall: `./install.sh --uninstall <platform>`
 
@@ -199,6 +200,18 @@ Cursor auto-discovers the plugin via `.cursor-plugin/plugin.json` when this repo
 VS Code with GitHub Copilot (v1.108+) auto-discovers the plugin via `.copilot-plugin/plugin.json` when this repo is cloned. No manual installation needed — just clone and open in VS Code.
 
 For personal skills (available across all projects), run the `install.sh` above with the `vscode` platform.
+
+### Kiro
+
+Kiro is the AWS-built AI IDE/agent that reads `.kiro/steering/*.md` files as persistent guidance. There are two ways to install Understand Anything for Kiro:
+
+1. **Auto-discovery (per-repo).** Clone this repo and open it in Kiro. Kiro picks up `.kiro-plugin/plugin.json` (skills + agents) and the steering file at `.kiro/steering/understand-anything.md` (read by Kiro's default steering scope) automatically.
+2. **Global install (all projects).** Run `./install.sh kiro` (or `./install.ps1 kiro` on Windows). The installer links every skill into `~/.kiro/skills/` and copies the steering file to `~/.kiro/steering/understand-anything.md`, so any Kiro session knows how to invoke each slash command.
+
+> [!IMPORTANT]
+> **Trust boundary.** The steering file shapes how the agent interprets prompts before you type anything. The curl-pipe install (`curl -fsSL ... | bash -s kiro`) drops both the skills *and* this behavior-shaping steering file into your home directory with no integrity check (no checksum, no signature, no version pin). For higher-trust environments, prefer the clone-then-`./install.sh kiro` flow so you can review `.kiro/steering/understand-anything.md` before it ships into `~/.kiro/steering/`.
+
+Tip: see [`docs/kiro-integration.md`](docs/kiro-integration.md) for a deeper guide (PT-BR output, troubleshooting, uninstall).
 
 ### Copilot CLI
 
@@ -224,6 +237,7 @@ copilot plugin install Lum1104/Understand-Anything:understand-anything-plugin
 | Hermes | ✅ Supported | `install.sh hermes` |
 | Cline | ✅ Supported | `install.sh cline` |
 | KIMI CLI | ✅ Supported | `install.sh kimi` |
+| Kiro | ✅ Supported | Auto-discovery / `install.sh kiro` |
 
 ---
 

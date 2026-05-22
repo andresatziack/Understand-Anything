@@ -1,117 +1,117 @@
-# Understand Anything: Universal File Type Support
+# Understand Anything: Suporte Universal a Tipos de Arquivo
 
-**Date**: 2026-03-28
-**Status**: Approved
-**Approach**: Big Bang — all file types in one release
+**Data**: 2026-03-28
+**Status**: Aprovado
+**Abordagem**: Big Bang — todos os tipos de arquivo em uma release
 
-## Goals
+## Objetivos
 
-1. Extend Understand Anything to analyze **any** file type, not just code
-2. Support both holistic project enrichment (non-code files enrich code graphs) and standalone analysis (docs-only repos, SQL schema collections, IaC projects)
-3. Maintain backward compatibility with existing code-only analysis
+1. Estender o Understand Anything para analisar **qualquer** tipo de arquivo, não apenas código
+2. Suportar tanto enriquecimento holístico de projeto (arquivos não-código enriquecem grafos de código) quanto análise standalone (repos só-docs, coleções de schemas SQL, projetos IaC)
+3. Manter compatibilidade retroativa com a análise código-only existente
 
-## Supported File Types (26 new)
+## Tipos de Arquivo Suportados (26 novos)
 
-### Documentation (3)
+### Documentação (3)
 
-| Type | Extensions | Parser | Node Types |
+| Tipo | Extensões | Parser | Tipos de Nó |
 |------|-----------|--------|------------|
-| Markdown | `.md`, `.mdx` | LLM + regex heading extraction | `document` |
+| Markdown | `.md`, `.mdx` | LLM + regex de extração de heading | `document` |
 | reStructuredText | `.rst` | LLM | `document` |
-| Plain text | `.txt` | LLM | `document` |
+| Texto plano | `.txt` | LLM | `document` |
 
-### Configuration (5)
+### Configuração (5)
 
-| Type | Extensions | Parser | Node Types |
+| Tipo | Extensões | Parser | Tipos de Nó |
 |------|-----------|--------|------------|
-| YAML | `.yaml`, `.yml` | `yaml` npm package | `config` |
+| YAML | `.yaml`, `.yml` | pacote npm `yaml` | `config` |
 | JSON | `.json`, `.jsonc` | `JSON.parse` / `jsonc-parser` | `config`, `schema` |
-| TOML | `.toml` | `@iarna/toml` or similar | `config` |
-| .env | `.env`, `.env.*` | Regex line parser | `config` |
-| XML | `.xml` | LLM (optionally `fast-xml-parser`) | `config` |
+| TOML | `.toml` | `@iarna/toml` ou similar | `config` |
+| .env | `.env`, `.env.*` | Parser regex de linha | `config` |
+| XML | `.xml` | LLM (opcionalmente `fast-xml-parser`) | `config` |
 
-### Infrastructure & DevOps (7)
+### Infraestrutura e DevOps (7)
 
-| Type | Extensions | Parser | Node Types |
+| Tipo | Extensões | Parser | Tipos de Nó |
 |------|-----------|--------|------------|
-| Dockerfile | `Dockerfile`, `Dockerfile.*`, `.dockerfile` | Custom instruction parser | `service`, `pipeline` |
-| Docker Compose | `docker-compose.yml`, `compose.yml` | YAML parser + service extraction | `service` |
-| Terraform | `.tf`, `.tfvars` | Regex block parser | `resource` |
-| Kubernetes | K8s YAML (detected by `apiVersion` field) | YAML + kind detection | `service`, `resource` |
-| GitHub Actions | `.github/workflows/*.yml` | YAML + job/step extraction | `pipeline` |
-| Jenkinsfile | `Jenkinsfile` | LLM (Groovy DSL) | `pipeline` |
-| Makefile | `Makefile`, `*.mk` | Regex target parser | `pipeline` |
+| Dockerfile | `Dockerfile`, `Dockerfile.*`, `.dockerfile` | Parser de instrução customizado | `service`, `pipeline` |
+| Docker Compose | `docker-compose.yml`, `compose.yml` | Parser YAML + extração de serviço | `service` |
+| Terraform | `.tf`, `.tfvars` | Parser regex de bloco | `resource` |
+| Kubernetes | YAML K8s (detectado pelo campo `apiVersion`) | YAML + detecção de kind | `service`, `resource` |
+| GitHub Actions | `.github/workflows/*.yml` | YAML + extração de job/step | `pipeline` |
+| Jenkinsfile | `Jenkinsfile` | LLM (DSL Groovy) | `pipeline` |
+| Makefile | `Makefile`, `*.mk` | Parser regex de target | `pipeline` |
 
-### Data & Schema (6)
+### Dados e Schema (6)
 
-| Type | Extensions | Parser | Node Types |
+| Tipo | Extensões | Parser | Tipos de Nó |
 |------|-----------|--------|------------|
-| SQL | `.sql` | Simple DDL parser | `table`, `endpoint` |
-| GraphQL | `.graphql`, `.gql` | Regex type/query parser | `schema`, `endpoint` |
-| OpenAPI/Swagger | `openapi.yaml`, `swagger.json` | YAML/JSON + path extraction | `endpoint`, `schema` |
-| Protocol Buffers | `.proto` | Regex message/service parser | `schema` |
-| JSON Schema | `*.schema.json` | JSON + `$ref`/`$defs` extraction | `schema` |
-| CSV/TSV | `.csv`, `.tsv` | Header row extraction | `table` |
+| SQL | `.sql` | Parser DDL simples | `table`, `endpoint` |
+| GraphQL | `.graphql`, `.gql` | Parser regex de type/query | `schema`, `endpoint` |
+| OpenAPI/Swagger | `openapi.yaml`, `swagger.json` | YAML/JSON + extração de path | `endpoint`, `schema` |
+| Protocol Buffers | `.proto` | Parser regex de message/service | `schema` |
+| JSON Schema | `*.schema.json` | JSON + extração de `$ref`/`$defs` | `schema` |
+| CSV/TSV | `.csv`, `.tsv` | Extração de linha de header | `table` |
 
-### Shell & Scripts (3)
+### Shell e Scripts (3)
 
-| Type | Extensions | Parser | Node Types |
+| Tipo | Extensões | Parser | Tipos de Nó |
 |------|-----------|--------|------------|
-| Shell | `.sh`, `.bash`, `.zsh` | Regex function parser | `file`, `function` |
+| Shell | `.sh`, `.bash`, `.zsh` | Parser regex de função | `file`, `function` |
 | PowerShell | `.ps1`, `.psm1` | LLM | `file`, `function` |
 | Batch | `.bat`, `.cmd` | LLM | `file` |
 
 ### Markup (2)
 
-| Type | Extensions | Parser | Node Types |
+| Tipo | Extensões | Parser | Tipos de Nó |
 |------|-----------|--------|------------|
-| HTML | `.html`, `.htm` | LLM (tag structure) | `document` |
+| HTML | `.html`, `.htm` | LLM (estrutura de tag) | `document` |
 | CSS/SCSS/Less | `.css`, `.scss`, `.less` | LLM | `file` |
 
-## Schema Extensions
+## Extensões de Schema
 
-### New Node Types (8)
+### Novos Tipos de Nó (8)
 
-Added to the existing `file | function | class | module | concept`:
+Adicionados aos `file | function | class | module | concept` existentes:
 
-| Node Type | Purpose | Example |
+| Tipo de Nó | Propósito | Exemplo |
 |-----------|---------|---------|
-| `config` | Configuration files and key settings | `package.json`, `tsconfig.json`, env vars |
-| `document` | Documentation, prose, guides | `README.md`, API docs |
-| `service` | Deployable services/containers | Docker containers, K8s Deployments |
-| `table` | Data tables, database objects | SQL tables, CSV datasets |
-| `endpoint` | API routes, queries, mutations | REST paths, GraphQL queries |
-| `pipeline` | CI/CD workflows, build steps | GitHub Actions jobs, Makefile targets |
-| `schema` | Type definitions for data interchange | Protobuf messages, JSON Schema |
-| `resource` | Infrastructure resources | Terraform resources, K8s ConfigMaps |
+| `config` | Arquivos de configuração e settings-chave | `package.json`, `tsconfig.json`, env vars |
+| `document` | Documentação, prosa, guias | `README.md`, docs de API |
+| `service` | Serviços/containers deployáveis | Containers Docker, Deployments K8s |
+| `table` | Tabelas de dados, objetos de banco | Tabelas SQL, datasets CSV |
+| `endpoint` | Rotas de API, queries, mutations | Paths REST, queries GraphQL |
+| `pipeline` | Workflows CI/CD, build steps | Jobs do GitHub Actions, targets de Makefile |
+| `schema` | Definições de tipo para troca de dados | Mensagens Protobuf, JSON Schema |
+| `resource` | Recursos de infraestrutura | Recursos Terraform, ConfigMaps K8s |
 
-### New Edge Types (8)
+### Novos Tipos de Aresta (8)
 
-Added to the existing 18 edge types:
+Adicionados aos 18 tipos de aresta existentes:
 
-| Edge Type | Category | Meaning | Example |
+| Tipo de Aresta | Categoria | Significado | Exemplo |
 |-----------|----------|---------|---------|
-| `deploys` | Infrastructure | Service deploys code | Dockerfile -> app source |
-| `serves` | Infrastructure | Service exposes endpoint | K8s Service -> API endpoint |
-| `migrates` | Data flow | Migration modifies table | SQL migration -> table |
-| `documents` | Semantic | Doc describes code | README -> module |
-| `provisions` | Infrastructure | IaC creates resource | Terraform -> AWS resource |
-| `routes` | Behavioral | Routes traffic to service | nginx config -> service |
-| `defines_schema` | Data flow | Defines data shape | Protobuf -> endpoint |
-| `triggers` | Behavioral | Triggers pipeline/action | Git push -> GitHub Actions |
+| `deploys` | Infraestrutura | Serviço faz deploy de código | Dockerfile -> source da app |
+| `serves` | Infraestrutura | Serviço expõe endpoint | Service K8s -> endpoint de API |
+| `migrates` | Fluxo de dados | Migration modifica tabela | Migration SQL -> tabela |
+| `documents` | Semântico | Doc descreve código | README -> módulo |
+| `provisions` | Infraestrutura | IaC cria recurso | Terraform -> recurso AWS |
+| `routes` | Comportamental | Roteia tráfego para serviço | Config nginx -> serviço |
+| `defines_schema` | Fluxo de dados | Define formato de dados | Protobuf -> endpoint |
+| `triggers` | Comportamental | Dispara pipeline/action | Git push -> GitHub Actions |
 
-### Schema Validation Auto-Fix Aliases
+### Aliases de Auto-Fix da Validação de Schema
 
-New node type aliases:
+Novos aliases de tipo de nó:
 - `container` -> `service`, `migration` -> `table`, `workflow` -> `pipeline`
 - `route` -> `endpoint`, `doc` -> `document`, `setting` -> `config`, `infra` -> `resource`
 
-New edge type aliases:
+Novos aliases de tipo de aresta:
 - `describes` -> `documents`, `creates` -> `provisions`, `exposes` -> `serves`
 
-## Plugin Architecture Changes
+## Mudanças na Arquitetura de Plugins
 
-### Generalized AnalyzerPlugin Interface
+### Interface AnalyzerPlugin Generalizada
 
 ```typescript
 interface AnalyzerPlugin {
@@ -131,7 +131,7 @@ interface ReferenceResolution {
 }
 ```
 
-### Extended StructuralAnalysis
+### StructuralAnalysis Estendida
 
 ```typescript
 interface StructuralAnalysis {
@@ -150,117 +150,117 @@ interface StructuralAnalysis {
 }
 ```
 
-### Custom Parsers (12)
+### Parsers Customizados (12)
 
-All lightweight — mostly regex-based, minimal dependencies:
+Todos leves — em sua maioria baseados em regex, dependências mínimas:
 
-| Parser | Implementation | Extracts |
+| Parser | Implementação | Extrai |
 |--------|---------------|----------|
-| `MarkdownParser` | Regex | Headings, links, code blocks, front matter |
-| `YAMLParser` | `yaml` npm | Key hierarchy, anchors, multi-doc |
-| `JSONParser` | Built-in `JSON.parse` | Key structure, `$ref`/`$defs` |
-| `TOMLParser` | `@iarna/toml` | Section structure |
-| `EnvParser` | Regex | Variable names and references |
-| `DockerfileParser` | Regex | FROM stages, EXPOSE ports, COPY sources |
-| `SQLParser` | Regex | CREATE TABLE/VIEW/INDEX, columns, foreign keys |
+| `MarkdownParser` | Regex | Headings, links, blocos de código, front matter |
+| `YAMLParser` | npm `yaml` | Hierarquia de chaves, anchors, multi-doc |
+| `JSONParser` | `JSON.parse` built-in | Estrutura de chave, `$ref`/`$defs` |
+| `TOMLParser` | `@iarna/toml` | Estrutura de seção |
+| `EnvParser` | Regex | Nomes de variáveis e referências |
+| `DockerfileParser` | Regex | Stages FROM, portas EXPOSE, sources COPY |
+| `SQLParser` | Regex | CREATE TABLE/VIEW/INDEX, colunas, foreign keys |
 | `GraphQLParser` | Regex | Types, queries, mutations, subscriptions |
 | `ProtobufParser` | Regex | Messages, services, enums, RPCs |
 | `TerraformParser` | Regex | Resources, modules, variables, outputs |
-| `MakefileParser` | Regex | Targets, dependencies, variables |
-| `ShellParser` | Regex | Functions, sourced files |
+| `MakefileParser` | Regex | Targets, dependências, variáveis |
+| `ShellParser` | Regex | Funções, arquivos sourced |
 
-## Agent Pipeline Changes
+## Mudanças no Pipeline de Agentes
 
 ### Project Scanner
 
-1. Scan ALL file types (remove code-only filter)
-2. Tag each file with category: `code`, `config`, `docs`, `infra`, `data`, `script`, `markup`
-3. Smart batch grouping: keep related files together (e.g., Dockerfile + docker-compose.yml)
+1. Escanear TODOS os tipos de arquivo (remover o filtro código-only)
+2. Tagar cada arquivo com categoria: `code`, `config`, `docs`, `infra`, `data`, `script`, `markup`
+3. Agrupamento inteligente de batch: manter arquivos relacionados juntos (ex: Dockerfile + docker-compose.yml)
 
 ### File Analyzer
 
-Type-aware prompt templates by category:
+Templates de prompt cientes do tipo por categoria:
 
-- **Code**: Current behavior (functions, classes, imports, call graph)
-- **Config**: Extract key settings, what they configure, which code files they affect
-- **Documentation**: Extract sections, key concepts, which code components are documented
-- **Infrastructure**: Extract services, ports, volumes, dependencies, which code they deploy
-- **Data/Schema**: Extract tables, columns, types, relationships, which code consumes this data
-- **Pipelines**: Extract jobs, steps, triggers, which code/infra they build/deploy
+- **Code**: Comportamento atual (functions, classes, imports, call graph)
+- **Config**: Extrair settings-chave, o que configuram, quais arquivos de código afetam
+- **Documentation**: Extrair seções, conceitos-chave, quais componentes de código são documentados
+- **Infrastructure**: Extrair serviços, portas, volumes, dependências, qual código é deployado
+- **Data/Schema**: Extrair tabelas, colunas, types, relacionamentos, qual código consome esses dados
+- **Pipelines**: Extrair jobs, steps, triggers, qual código/infra é buildado/deployado
 
-### Cross-Type Reference Resolution
+### Resolução de Referências Cross-Type
 
-Post-analysis step connecting:
-- Dockerfile `COPY` -> source code directories
-- CI config `run: npm test` -> test files
-- K8s manifest `image:` -> Dockerfile
-- SQL foreign keys -> other tables
-- OpenAPI `$ref` -> schema definitions
-- Markdown links -> referenced files
+Step pós-análise conectando:
+- Dockerfile `COPY` -> diretórios de source code
+- Config CI `run: npm test` -> arquivos de teste
+- Manifest K8s `image:` -> Dockerfile
+- Foreign keys SQL -> outras tabelas
+- OpenAPI `$ref` -> definições de schema
+- Links Markdown -> arquivos referenciados
 
 ### Architecture Analyzer
 
-New pattern detection:
-- Deployment topology: Dockerfile -> compose -> K8s chain
-- Data flow: Schema -> migration -> API endpoint -> client code
-- Documentation coverage: which modules have docs vs. not
-- Configuration dependency: which config files affect which code paths
+Detecção de novos padrões:
+- Topologia de deploy: cadeia Dockerfile -> compose -> K8s
+- Fluxo de dados: Schema -> migration -> endpoint de API -> código cliente
+- Cobertura de documentação: quais módulos têm docs vs. não têm
+- Dependência de configuração: quais arquivos de config afetam quais code paths
 
 ### Tour Builder
 
-Include non-code tour stops:
-- Project README overview
-- Dockerfile containerization
-- SQL migration database schema
-- CI/CD pipeline explanation
+Incluir paradas de tour não-código:
+- Visão geral do README do projeto
+- Containerização do Dockerfile
+- Schema de banco de dados de migration SQL
+- Explicação do pipeline CI/CD
 
-## Dashboard Visualization
+## Visualização do Dashboard
 
-### New Node Visual Styles
+### Novos Estilos Visuais de Nó
 
-| Node Type | Shape | Color | Icon |
+| Tipo de Nó | Forma | Cor | Ícone |
 |-----------|-------|-------|------|
-| `config` | Rounded rect | Teal (#5eead4) | Gear |
-| `document` | Rounded rect | Sky blue (#7dd3fc) | Document |
-| `service` | Hexagon | Violet (#a78bfa) | Container/Box |
-| `table` | Rectangle | Emerald (#6ee7b7) | Grid |
-| `endpoint` | Pill/Stadium | Orange (#fdba74) | Arrow-right |
-| `pipeline` | Rounded rect | Rose (#fda4af) | Play/Workflow |
-| `schema` | Diamond | Amber (#fcd34d) | Blueprint |
-| `resource` | Cloud shape | Indigo (#a5b4fc) | Cloud |
+| `config` | Rect arredondado | Teal (#5eead4) | Engrenagem |
+| `document` | Rect arredondado | Azul céu (#7dd3fc) | Documento |
+| `service` | Hexágono | Violeta (#a78bfa) | Container/Caixa |
+| `table` | Retângulo | Esmeralda (#6ee7b7) | Grid |
+| `endpoint` | Pill/Stadium | Laranja (#fdba74) | Seta-direita |
+| `pipeline` | Rect arredondado | Rosa (#fda4af) | Play/Workflow |
+| `schema` | Diamante | Âmbar (#fcd34d) | Blueprint |
+| `resource` | Forma de nuvem | Índigo (#a5b4fc) | Nuvem |
 
-### Graph Layout
+### Layout do Grafo
 
-1. Layer grouping by category — non-code nodes cluster separately from code nodes
-2. Legend update with 8 new node types
-3. Filter controls — checkboxes to show/hide each file category
+1. Agrupamento por camada por categoria — nós não-código se agrupam separadamente dos nós de código
+2. Atualização da legenda com 8 novos tipos de nó
+3. Controles de filtro — checkboxes para mostrar/esconder cada categoria de arquivo
 
-### Sidebar Enhancements
+### Melhorias na Sidebar
 
-NodeInfo panel updates per node type:
-- **Config**: key-value pairs, referencing code files
-- **Document**: heading outline, linked code components
-- **Service**: ports, volumes, dependencies, deployed code
-- **Table**: columns, types, foreign key relationships
-- **Endpoint**: HTTP method, path, request/response schema
-- **Pipeline**: jobs, triggers, deployed targets
-- **Schema**: fields, nested types, consumers
-- **Resource**: provider, type, dependencies
+Atualizações no painel NodeInfo por tipo de nó:
+- **Config**: pares chave-valor, referenciando arquivos de código
+- **Document**: outline de heading, componentes de código linkados
+- **Service**: portas, volumes, dependências, código deployado
+- **Table**: colunas, types, relacionamentos de foreign key
+- **Endpoint**: método HTTP, path, schema de request/response
+- **Pipeline**: jobs, triggers, targets deployados
+- **Schema**: campos, types aninhados, consumidores
+- **Resource**: provider, type, dependências
 
-ProjectOverview panel: add "File Types" breakdown (code vs. non-code distribution).
+Painel ProjectOverview: adicionar breakdown "File Types" (distribuição código vs. não-código).
 
-## New Dependencies
+## Novas Dependências
 
-- `yaml` — YAML parsing (already common, ~50KB)
-- `@iarna/toml` — TOML parsing (~30KB)
-- `jsonc-parser` — JSON with comments (~20KB)
+- `yaml` — Parsing YAML (já comum, ~50KB)
+- `@iarna/toml` — Parsing TOML (~30KB)
+- `jsonc-parser` — JSON com comentários (~20KB)
 
-No tree-sitter WASM additions. All other parsers are regex-based with zero dependencies.
+Sem adições de WASM tree-sitter. Todos os outros parsers são baseados em regex com zero dependências.
 
-## Backward Compatibility
+## Compatibilidade Retroativa
 
-- All new `StructuralAnalysis` fields are optional
-- `resolveImports` becomes optional on `AnalyzerPlugin`
-- Existing `LanguageConfig` entries unchanged
-- Schema validation auto-fixes new type aliases
-- Existing knowledge graphs remain valid (new types are additive)
+- Todos os novos campos de `StructuralAnalysis` são opcionais
+- `resolveImports` se torna opcional em `AnalyzerPlugin`
+- Entradas existentes de `LanguageConfig` inalteradas
+- A validação de schema auto-fixa os novos aliases de tipo
+- Knowledge graphs existentes permanecem válidos (novos types são aditivos)

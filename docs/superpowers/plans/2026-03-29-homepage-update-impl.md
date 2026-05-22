@@ -1,23 +1,23 @@
-# Homepage Feature Update Implementation Plan
+# Plano de Implementação da Atualização de Features da Homepage
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **Para o Claude:** SUB-SKILL OBRIGATÓRIA: Use superpowers:executing-plans para implementar este plano tarefa por tarefa.
 
-**Goal:** Update the Astro homepage to reflect features from v1.2.0–v2.0.0 releases.
+**Objetivo:** Atualizar a homepage Astro para refletir as features dos releases v1.2.0–v2.0.0.
 
-**Architecture:** Three file edits — expand Features.astro from 3→6 cards, update Install.astro platform note, update Footer.astro tagline. No new files or structural changes.
+**Arquitetura:** Três edições de arquivo — expandir Features.astro de 3→6 cards, atualizar a nota de plataformas do Install.astro, atualizar a tagline do Footer.astro. Sem novos arquivos ou mudanças estruturais.
 
-**Tech Stack:** Astro 6, CSS grid
+**Stack Tecnológica:** Astro 6, CSS grid
 
 ---
 
-### Task 1: Update Features.astro — Replace 3 Cards with 6
+### Tarefa 1: Atualizar Features.astro — Substituir 3 Cards por 6
 
-**Files:**
-- Modify: `homepage/src/components/Features.astro`
+**Arquivos:**
+- Modificar: `homepage/src/components/Features.astro`
 
-**Step 1: Replace the features array (lines 2–18)**
+**Step 1: Substituir o array de features (linhas 2–18)**
 
-Replace the entire frontmatter features array with:
+Substitua o array de features no frontmatter por:
 
 ```astro
 ---
@@ -56,22 +56,22 @@ const features = [
 ---
 ```
 
-**Step 2: Update the reveal delay logic (line 24)**
+**Step 2: Atualizar a lógica de delay do reveal (linha 24)**
 
-The current `reveal-delay-${i + 1}` only has CSS for delays 1–3. With 6 cards in 2 rows, use modulo so each row staggers 1/2/3:
+O `reveal-delay-${i + 1}` atual só tem CSS para os delays 1–3. Com 6 cards em 2 linhas, use módulo para que cada linha escalone 1/2/3:
 
 ```astro
 <div class={`feature-card reveal reveal-delay-${(i % 3) + 1}`}>
 ```
 
-**Step 3: Update the grid CSS to handle 2 rows properly**
+**Step 3: Atualizar o CSS do grid para tratar 2 linhas corretamente**
 
-No change needed — `grid-template-columns: repeat(3, 1fr)` already wraps to a second row. The mobile `1fr` breakpoint also works. No CSS changes required.
+Sem mudança necessária — `grid-template-columns: repeat(3, 1fr)` já quebra para uma segunda linha. O breakpoint mobile `1fr` também funciona. Nenhuma mudança de CSS é necessária.
 
-**Step 4: Verify build**
+**Step 4: Verificar o build**
 
-Run: `cd homepage && npx astro build`
-Expected: Build completes with no errors.
+Execute: `cd homepage && npx astro build`
+Esperado: Build completa sem erros.
 
 **Step 5: Commit**
 
@@ -82,19 +82,19 @@ git commit -m "feat(homepage): expand features section to 6 cards for v2.0.0"
 
 ---
 
-### Task 2: Update Install.astro — Multi-Platform Note
+### Tarefa 2: Atualizar Install.astro — Nota Multi-Plataforma
 
-**Files:**
-- Modify: `homepage/src/components/Install.astro`
+**Arquivos:**
+- Modificar: `homepage/src/components/Install.astro`
 
-**Step 1: Replace the platform note (line 13)**
+**Step 1: Substituir a nota de plataforma (linha 13)**
 
-Change:
+Substitua:
 ```html
 <p class="install-note">Works with <strong>Claude Code</strong> — Anthropic's official CLI for Claude.</p>
 ```
 
-To:
+Por:
 ```html
 <p class="install-note">Works with <strong>Claude Code</strong>, <strong>Codex</strong>, <strong>OpenCode</strong>, <strong>Gemini CLI</strong>, and more.</p>
 ```
@@ -108,27 +108,27 @@ git commit -m "feat(homepage): update install note for multi-platform support"
 
 ---
 
-### Task 3: Update Footer.astro — Tagline
+### Tarefa 3: Atualizar Footer.astro — Tagline
 
-**Files:**
-- Modify: `homepage/src/components/Footer.astro`
+**Arquivos:**
+- Modificar: `homepage/src/components/Footer.astro`
 
-**Step 1: Replace the tagline (line 13)**
+**Step 1: Substituir a tagline (linha 13)**
 
-Change:
+Substitua:
 ```html
 <p class="footer-note">Built as a Claude Code plugin</p>
 ```
 
-To:
+Por:
 ```html
 <p class="footer-note">Built for AI coding assistants</p>
 ```
 
-**Step 2: Verify full build**
+**Step 2: Verificar o build completo**
 
-Run: `cd homepage && npx astro build`
-Expected: Clean build, no errors.
+Execute: `cd homepage && npx astro build`
+Esperado: Build limpo, sem erros.
 
 **Step 3: Commit**
 

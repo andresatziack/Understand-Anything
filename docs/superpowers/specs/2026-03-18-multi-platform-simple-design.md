@@ -1,22 +1,22 @@
-# Multi-Platform Skill Support — Simplified Design
+# Suporte Multi-Plataforma para Skills — Design Simplificado
 
-**Date**: 2026-03-18
-**Status**: Approved
-**Goal**: Make Understand-Anything skills work across Codex, OpenClaw, OpenCode, and Cursor with zero build step — same files everywhere.
+**Data**: 2026-03-18
+**Status**: Aprovado
+**Objetivo**: Fazer com que as skills do Understand-Anything funcionem em Codex, OpenClaw, OpenCode e Cursor sem nenhum passo de build — os mesmos arquivos em todos os lugares.
 
-## Design Principles
+## Princípios de Design
 
-Follows the [obra/superpowers](https://github.com/obra/superpowers) pattern:
-1. **Same files, all platforms** — no template markers, no build step, no platform-specific variants
-2. **`model: inherit`** — agents use the parent session's model, making them platform-agnostic
-3. **AI-driven installation** — `.{platform}/INSTALL.md` files that the AI agent reads and executes
-4. **Self-contained skills** — pipeline prompt templates live inside the skill directory, not in a separate `agents/` folder
+Segue o padrão do [obra/superpowers](https://github.com/obra/superpowers):
+1. **Mesmos arquivos, todas as plataformas** — sem markers de template, sem passo de build, sem variantes específicas por plataforma
+2. **`model: inherit`** — agentes usam o modelo da sessão pai, tornando-os agnósticos de plataforma
+3. **Instalação dirigida por IA** — arquivos `.{platform}/INSTALL.md` que o agente de IA lê e executa
+4. **Skills self-contained** — templates de prompt do pipeline ficam dentro do diretório da skill, não em uma pasta `agents/` separada
 
-## Change 1: Move Pipeline Agents Into Skill
+## Mudança 1: Mover Agentes do Pipeline Para Dentro da Skill
 
-The 5 pipeline agents (project-scanner, file-analyzer, architecture-analyzer, tour-builder, graph-reviewer) are used exclusively by the `/understand` skill. They become prompt templates co-located with the skill:
+Os 5 agentes do pipeline (project-scanner, file-analyzer, architecture-analyzer, tour-builder, graph-reviewer) são usados exclusivamente pela skill `/understand`. Eles se tornam templates de prompt co-localizados com a skill:
 
-**Before:**
+**Antes:**
 ```
 agents/
   project-scanner.md          # agent definition
@@ -28,7 +28,7 @@ skills/understand/
   SKILL.md                    # dispatches named agents
 ```
 
-**After:**
+**Depois:**
 ```
 skills/understand/
   SKILL.md                           # dispatches subagents using templates
@@ -39,15 +39,15 @@ skills/understand/
   graph-reviewer-prompt.md
 ```
 
-The prompt template files retain the full instruction content but drop the agent frontmatter (`name`, `tools`, `model`). The `SKILL.md` dispatch changes from "Dispatch the **project-scanner** agent" to "Dispatch a subagent using the template at `./project-scanner-prompt.md`".
+Os arquivos de template de prompt mantêm o conteúdo completo de instruções mas removem o frontmatter de agente (`name`, `tools`, `model`). O dispatch do `SKILL.md` muda de "Dispatch the **project-scanner** agent" para "Dispatch a subagent using the template at `./project-scanner-prompt.md`".
 
-### Context Cost
+### Custo de Contexto
 
-Reading templates through the main session adds ~11K tokens total (~5.5% of 200K context). This is sequential (one template at a time), and context compression reclaims earlier content. Acceptable trade-off for portability.
+Ler templates pela sessão principal adiciona ~11K tokens no total (~5,5% de um contexto de 200K). Isso é sequencial (um template por vez), e a compressão de contexto recupera o conteúdo anterior. Trade-off aceitável pela portabilidade.
 
-## Change 2: New Registered Agent — knowledge-graph-guide
+## Mudança 2: Novo Agente Registrado — knowledge-graph-guide
 
-Create a reusable agent that any skill or user can invoke to work with knowledge graphs:
+Criar um agente reutilizável que qualquer skill ou usuário pode invocar para trabalhar com knowledge graphs:
 
 ```yaml
 # agents/knowledge-graph-guide.md
@@ -62,60 +62,60 @@ model: inherit
 ---
 ```
 
-This agent knows:
-- The KnowledgeGraph JSON schema (nodes, edges, layers, tours)
-- The 5 node types and 18 edge types
-- How to navigate and query the graph
-- How to use the interactive dashboard
-- How to interpret architectural layers and guided tours
+Esse agente conhece:
+- O schema JSON do KnowledgeGraph (nodes, edges, layers, tours)
+- Os 5 tipos de nó e 18 tipos de edge
+- Como navegar e consultar o grafo
+- Como usar o dashboard interativo
+- Como interpretar camadas arquiteturais e guided tours
 
-## Change 3: Platform Installation Files
+## Mudança 3: Arquivos de Instalação por Plataforma
 
-Each platform gets an `INSTALL.md` that the AI agent can fetch and follow:
+Cada plataforma ganha um `INSTALL.md` que o agente de IA pode buscar e seguir:
 
-| File | Platform | Install Mechanism |
+| Arquivo | Plataforma | Mecanismo de Instalação |
 |------|----------|-------------------|
-| `.codex/INSTALL.md` | Codex | `git clone` + symlink to `~/.agents/skills/` |
-| `.opencode/INSTALL.md` | OpenCode | Plugin config in `opencode.json` |
-| `.openclaw/INSTALL.md` | OpenClaw | `git clone` + symlink to `~/.openclaw/skills/` |
-| `.cursor/INSTALL.md` | Cursor | `git clone` + symlink to `.cursor/plugins/` |
+| `.codex/INSTALL.md` | Codex | `git clone` + symlink para `~/.agents/skills/` |
+| `.opencode/INSTALL.md` | OpenCode | Plugin config em `opencode.json` |
+| `.openclaw/INSTALL.md` | OpenClaw | `git clone` + symlink para `~/.openclaw/skills/` |
+| `.cursor/INSTALL.md` | Cursor | `git clone` + symlink para `.cursor/plugins/` |
 
-User tells the agent one line:
+O usuário diz ao agente uma linha:
 ```
 Fetch and follow instructions from https://raw.githubusercontent.com/Lum1104/Understand-Anything/refs/heads/main/understand-anything-plugin/.codex/INSTALL.md
 ```
 
-The agent executes the clone + symlink/config automatically.
+O agente executa o clone + symlink/config automaticamente.
 
-## Change 4: README Update
+## Mudança 4: Atualização do README
 
-Add a "Multi-Platform Installation" section to README.md with one-liner per platform.
+Adicionar uma seção "Multi-Platform Installation" ao README.md com one-liner por plataforma.
 
-## File Summary
+## Resumo de Arquivos
 
-| Action | Files |
+| Ação | Arquivos |
 |--------|-------|
-| Delete | `agents/project-scanner.md`, `agents/file-analyzer.md`, `agents/architecture-analyzer.md`, `agents/tour-builder.md`, `agents/graph-reviewer.md` |
-| Create | `skills/understand/project-scanner-prompt.md`, `skills/understand/file-analyzer-prompt.md`, `skills/understand/architecture-analyzer-prompt.md`, `skills/understand/tour-builder-prompt.md`, `skills/understand/graph-reviewer-prompt.md` |
-| Create | `agents/knowledge-graph-guide.md` |
-| Create | `.codex/INSTALL.md`, `.opencode/INSTALL.md`, `.openclaw/INSTALL.md`, `.cursor/INSTALL.md` |
-| Modify | `skills/understand/SKILL.md` (dispatch references) |
-| Modify | `README.md` (multi-platform section) |
+| Deletar | `agents/project-scanner.md`, `agents/file-analyzer.md`, `agents/architecture-analyzer.md`, `agents/tour-builder.md`, `agents/graph-reviewer.md` |
+| Criar | `skills/understand/project-scanner-prompt.md`, `skills/understand/file-analyzer-prompt.md`, `skills/understand/architecture-analyzer-prompt.md`, `skills/understand/tour-builder-prompt.md`, `skills/understand/graph-reviewer-prompt.md` |
+| Criar | `agents/knowledge-graph-guide.md` |
+| Criar | `.codex/INSTALL.md`, `.opencode/INSTALL.md`, `.openclaw/INSTALL.md`, `.cursor/INSTALL.md` |
+| Modificar | `skills/understand/SKILL.md` (referências de dispatch) |
+| Modificar | `README.md` (seção multi-plataforma) |
 
-## What We Don't Need
+## O Que Não Precisamos
 
-- ~~`platforms/platform-config.json`~~ — same files everywhere
-- ~~`platforms/build.mjs`~~ — no build step
-- ~~`{{MARKER}}` template markers~~ — no templating
-- ~~`scripts/install-*.sh`~~ — AI agent follows INSTALL.md
-- ~~`dist-platforms/`~~ — no generated output
+- ~~`platforms/platform-config.json`~~ — mesmos arquivos em todos os lugares
+- ~~`platforms/build.mjs`~~ — sem passo de build
+- ~~markers de template `{{MARKER}}`~~ — sem templating
+- ~~`scripts/install-*.sh`~~ — agente de IA segue o INSTALL.md
+- ~~`dist-platforms/`~~ — sem saída gerada
 
-## Platform Compatibility
+## Compatibilidade de Plataformas
 
-| Platform | Install Method | Agent Discovery | Skill Discovery |
+| Plataforma | Método de Instalação | Descoberta de Agente | Descoberta de Skill |
 |----------|---------------|-----------------|-----------------|
-| Claude Code | Marketplace (existing) | `agents/` dir | `skills/` dir |
-| Codex | INSTALL.md → symlink | N/A (templates in skill) | `~/.agents/skills/` |
-| OpenCode | INSTALL.md → plugin config | N/A (templates in skill) | Plugin auto-registers |
-| OpenClaw | INSTALL.md → symlink | N/A (templates in skill) | `~/.openclaw/skills/` |
-| Cursor | INSTALL.md → symlink | `agents/` dir | `.cursor/plugins/` |
+| Claude Code | Marketplace (existente) | diretório `agents/` | diretório `skills/` |
+| Codex | INSTALL.md → symlink | N/A (templates dentro da skill) | `~/.agents/skills/` |
+| OpenCode | INSTALL.md → plugin config | N/A (templates dentro da skill) | Plugin auto-registra |
+| OpenClaw | INSTALL.md → symlink | N/A (templates dentro da skill) | `~/.openclaw/skills/` |
+| Cursor | INSTALL.md → symlink | diretório `agents/` | `.cursor/plugins/` |

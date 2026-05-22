@@ -1,34 +1,34 @@
-# HTML Language Prompt Snippet
+# Snippet de Prompt da Linguagem HTML
 
-## Key Concepts
+## Conceitos-Chave
 
-- **Semantic Elements**: `<main>`, `<nav>`, `<header>`, `<footer>`, `<article>`, `<section>` for meaningful structure
-- **Document Structure**: `<!DOCTYPE html>`, `<html>`, `<head>`, `<body>` forming the page skeleton
-- **Forms**: `<form>`, `<input>`, `<select>`, `<textarea>` for user data collection with validation attributes
-- **Accessibility**: `aria-*` attributes, `role`, `alt` text, and semantic markup for screen readers
-- **Meta Tags**: `<meta>` for viewport, charset, description, Open Graph, and SEO metadata
-- **Script and Style Loading**: `<script>`, `<link>`, `<style>` for JavaScript and CSS inclusion
-- **Data Attributes**: `data-*` custom attributes for storing element-specific data
-- **Template Syntax**: Framework-specific templating (`{{ }}` for Jinja/Django, `<%= %>` for ERB)
-- **Web Components**: `<template>`, `<slot>`, Custom Elements for encapsulated reusable components
+- **Elementos Semânticos**: `<main>`, `<nav>`, `<header>`, `<footer>`, `<article>`, `<section>` para estrutura significativa
+- **Estrutura do Documento**: `<!DOCTYPE html>`, `<html>`, `<head>`, `<body>` formando o esqueleto da página
+- **Forms**: `<form>`, `<input>`, `<select>`, `<textarea>` para coleta de dados do usuário com atributos de validação
+- **Acessibilidade**: atributos `aria-*`, `role`, texto `alt` e marcação semântica para leitores de tela
+- **Meta Tags**: `<meta>` para viewport, charset, description, Open Graph e metadados de SEO
+- **Carregamento de Script e Style**: `<script>`, `<link>`, `<style>` para inclusão de JavaScript e CSS
+- **Atributos de Dados**: atributos customizados `data-*` para armazenar dados específicos do elemento
+- **Sintaxe de Template**: templating específico de framework (`{{ }}` para Jinja/Django, `<%= %>` para ERB)
+- **Web Components**: `<template>`, `<slot>`, Custom Elements para componentes reutilizáveis encapsulados
 
-## Notable File Patterns
+## Padrões de Arquivo Notáveis
 
-- `index.html` — Application entry point or SPA shell
-- `*.html` / `*.htm` — Static HTML pages
-- `templates/**/*.html` — Server-side template files (Django, Jinja2, Go templates)
-- `public/index.html` — SPA root document (React, Vue)
-- `*.ejs` / `*.hbs` / `*.pug` — Templating engine files
+- `index.html` — ponto de entrada da aplicação ou shell de SPA
+- `*.html` / `*.htm` — páginas HTML estáticas
+- `templates/**/*.html` — arquivos de template renderizados no servidor (Django, Jinja2, templates do Go)
+- `public/index.html` — documento raiz de SPA (React, Vue)
+- `*.ejs` / `*.hbs` / `*.pug` — arquivos de templating engines
 
-## Edge Patterns
+## Padrões de Aresta
 
-- HTML files `depends_on` JavaScript and CSS files they include via `<script>` and `<link>` tags
-- Template HTML files `depends_on` the server-side code that renders them
-- HTML entry points are `deploys` targets for build systems and web servers
-- HTML files `related` to the components or routes they render
+- Arquivos HTML `depends_on` os arquivos JavaScript e CSS que incluem via tags `<script>` e `<link>`
+- Arquivos de template HTML `depends_on` o código no servidor que os renderiza
+- Pontos de entrada HTML são alvos `deploys` para sistemas de build e servidores web
+- Arquivos HTML são `related` aos componentes ou rotas que renderizam
 
-## Summary Style
+## Estilo de Resumo
 
-> "Single-page application shell with viewport meta, CSS reset, and React root mount point."
-> "Server-rendered template with navigation, content area, and footer using Django template inheritance."
-> "Static landing page with responsive layout, form, and third-party script integrations."
+> "Shell de single-page application com viewport meta, CSS reset e ponto de montagem da raiz do React."
+> "Template renderizado no servidor com navegação, área de conteúdo e footer usando herança de templates do Django."
+> "Página de landing estática com layout responsivo, formulário e integrações de scripts de terceiros."

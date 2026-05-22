@@ -1,47 +1,48 @@
-# Rust Language Prompt Snippet
+# Snippet de Prompt da Linguagem Rust
 
-## Key Concepts
+## Conceitos-Chave
 
-- **Ownership and Borrowing**: Each value has one owner; references borrow without taking ownership
-- **Lifetimes**: Annotations (`'a`) ensuring references remain valid for their required duration
-- **Traits and Trait Objects**: Shared behavior definitions; `dyn Trait` for dynamic dispatch
-- **Pattern Matching**: Exhaustive `match` expressions deconstructing enums, structs, and tuples
-- **Enums with Data**: Algebraic data types — each variant can carry different associated data
-- **Result/Option Error Handling**: `Result<T, E>` for fallible ops; `Option<T>` for nullable values
-- **Macros**: Declarative (`macro_rules!`) and procedural (derive, attribute, function-like) code generation
-- **Async/Await with Tokio**: Zero-cost async using `Future` trait and runtime executors
-- **Unsafe Blocks**: Opt-in blocks for raw pointer dereferencing, FFI, and bypassing borrow checker
-- **Generics with Trait Bounds**: `<T: Clone + Send>` constraining generic parameters
-- **Closures and Fn Traits**: `Fn`, `FnMut`, `FnOnce` determine how closures capture environment
+- **Ownership e Borrowing**: cada valor tem um proprietário; referências fazem borrow sem assumir a posse
+- **Lifetimes**: anotações (`'a`) garantindo que referências permaneçam válidas pela duração necessária
+- **Traits e Trait Objects**: definições de comportamento compartilhado; `dyn Trait` para despacho dinâmico
+- **Pattern Matching**: expressões `match` exaustivas que desconstruem enums, structs e tuples
+- **Enums com Dados**: tipos algébricos de dados — cada variante pode carregar dados associados diferentes
+- **Tratamento de Erros com Result/Option**: `Result<T, E>` para operações falíveis; `Option<T>` para valores nuláveis
+- **Macros**: geração de código declarativa (`macro_rules!`) e procedural (derive, attribute, function-like)
+- **Async/Await com Tokio**: async com custo zero usando o trait `Future` e executores de runtime
+- **Unsafe Blocks**: blocos opt-in para desreferenciar raw pointers, FFI e contornar o borrow checker
+- **Generics com Trait Bounds**: `<T: Clone + Send>` restringindo parâmetros genéricos
+- **Closures e Traits Fn**: `Fn`, `FnMut`, `FnOnce` determinam como closures capturam o ambiente
 
-## Import Patterns
+## Padrões de Importação
 
-- `use crate::module::Item` — import from current crate
-- `use std::collections::HashMap` — import from standard library
-- `use super::*` — import everything from parent module
-- `mod module_name` — declare a submodule (loads from file)
+- `use crate::module::Item` — importa do crate atual
+- `use std::collections::HashMap` — importa da biblioteca padrão
+- `use super::*` — importa tudo do módulo pai
+- `mod module_name` — declara um submódulo (carrega do arquivo)
 
-## File Patterns
+## Padrões de Arquivos
 
-- `mod.rs` — module barrel file (older convention) or `module_name.rs` (2018+ edition)
-- `lib.rs` — library crate root defining the public API
-- `main.rs` — binary crate entry point
-- `Cargo.toml` — project manifest with dependencies and metadata
-- `build.rs` — build script executed before compilation
+- `mod.rs` — barrel file de módulo (convenção antiga) ou `module_name.rs` (edition 2018+)
+- `lib.rs` — raiz do crate de biblioteca definindo a API pública
+- `main.rs` — ponto de entrada de crate binário
+- `Cargo.toml` — manifesto do projeto com dependências e metadados
+- `build.rs` — script de build executado antes da compilação
 
-## Common Frameworks
+## Frameworks Comuns
 
-- **Actix-web** — Actor-based, high-performance web framework
-- **Axum** — Ergonomic web framework built on Tower and Hyper
-- **Rocket** — Type-safe web framework with declarative routing
-- **Diesel** — Safe, composable ORM and query builder
-- **Tokio** — Async runtime providing I/O, timers, and task scheduling
+- **Actix-web** — framework web baseado em atores e de alta performance
+- **Axum** — framework web ergonômico construído sobre Tower e Hyper
+- **Rocket** — framework web type-safe com roteamento declarativo
+- **Diesel** — ORM e query builder seguro e composável
+- **Tokio** — runtime async fornecendo I/O, timers e agendamento de tasks
 
-## Example Language Notes
+## Exemplo de Notas da Linguagem
 
-> Takes `&self` borrow to read state without transferring ownership; returns
-> `Result<T, Error>` for explicit error propagation. The `?` operator propagates
-> errors up the call stack concisely, replacing verbose match blocks.
+> Faz borrow `&self` para ler estado sem transferir a posse; retorna `Result<T, Error>`
+> para propagação explícita de erros. O operador `?` propaga erros pela call stack
+> de forma concisa, substituindo blocos `match` verbosos.
 >
-> The module system maps to the filesystem: `mod handlers;` loads either
-> `handlers.rs` or `handlers/mod.rs`, establishing the module tree at compile time.
+> O sistema de módulos mapeia para o sistema de arquivos: `mod handlers;` carrega ou
+> `handlers.rs` ou `handlers/mod.rs`, estabelecendo a árvore de módulos em tempo de
+> compilação.

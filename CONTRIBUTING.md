@@ -1,123 +1,123 @@
-# Contributing to Understand Anything
+# Contribuindo para Understand Anything
 
-Thank you for your interest in contributing to Understand Anything! This document provides guidelines and instructions for contributing to the project.
+Obrigado pelo interesse em contribuir com o Understand Anything! Este documento traz orientações e instruções para contribuir com o projeto.
 
-## 🌟 Ways to Contribute
+## 🌟 Formas de Contribuir
 
-- **Bug Reports**: Found a bug? Open an issue with detailed reproduction steps
-- **Feature Requests**: Have an idea? Share it in the issues section
-- **Documentation**: Improve or translate documentation
-- **Code**: Fix bugs, add features, or improve performance
-- **Testing**: Write tests to improve code coverage
+- **Reports de bug**: Encontrou um bug? Abra uma issue com passos detalhados para reproduzir
+- **Pedidos de funcionalidade**: Tem uma ideia? Compartilhe na seção de issues
+- **Documentação**: Melhore ou traduza a documentação
+- **Código**: Corrija bugs, adicione funcionalidades ou melhore a performance
+- **Testes**: Escreva testes para aumentar a cobertura
 
-## 🚀 Getting Started
+## 🚀 Começando
 
-### Prerequisites
+### Pré-requisitos
 
-- Node.js >= 22 (developed on v24)
-- pnpm >= 10 (pinned via `packageManager` field in root `package.json`)
-- Git for version control
+- Node.js >= 22 (desenvolvido na v24)
+- pnpm >= 10 (fixado pelo campo `packageManager` no `package.json` da raiz)
+- Git para versionamento
 
-### Setup
+### Configuração
 
-1. **Fork and Clone**
+1. **Faça o fork e clone**
    ```bash
    git clone https://github.com/YOUR_USERNAME/Understand-Anything.git
    cd Understand-Anything
    ```
 
-2. **Install Dependencies**
+2. **Instale as dependências**
    ```bash
    pnpm install
    ```
 
-3. **Build Core Package**
+3. **Faça o build do pacote core**
    ```bash
    pnpm --filter @understand-anything/core build
    ```
 
-4. **Run Tests**
+4. **Rode os testes**
    ```bash
    pnpm --filter @understand-anything/core test
    pnpm --filter @understand-anything/skill test
    ```
 
-5. **Start Dashboard (Optional)**
+5. **Suba o Dashboard (opcional)**
    ```bash
    pnpm dev:dashboard
    ```
 
-## 📝 Development Workflow
+## 📝 Fluxo de Desenvolvimento
 
-### 1. Create a Branch
+### 1. Crie um Branch
 
-Create a descriptive branch name:
+Use um nome de branch descritivo:
 ```bash
-git checkout -b feat/my-feature        # For new features
-git checkout -b fix/bug-description    # For bug fixes
-git checkout -b docs/update-readme     # For documentation
+git checkout -b feat/my-feature        # Para novas funcionalidades
+git checkout -b fix/bug-description    # Para correções de bug
+git checkout -b docs/update-readme     # Para documentação
 ```
 
-### 2. Make Changes
+### 2. Faça as Alterações
 
-- Write clean, readable code
-- Follow existing code style and conventions
-- Add tests for new functionality
-- Update documentation as needed
+- Escreva código limpo e legível
+- Siga o estilo e as convenções já presentes no código
+- Adicione testes para o que for novo
+- Atualize a documentação quando necessário
 
-### 3. Test Your Changes
+### 3. Teste Suas Alterações
 
 ```bash
-# Run all tests
+# Roda todos os testes
 pnpm --filter @understand-anything/core test
 pnpm --filter @understand-anything/skill test
 
-# Run linter
+# Roda o linter
 pnpm lint
 
-# Build packages
+# Faz o build dos pacotes
 pnpm build
 ```
 
-### 4. Commit Your Changes
+### 4. Faça o Commit
 
-Write clear, descriptive commit messages:
+Escreva mensagens de commit claras e descritivas:
 ```bash
 git add .
 git commit -m "feat: add keyboard shortcuts to dashboard"
 ```
 
-**Commit Message Convention:**
-- `feat:` - New feature
-- `fix:` - Bug fix
-- `docs:` - Documentation changes
-- `style:` - Code style changes (formatting, etc.)
-- `refactor:` - Code refactoring
-- `test:` - Adding or updating tests
-- `chore:` - Maintenance tasks
+**Convenção de mensagens de commit:**
+- `feat:` - nova funcionalidade
+- `fix:` - correção de bug
+- `docs:` - alteração na documentação
+- `style:` - alterações de estilo de código (formatação, etc.)
+- `refactor:` - refatoração de código
+- `test:` - adição ou atualização de testes
+- `chore:` - tarefas de manutenção
 
-### 5. Push and Create Pull Request
+### 5. Faça o Push e Abra um Pull Request
 
 ```bash
 git push origin your-branch-name
 ```
 
-Then open a Pull Request on GitHub with:
-- Clear title describing the change
-- Detailed description of what changed and why
-- Link to related issues (if any)
-- Screenshots (for UI changes)
+Em seguida, abra um Pull Request no GitHub com:
+- Título claro descrevendo a mudança
+- Descrição detalhada do que mudou e por quê
+- Link para issues relacionadas (se houver)
+- Screenshots (para mudanças de UI)
 
-## 🧪 Testing Guidelines
+## 🧪 Diretrizes de Teste
 
-### Writing Tests
+### Escrevendo Testes
 
-- Use Vitest for testing
-- Place tests in `__tests__` directories or `*.test.ts` files
-- Aim for high test coverage for new features
-- Test edge cases and error conditions
+- Use Vitest para testar
+- Coloque os testes em diretórios `__tests__` ou em arquivos `*.test.ts`
+- Busque cobertura alta para funcionalidades novas
+- Cubra edge cases e condições de erro
 
-Example test structure:
+Estrutura de exemplo:
 ```typescript
 import { describe, it, expect } from 'vitest';
 
@@ -135,48 +135,48 @@ describe('MyFeature', () => {
 });
 ```
 
-### Running Tests
+### Rodando Testes
 
 ```bash
-# Run all tests
+# Roda todos os testes
 pnpm test
 
-# Run tests for specific package
+# Roda os testes de um pacote específico
 pnpm --filter @understand-anything/core test
 
-# Run tests in watch mode
+# Roda os testes em watch mode
 pnpm --filter @understand-anything/core test --watch
 ```
 
-## 📚 Code Style Guidelines
+## 📚 Diretrizes de Estilo de Código
 
 ### TypeScript
 
-- Use TypeScript strict mode
-- Define explicit types for function parameters and return values
-- Avoid `any` type - use `unknown` if type is truly unknown
-- Use interfaces for object shapes
-- Use type aliases for unions and complex types
+- Use TypeScript em strict mode
+- Defina tipos explícitos para parâmetros de função e valores de retorno
+- Evite o tipo `any` — use `unknown` quando o tipo for realmente desconhecido
+- Use interfaces para descrever o formato de objetos
+- Use type aliases para uniões e tipos complexos
 
-### Formatting
+### Formatação
 
-- The project uses ESLint for code quality
-- Consistent indentation (2 spaces)
-- Use meaningful variable and function names
-- Keep functions small and focused
+- O projeto usa ESLint para qualidade de código
+- Indentação consistente (2 espaços)
+- Use nomes de variáveis e funções significativos
+- Mantenha as funções pequenas e focadas
 
 ### React/Dashboard
 
-- Use functional components with hooks
-- Keep components focused and single-purpose
-- Use Zustand for state management
-- Follow the existing component structure
+- Use componentes funcionais com hooks
+- Mantenha cada componente focado em um único papel
+- Use Zustand para gerenciamento de estado
+- Siga a estrutura de componentes existente
 
-### Tech Stack
+### Stack Técnica
 
 TypeScript, pnpm workspaces, React 18, Vite, TailwindCSS v4, React Flow, Zustand, web-tree-sitter, Fuse.js, Zod, Dagre
 
-### File Organization
+### Organização de Arquivos
 
 ```
 understand-anything-plugin/
@@ -195,80 +195,80 @@ understand-anything-plugin/
 └── skills/                # Skill definitions
 ```
 
-## 🌍 Translation Guidelines
+## 🌍 Diretrizes de Tradução
 
-### Adding a New Language
+### Adicionando um Novo Idioma
 
-1. Create `README.{language-code}.md` (e.g., `README.fr-FR.md`)
-2. Translate all sections while maintaining formatting
-3. Update main `README.md` to include language link
-4. Keep technical terms in English where appropriate
-5. Ensure all links still work
+1. Crie `README.{language-code}.md` (por exemplo, `README.fr-FR.md`)
+2. Traduza todas as seções mantendo a formatação
+3. Atualize o `README.md` principal incluindo o link para o novo idioma
+4. Mantenha termos técnicos em inglês quando fizer sentido
+5. Garanta que todos os links continuem funcionando
 
-Example:
+Exemplo:
 ```markdown
 <a href="README.md">English</a> | <a href="README.fr-FR.md">Français</a>
 ```
 
-## 🐛 Bug Reports
+## 🐛 Reports de Bug
 
-When reporting bugs, include:
+Ao reportar um bug, inclua:
 
-- **Description**: Clear description of the issue
-- **Steps to Reproduce**: Detailed steps to reproduce the bug
-- **Expected Behavior**: What you expected to happen
-- **Actual Behavior**: What actually happened
-- **Environment**: OS, Node version, pnpm version
-- **Screenshots**: If applicable
-- **Error Messages**: Full error output
+- **Descrição**: descrição clara do problema
+- **Passos para reproduzir**: passos detalhados que reproduzem o bug
+- **Comportamento esperado**: o que você esperava que acontecesse
+- **Comportamento real**: o que de fato aconteceu
+- **Ambiente**: SO, versão do Node, versão do pnpm
+- **Screenshots**: se aplicável
+- **Mensagens de erro**: saída de erro completa
 
-## 💡 Feature Requests
+## 💡 Pedidos de Funcionalidade
 
-When requesting features:
+Ao pedir uma funcionalidade nova:
 
-- **Use Case**: Describe the problem you're trying to solve
-- **Proposed Solution**: How you envision the feature working
-- **Alternatives**: Other solutions you've considered
-- **Additional Context**: Any other relevant information
+- **Caso de uso**: descreva o problema que você está tentando resolver
+- **Solução proposta**: como você imagina que a funcionalidade deve funcionar
+- **Alternativas**: outras soluções que você já considerou
+- **Contexto adicional**: qualquer outra informação relevante
 
-## 📋 Pull Request Checklist
+## 📋 Checklist do Pull Request
 
-Before submitting a PR, ensure:
+Antes de submeter um PR, garanta que:
 
-- [ ] Code follows the project's style guidelines
-- [ ] All tests pass (`pnpm test`)
-- [ ] New code has test coverage
-- [ ] Documentation is updated (if needed)
-- [ ] Commit messages follow convention
-- [ ] PR description clearly explains changes
-- [ ] No console.log or debug code left behind
-- [ ] Branch is up to date with main
+- [ ] O código segue as diretrizes de estilo do projeto
+- [ ] Todos os testes passam (`pnpm test`)
+- [ ] O código novo tem cobertura de testes
+- [ ] A documentação foi atualizada (se necessário)
+- [ ] As mensagens de commit seguem a convenção
+- [ ] A descrição do PR explica claramente as mudanças
+- [ ] Não ficou nenhum `console.log` ou código de debug perdido
+- [ ] O branch está atualizado com o `main`
 
-## 🤝 Code Review Process
+## 🤝 Processo de Code Review
 
-1. **Automated Checks**: CI runs tests and linting
-2. **Maintainer Review**: Project maintainers review the code
-3. **Feedback**: Address any requested changes
-4. **Approval**: Once approved, PR will be merged
-5. **Cleanup**: Delete your branch after merge
+1. **Checagens automatizadas**: a CI roda testes e lint
+2. **Review do mantenedor**: os mantenedores do projeto revisam o código
+3. **Feedback**: aplique as alterações solicitadas
+4. **Aprovação**: depois de aprovado, o PR é mesclado
+5. **Limpeza**: apague o seu branch após o merge
 
-## 📞 Getting Help
+## 📞 Onde Pedir Ajuda
 
-- **Issues**: For bugs and feature requests
-- **Discussions**: For questions and general discussion
-- **Documentation**: Check existing docs first
+- **Issues**: para bugs e pedidos de funcionalidade
+- **Discussions**: para perguntas e conversas em geral
+- **Documentação**: cheque os documentos existentes primeiro
 
-## 📄 License
+## 📄 Licença
 
-By contributing, you agree that your contributions will be licensed under the MIT License.
+Ao contribuir, você concorda que suas contribuições serão licenciadas sob a MIT License.
 
-## 🙏 Recognition
+## 🙏 Reconhecimento
 
-Contributors will be recognized in:
-- GitHub contributors list
-- Release notes (for significant contributions)
-- Special mentions for exceptional contributions
+Quem contribui é reconhecido em:
+- Lista de contribuidores no GitHub
+- Notas de release (para contribuições significativas)
+- Menções especiais para contribuições excepcionais
 
 ---
 
-**Thank you for contributing to Understand Anything! Your contributions help make code understanding accessible to everyone.** 🚀
+**Obrigado por contribuir com o Understand Anything! Suas contribuições ajudam a tornar a compreensão de código acessível a todo mundo.** 🚀
